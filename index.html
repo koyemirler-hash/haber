@@ -1,21 +1,62 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Emirler Köyü</title>
     <link rel="stylesheet" href="style.css">
-    </head>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
 <body>
-    <div id="app">
-        <div class="status-bar" id="statusBar">
-            <div class="status-item">
-                <div class="status-circle"><img src="muhtar.png"></div>
-                <small>Muhtar</small>
-            </div>
-        </div>
 
-        <div id="view-feed" class="view">
-            <div id="feedList"></div>
-        </div>
-    </div>
+    <header class="app-header">
+        <h2>Emirler Köyü</h2>
+    </header>
+
+    <main id="main-content">
+        <section id="view-feed" class="view">
+            <div class="status-wrapper" id="status-bar">
+                </div>
+            <div id="admin-post-area" class="admin-only hidden">
+                <input type="text" id="post-title" placeholder="Duyuru başlığı...">
+                <input type="file" id="post-file" accept="image/*,video/*">
+                <button onclick="paylas()">📢 Yayınla</button>
+            </div>
+            <div id="feed-container"></div>
+        </section>
+
+        <section id="view-chat" class="view hidden">
+            <div id="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Mesaj yaz...">
+                <label for="chat-file">📁</label>
+                <input type="file" id="chat-file" hidden accept="image/*">
+                <button onclick="mesajGonder()">➤</button>
+            </div>
+        </section>
+
+        <section id="view-settings" class="view hidden">
+            <div class="accordion">
+                <button class="acc-header" onclick="toggleAcc('admin-acc')">Yönetim Paneli</button>
+                <div id="admin-acc" class="acc-body hidden">
+                    <input id="f-name" placeholder="Firma Adı">
+                    <input id="f-tel" placeholder="Telefon">
+                    <button onclick="firmaEkle()">Firma Kaydet</button>
+                    <div id="online-list"></div>
+                </div>
+            </div>
+            <button class="logout-btn" onclick="cikis()">Çıkış Yap</button>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <div onclick="tabDegistir('feed')">🏠 Akış</div>
+        <div onclick="tabDegistir('chat')">💬 Sohbet</div>
+        <div onclick="tabDegistir('settings')">⚙️ Ayarlar</div>
+    </nav>
 
     <script src="app.js"></script>
 </body>

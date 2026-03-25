@@ -3,37 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emirler Köyü Portalı</title>
+    <title>Emirler Köyü</title>
     <link rel="manifest" href="manifest.json">
     <style>
         :root { --p: #4a5568; --bg: #f8f9fa; --accent: #588157; --orange: #ff6000; --white: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; overflow-x: hidden; }
-        .card { background: var(--white); padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 75px; }
+        .card { background: var(--white); padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: 10px; position: relative; }
         .hidden { display: none !important; }
         
-        /* 📜 AÇILIŞ ŞARTLARI & TANITIM OVERLAY */
-        #termsOverlay { position: fixed; inset: 0; background: white; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; text-align: center; }
-        .terms-box { height: 200px; overflow-y: auto; border: 1px solid #eee; padding: 15px; font-size: 13px; margin: 15px 0; border-radius: 10px; background: #fdfdfd; }
-
-        /* 👤 GİRİŞ SAYFASI */
-        #loginPage { position: fixed; inset: 0; background: var(--bg); z-index: 9000; display: flex; align-items: center; justify-content: center; }
-
-        /* 🏢 FİRMALAR & AKIŞ TASARIMI */
-        .biz-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding: 10px; }
-        .biz-card { min-width: 80%; scroll-snap-align: center; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-top: 5px solid var(--accent); }
-        
-        /* 💬 SOHBET BALONLARI */
-        .chat-box { height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px; background: #e5ddd5; border-radius: 10px; }
-        .msg { max-width: 75%; padding: 8px 12px; border-radius: 12px; font-size: 14px; }
+        /* 🖼️ RESİM/VİDEO VE SOHBET */
+        .post-media { width: 100%; border-radius: 10px; margin: 10px 0; max-height: 300px; object-fit: cover; }
+        .chat-box { height: 400px; overflow-y: auto; background: #e5ddd5; padding: 15px; border-radius: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 80%; padding: 10px; border-radius: 12px; position: relative; font-size: 14px; }
         .sent { align-self: flex-end; background: #dcf8c6; }
         .received { align-self: flex-start; background: white; }
+        .msg-tools { font-size: 10px; color: #888; margin-top: 5px; cursor: pointer; }
 
-        /* ⚙️ AYARLAR & ADMIN PANELİ */
-        .admin-section { border: 2px solid #e2e8f0; border-radius: 15px; padding: 15px; margin-top: 15px; background: #f9fafb; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .online { background: #48bb78; } .offline { background: #cbd5e0; }
+        /* 🏢 FİRMALAR (Snap Scroll) */
+        .biz-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding: 10px; }
+        .biz-card { min-width: 80%; scroll-snap-align: center; background: white; border-radius: 20px; padding: 20px; border-top: 5px solid var(--accent); }
 
-        input, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; }
+        /* ⚙️ PANEL TASARIMI */
+        .admin-only { border: 2px dashed var(--accent); padding: 15px; border-radius: 15px; margin: 10px; background: #f0f4f0; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
         .btn { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         
         .nav-footer { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #eee; z-index: 1000; }
@@ -41,228 +33,216 @@
 </head>
 <body>
 
-<div id="termsOverlay">
-    <h2 style="color: var(--accent);">🏡 Emirler Köyü</h2>
-    <p>Kullanım Şartları ve Gizlilik Sözleşmesi</p>
-    <div class="terms-box">
-        Bu uygulama Emirler Köyü sakinleri için geliştirilmiştir. <br><br>
-        1. Küfür, hakaret ve siyasi paylaşım yasaktır.<br>
-        2. Nostalji paylaşımları muhtar onayından geçer.<br>
-        3. Verileriniz şifrelenmiş olarak saklanır.
-    </div>
-    <label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
-    <button class="btn" style="margin-top:20px;" onclick="onayVer()">Uygulamaya Gir</button>
-</div>
-
-<div id="loginPage" class="hidden">
-    <div class="card" style="width: 80%; text-align: center;">
-        <h3>🔑 Üye Girişi</h3>
-        <input id="logEmail" type="email" placeholder="E-posta" value="koyemirler@gmail.com">
-        <input id="logPass" type="password" placeholder="Şifre">
-        <button class="btn" onclick="girisYap()">Giriş Yap</button>
-        <p id="errorMsg" style="color:red; font-size:12px;"></p>
+<div id="auth-screen">
+    <div class="card" id="login-form">
+        <h3 style="text-align:center;">🔑 Giriş / Kayıt</h3>
+        <input id="email" type="email" placeholder="E-posta">
+        <input id="pass" type="password" placeholder="Şifre">
+        <input id="username" type="text" placeholder="Ad Soyad (Sadece Kayıt İçin)">
+        <div style="display:flex; gap:10px;">
+            <button class="btn" onclick="authEylem('login')">Giriş Yap</button>
+            <button class="btn" style="background:#4a5568" onclick="authEylem('register')">Kayıt Ol</button>
+        </div>
+        <p id="auth-hata" style="color:red; font-size:12px; text-align:center;"></p>
     </div>
 </div>
 
 <div id="app" class="hidden">
-    <div id="adBanner" style="background:var(--orange); color:white; padding:10px; text-align:center; font-weight:bold; display:none;" onclick="reklamGit()"></div>
-
     <div id="view-feed" class="view">
-        <div class="card" style="background:var(--accent); color:white; border-radius:0 0 20px 20px; margin:0; text-align:center;">
+        <div class="card" style="background:var(--accent); color:white; text-align:center; margin:0; border-radius:0 0 20px 20px;">
             <h3>Köy Meydanı</h3>
         </div>
-        <div id="postList"></div>
+        <div id="feed-container"></div>
     </div>
 
     <div id="view-chat" class="view hidden">
         <div class="card">
-            <h4>💬 Canlı Sohbet</h4>
-            <div id="chatBox" class="chat-box"></div>
-            <div style="display:flex; gap:5px; margin-top:10px;">
-                <input id="msgInput" placeholder="Bir şeyler yaz...">
-                <button onclick="mesajGonder()" style="padding:10px; border-radius:10px; border:none; background:var(--accent); color:white;">Gönder</button>
+            <h4>💬 Köy Sohbeti</h4>
+            <div id="chat-list" class="chat-box"></div>
+            <div style="margin-top:10px;">
+                <input id="chat-msg" placeholder="Mesaj yaz veya resim seç...">
+                <input type="file" id="chat-file" accept="image/*,video/*" style="font-size:10px;">
+                <button class="btn" onclick="mesajGonder()">Gönder</button>
             </div>
         </div>
     </div>
 
     <div id="view-biz" class="view hidden">
-        <div class="card"><h3>🏢 Köy Firmaları</h3></div>
-        <div class="biz-container" id="bizList"></div>
+        <div class="card"><h3>🏢 Köy Rehberi</h3></div>
+        <div class="biz-container" id="biz-list"></div>
     </div>
 
     <div id="view-settings" class="view hidden">
         <div class="card">
             <h3>⚙️ Ayarlar</h3>
             
-            <div id="adminPanel" class="hidden admin-section">
-                <h4>🛡️ Admin Kontrol Paneli</h4>
-                <p><b>Kullanıcı Yetkilendirme</b></p>
-                <input id="targetEmail" placeholder="E-posta">
-                <select id="targetRole">
-                    <option value="muhtar">Muhtar</option>
-                    <option value="yardimci">Yardımcı</option>
-                    <option value="user">Normal Üye</option>
-                </select>
-                <button class="btn" onclick="yetkiVer()">Yetki Tanımla</button>
-                
+            <div id="admin-panel" class="hidden admin-only">
+                <h4>🛡️ Yönetim Paneli</h4>
+                <p><b>Firma Ekle/Düzenle</b></p>
+                <input id="f_ad" placeholder="Firma Adı">
+                <input id="f_tel" placeholder="Telefon (05xx)">
+                <input id="f_site" placeholder="Web/Gmail">
+                <button class="btn" onclick="firmaEkle()">Firmayı Kaydet</button>
                 <hr>
-                <p><b>💰 Reklam Ayarları</b></p>
-                <input id="adTxt" placeholder="Reklam Yazısı">
-                <input id="adLnk" placeholder="Reklam Linki">
-                <label><input type="checkbox" id="adActive"> Reklamı Göster</label>
-                <button class="btn" onclick="reklamKaydet()" style="background:#ff8a00">Kaydet</button>
+                <p><b>Bekleyen Üye Onayları</b></p>
+                <div id="pending-users"></div>
             </div>
 
-            <div class="admin-section">
-                <h4>👥 Kimler Online?</h4>
-                <div id="userList"></div>
-            </div>
-
-            <div class="card" style="text-align:center;">
-                <p>Uygulama Karekodu</p>
-                <img src="karekod.png" width="120">
-            </div>
-
-            <button class="btn" style="background:#e53e3e; margin-top:20px;" onclick="cikisYap()">🚪 Çıkış Yap</button>
+            <button class="btn" style="background:#e53e3e; margin-top:20px;" onclick="cikis()">🚪 Çıkış Yap</button>
         </div>
     </div>
 </div>
 
-<div class="nav-footer hidden" id="navBar">
-    <span onclick="tabDegistir('feed')">🏠 Akış</span>
-    <span onclick="tabDegistir('chat')">💬 Sohbet</span>
-    <span onclick="tabDegistir('biz')">🏢 Firmalar</span>
-    <span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
-</div>
+<nav class="nav-footer hidden" id="main-nav">
+    <span onclick="tabGit('feed')">🏠 Akış</span>
+    <span onclick="tabGit('chat')">💬 Sohbet</span>
+    <span onclick="tabGit('biz')">🏢 Rehber</span>
+    <span onclick="tabGit('settings')">⚙️ Ayarlar</span>
+</nav>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
     authDomain: "emirler-c5638.firebaseapp.com",
     projectId: "emirler-c5638",
-    storageBucket: "emirler-c5638.firebasestorage.app",
+    storageBucket: "emirler-c5638.appspot.com",
     appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
-// 🚀 AÇILIŞ VE ŞARTLAR
-if(localStorage.getItem('termsAccepted')) {
-    document.getElementById('termsOverlay').classList.add('hidden');
-    document.getElementById('loginPage').classList.remove('hidden');
-}
+const KUFURLER = ["kufur1", "kufur2"]; // Burayı istediğin kelimelerle doldurabilirsin kanki
 
-function onayVer() {
-    if(!document.getElementById('termsCheck').checked) return alert("Şartları kabul etmelisin kanki!");
-    localStorage.setItem('termsAccepted', 'true');
-    document.getElementById('termsOverlay').classList.add('hidden');
-    document.getElementById('loginPage').classList.remove('hidden');
-}
+let currentUser = null;
+let userRole = 'user';
 
-// 🔑 GİRİŞ VE ÇIKIŞ
-async function girisYap() {
-    const email = document.getElementById('logEmail').value;
-    const pass = document.getElementById('logPass').value;
+// 🔑 AUTH VE KAYIT SİSTEMİ
+async function authEylem(type) {
+    const email = document.getElementById('email').value;
+    const pass = document.getElementById('pass').value;
+    const name = document.getElementById('username').value;
+    
     try {
-        const res = await auth.signInWithEmailAndPassword(email, pass);
-        // Online durumunu güncelle
-        await db.collection("users").doc(res.user.uid).set({
-            name: email.split('@')[0], email, online: true, lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-        }, {merge: true});
-        location.reload();
-    } catch (e) { document.getElementById('errorMsg').innerText = "Hatalı giriş!"; }
+        if(type === 'register') {
+            const res = await auth.createUserWithEmailAndPassword(email, pass);
+            await db.collection("users").doc(res.user.uid).set({
+                name, email, role: 'user', approved: false, time: Date.now()
+            });
+            alert("Kayıt alındı! Muhtar onayından sonra girebilirsin.");
+        } else {
+            const res = await auth.signInWithEmailAndPassword(email, pass);
+            const doc = await db.collection("users").doc(res.user.uid).get();
+            if(!doc.data().approved && email !== "koyemirler@gmail.com") {
+                auth.signOut();
+                return alert("Üyeliğin henüz onaylanmamış kanki!");
+            }
+        }
+    } catch(e) { document.getElementById('auth-hata').innerText = "Hata: " + e.message; }
 }
 
-async function cikisYap() {
-    await db.collection("users").doc(auth.currentUser.uid).update({ online: false });
-    await auth.signOut();
-    location.reload();
-}
-
-// 🛡️ YETKİ VE PANEL KONTROLÜ
 auth.onAuthStateChanged(async user => {
     if(user) {
-        document.getElementById('loginPage').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        document.getElementById('navBar').classList.remove('hidden');
-        
+        currentUser = user;
         const doc = await db.collection("users").doc(user.uid).get();
-        if(user.email === "koyemirler@gmail.com") document.getElementById('adminPanel').classList.remove('hidden');
+        userRole = (user.email === "koyemirler@gmail.com") ? "admin" : (doc.data()?.role || "user");
         
-        reklamYukle();
-        tabDegistir('feed');
-        onlineListesiYukle();
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        document.getElementById('main-nav').classList.remove('hidden');
+        if(userRole === "admin" || userRole === "muhtar") document.getElementById('admin-panel').classList.remove('hidden');
+        
+        tabGit('feed');
+        firmalariGetir();
         mesajlariDinle();
     }
 });
 
-// 👥 ONLİNE LİSTESİ
-function onlineListesiYukle() {
-    db.collection("users").onSnapshot(snap => {
-        let html = "";
-        snap.forEach(doc => {
-            const u = doc.data();
-            html += `<div><span class="status-dot ${u.online ? 'online' : 'offline'}"></span> ${u.name}</div>`;
-        });
-        document.getElementById('userList').innerHTML = html;
-    });
-}
+// 💬 SOHBET VE MEDYA PAYLAŞIMI
+async function mesajGonder() {
+    let msg = document.getElementById('chat-msg').value;
+    const file = document.getElementById('chat-file').files[0];
+    
+    // Küfür Filtresi
+    KUFURLER.forEach(k => msg = msg.replace(new RegExp(k, 'gi'), '***'));
 
-// 💰 REKLAM SİSTEMİ
-async function reklamYukle() {
-    const doc = await db.collection("settings").doc("ads").get();
-    if(doc.exists && doc.data().active) {
-        const ad = document.getElementById('adBanner');
-        ad.style.display = "block";
-        ad.innerText = doc.data().text;
-        window.adLink = doc.data().link;
+    let mediaUrl = null;
+    if(file) {
+        const ref = storage.ref(`chat/${Date.now()}_${file.name}`);
+        await ref.put(file);
+        mediaUrl = await ref.getDownloadURL();
     }
-}
 
-async function reklamKaydet() {
-    await db.collection("settings").doc("ads").set({
-        text: document.getElementById('adTxt').value,
-        link: document.getElementById('adLnk').value,
-        active: document.getElementById('adActive').checked
+    await db.collection("chat").add({
+        text: msg, media: mediaUrl, uid: currentUser.uid, user: currentUser.email.split('@')[0],
+        time: firebase.firestore.FieldValue.serverTimestamp()
     });
-    alert("Reklam güncellendi!");
+    document.getElementById('chat-msg').value = "";
+    document.getElementById('chat-file').value = "";
 }
 
-// 💬 SOHBET
 function mesajlariDinle() {
-    db.collection("chat").orderBy("time","asc").limitToLast(20).onSnapshot(snap => {
+    db.collection("chat").orderBy("time","asc").limitToLast(30).onSnapshot(snap => {
         let html = "";
         snap.forEach(doc => {
             const m = doc.data();
-            const isMe = m.uid === auth.currentUser.uid;
-            html += `<div class="msg ${isMe ? 'sent' : 'received'}"><b>${m.user}:</b><br>${m.text}</div>`;
+            const isMe = m.uid === currentUser.uid;
+            html += `
+            <div class="msg ${isMe ? 'sent' : 'received'}">
+                <b>${m.user}</b><br>
+                ${m.media ? `<img src="${m.media}" class="post-media">` : ''}
+                ${m.text}
+                ${(isMe || userRole !== 'user') ? `<div class="msg-tools" onclick="sil('${doc.id}','chat')">🗑️ Sil</div>` : ''}
+            </div>`;
         });
-        const box = document.getElementById('chatBox');
+        const box = document.getElementById('chat-list');
         box.innerHTML = html;
         box.scrollTop = box.scrollHeight;
     });
 }
 
-async function mesajGonder() {
-    const text = document.getElementById('msgInput').value;
-    if(!text) return;
-    await db.collection("chat").add({
-        text, user: auth.currentUser.email.split('@')[0], uid: auth.currentUser.uid, time: firebase.firestore.FieldValue.serverTimestamp()
+// 🏢 FİRMA YÖNETİMİ (Sadece Admin)
+async function firmaEkle() {
+    const data = {
+        title: document.getElementById('f_ad').value,
+        phone: document.getElementById('f_tel').value,
+        site: document.getElementById('f_site').value
+    };
+    await db.collection("businesses").add(data);
+    alert("Firma eklendi!");
+}
+
+function firmalariGetir() {
+    db.collection("businesses").onSnapshot(snap => {
+        let html = "";
+        snap.forEach(doc => {
+            const b = doc.data();
+            html += `
+            <div class="biz-card">
+                <h3>${b.title}</h3>
+                <div style="display:flex; gap:10px;">
+                    <a href="tel:${b.phone}" class="btn" style="background:#48bb78; text-decoration:none; text-align:center;">📞 Ara</a>
+                    <a href="${b.site}" target="_blank" class="btn" style="background:#4299e1; text-decoration:none; text-align:center;">🌐 Site</a>
+                </div>
+            </div>`;
+        });
+        document.getElementById('biz-list').innerHTML = html;
     });
-    document.getElementById('msgInput').value = "";
 }
 
-function tabDegistir(t) {
+function tabGit(t) {
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById('view-' + t).classList.remove('hidden');
+    document.getElementById('view-'+t).classList.remove('hidden');
 }
 
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+async function sil(id, col) { if(confirm("Silinsin mi kanki?")) await db.collection(col).doc(id).delete(); }
+async function cikis() { await auth.signOut(); location.reload(); }
 </script>
 </body>
 </html>

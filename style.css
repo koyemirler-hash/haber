@@ -1,22 +1,21 @@
-:root { --wa-green: #25D366; --dark-green: #075E54; --light-bg: #f0f2f5; }
-body { margin: 0; background: var(--light-bg); font-family: sans-serif; }
-.app-header { background: var(--dark-green); color: white; padding: 10px; text-align: center; position: sticky; top: 0; z-index: 100; }
+:root { --wa-teal: #075e54; --wa-light: #25d366; --wa-bg: #e5ddd5; --white: #ffffff; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 70px; }
+.wa-header { background: var(--wa-teal); color: white; padding: 15px; font-weight: bold; font-size: 20px; }
 
-/* Akış & Durumlar */
-.status-wrapper { display: flex; overflow-x: auto; padding: 15px; background: white; gap: 15px; border-bottom: 1px solid #ddd; }
-.status-user { width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--wa-green); flex-shrink: 0; }
-.post-card { background: white; margin: 10px 0; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.post-img { width: 100%; border-radius: 8px; margin-top: 10px; }
+/* Akış & Status */
+.wa-status-bar { display: flex; gap: 15px; overflow-x: auto; padding: 15px; background: white; border-bottom: 1px solid #ddd; }
+.status-item { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--wa-light); padding: 2px; }
 
-/* Sohbet */
-#chat-messages { height: calc(100vh - 180px); overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-.msg { max-width: 75%; padding: 10px; border-radius: 10px; font-size: 14px; }
+/* Sohbet Balonları */
+.wa-chat-bg { height: calc(100vh - 180px); overflow-y: auto; background: var(--wa-bg); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 14px; position: relative; }
 .msg.me { align-self: flex-end; background: #dcf8c6; }
 .msg.other { align-self: flex-start; background: white; }
 
-/* Firma Kartı & Silme */
-.firma-item { display: flex; justify-content: space-between; background: white; padding: 10px; margin: 5px 0; border-radius: 8px; }
-.del-btn { color: red; cursor: pointer; font-weight: bold; }
+/* Accordion */
+.acc-btn { width: 100%; padding: 15px; background: white; border: none; border-bottom: 1px solid #eee; text-align: left; font-weight: bold; cursor: pointer; }
+.acc-content { padding: 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
 
+/* Bottom Nav */
 .bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #ddd; }
 .hidden { display: none !important; }

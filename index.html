@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emirler Köyü</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        :root { --p: #4a5568; --a: #a3b18a; --bg: #f8f9fa; --accent: #588157; --danger: #e53e3e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
+        .card { background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: 10px; }
+        .hidden { display: none; }
+        
+        /* Yan Yana Kaydırmalı Firmalar */
+        .biz-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 15px; padding: 10px; }
+        .biz-card { min-width: 80%; scroll-snap-align: center; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+
+        /* Etkileşim Butonları */
+        .post-actions { display: flex; gap: 15px; padding-top: 10px; border-top: 1px solid #eee; font-size: 14px; }
+        .admin-tool { color: var(--danger); cursor: pointer; font-weight: bold; margin-left: auto; }
+
+        /* Yönetim Paneli Inputlar */
+        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+
+        .nav-footer { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 100; }
+        .status-tag { font-size: 10px; padding: 3px 8px; border-radius: 5px; background: #edf2f7; color: #4a5568; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="view-feed" class="view">
+        <div class="card" style="background:var(--accent); color:white; border-radius:0 0 20px 20px; margin:0; text-align:center;">
+            <h3 id="feedTitle">Köy Akışı</h3>
+        </div>
+        <div id="postList"></div>
+    </div>
+
+    <div id="view-biz" class="view hidden">
+        <div class="card"><h3>🏢 Köy Firmaları</h3></div>
+        <div class="biz-container" id="bizList"></div>
+    </div>
+
+    <div id="view-settings" class="view hidden">
+        <div class="card">
+            <h3>⚙️ Yönetim Merkezi</h3>
+            
+            <div id="adminPanel" class="hidden">
+                <p><b>🛡️ Yetkilendirme (Muhtar/Yardımcı)</b></p>
+                <input id="authEmail" type="email" placeholder="E-posta adresi">
+                <select id="authRole">
+                    <option value="muhtar">Muhtar Yap</option>
+                    <option value="yardimci">Admin Yardımcısı Yap</option>
+                    <option value="user">Yetkiyi Kaldır (Üye Yap)</option>
+                </select>
+                <button class="btn" onclick="yetkiGuncelle()">Yetkiyi Tanımla</button>
+                <hr>
+            </div>
+
+            <div id="modPanel" class="hidden">
+                <p><b>📝 İçerik Yönetimi</b></p>
+                <select id="colSelect" onchange="toggleBizForm()">
+                    <option value="announcements">📢 Akışa Duyuru Ekle</option>
+                    <option value="nostalgia">🎞️ Nostaljiye Ekle (Direkt Onaylı)</option>
+                    <option value="businesses">🏢 Firma Ekle/Düzenle</option>
+                </select>
+                
+                <input id="c_title" type="text" placeholder="Başlık">
+                <textarea id="c_text" placeholder="Açıklama/İçerik"></textarea>
+                
+                <div id="bizFields" class="hidden">
+                    <input id="b_phone" type="text" placeholder="Telefon (05xx...)">
+                    <input id="b_web" type="text" placeholder="Web Sitesi (https://...)">
+                </div>
+                
+                <button class="btn" style="background:#4299e1;" onclick="icerikKaydet()">Sisteme Kaydet</button>
+            </div>
+
+            <div id="approvalPanel" class="hidden">
+                <hr><p><b>⏳ Nostalji Onay Listesi</b></p>
+                <div id="pendingList"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="nav-footer">
+    <span onclick="showTab('feed')">🏠 Akış</span>
+    <span onclick="showTab('nostalgia')">🎞️ Nostalji</span>
+    <span onclick="showTab('biz')">🏢 Firmalar</span>
+    <span onclick="showTab('settings')">⚙️ Ayarlar</span>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
+    authDomain: "emirler-c5638.firebaseapp.com",
+    projectId: "emirler-c5638",
+    storageBucket: "emirler-c5638.firebasestorage.app",
+    appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+let userRole = 'user';
+let activeTab = 'feed';
+
+// 👑 YETKİ KONTROL SİSTEMİ
+auth.onAuthStateChanged(async (user) => {
+    if(user) {
+        const doc = await db.collection("users").doc(user.uid).get();
+        const data = doc.data() || {};
+        userRole = (user.email === "koyemirler@gmail.com") ? "admin" : (data.rol || "user");
+        
+        if(userRole === "admin") document.getElementById("adminPanel").classList.remove("hidden");
+        if(["admin", "muhtar", "yardimci"].includes(userRole)) {
+            document.getElementById("modPanel").classList.remove("hidden");
+            document.getElementById("approvalPanel").classList.remove("hidden");
+            onayBekleyenleriYukle();
+        }
+    }
+    showTab('feed');
+});
+
+// 📝 İÇERİK KAYDETME VE DÜZENLEME
+async function icerikKaydet() {
+    const col = document.getElementById("colSelect").value;
+    const title = document.getElementById("c_title").value;
+    const text = document.getElementById("c_text").value;
+    
+    const data = {
+        title, text,
+        time: firebase.firestore.FieldValue.serverTimestamp(),
+        sender: auth.currentUser.displayName || "Yönetim",
+        approved: true // Yönetim eklediği için direkt onaylı
+    };
+
+    if(col === 'businesses') {
+        data.phone = document.getElementById("b_phone").value;
+        data.web = document.getElementById("b_web").value;
+    }
+
+    await db.collection(col).add(data);
+    alert("Kayıt başarılı kanki!");
+    location.reload();
+}
+
+// 🏢 FİRMALARI YÜKLE (YAN YANA)
+function firmalariYukle() {
+    db.collection("businesses").onSnapshot(snap => {
+        let html = "";
+        snap.forEach(doc => {
+            const b = doc.data();
+            html += `
+            <div class="biz-card">
+                <h3>${b.name || b.title}</h3>
+                <p style="font-size:14px; color:#667085;">${b.text || b.desc}</p>
+                <div style="display:flex; gap:10px; margin-top:15px;">
+                    <a href="tel:${b.phone}" class="btn" style="background:#48bb78; text-decoration:none; text-align:center;">📞 Ara</a>
+                    <a href="${b.web}" target="_blank" class="btn" style="background:#4299e1; text-decoration:none; text-align:center;">🌐 Site</a>
+                </div>
+                ${["admin", "muhtar"].includes(userRole) ? `<div class="admin-tool" onclick="sil('${doc.id}','businesses')">🗑️ Sil</div>` : ''}
+            </div>`;
+        });
+        document.getElementById("bizList").innerHTML = html || "Henüz firma yok.";
+    });
+}
+
+// 📱 AKIŞ VE NOSTALJİ YÜKLE
+function verileriYukle(tab) {
+    const col = tab === 'nostalgia' ? 'nostalgia' : 'announcements';
+    let query = db.collection(col).orderBy("time", "desc");
+    
+    if(tab === 'nostalgia') query = query.where("approved", "==", true);
+
+    query.onSnapshot(snap => {
+        let html = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            html += `
+            <div class="card">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>${d.sender}</b>
+                    <span class="status-tag">${tab === 'nostalgia' ? '🎞️ Nostalji' : '📢 Akış'}</span>
+                </div>
+                <p>${d.title}</p>
+                <div class="post-actions">
+                    <span onclick="begen('${doc.id}','${col}')">👍 ${d.likes || 0}</span>
+                    <span onclick="yorumAc('${doc.id}')">💬 Yorum Yap</span>
+                    ${["admin", "muhtar", "yardimci"].includes(userRole) ? `<span class="admin-tool" onclick="sil('${doc.id}','${col}')">🗑️ Sil</span>` : ''}
+                </div>
+            </div>`;
+        });
+        document.getElementById("postList").innerHTML = html;
+    });
+}
+
+// 🔑 YETKİ GÜNCELLEME
+async function yetkiGuncelle() {
+    const email = document.getElementById("authEmail").value;
+    const rol = document.getElementById("authRole").value;
+    const q = await db.collection("users").where("email", "==", email).get();
+    if(!q.empty) {
+        await db.collection("users").doc(q.docs[0].id).update({ rol: rol });
+        alert(email + " artık " + rol);
+    } else { alert("Kullanıcı bulunamadı!"); }
+}
+
+function showTab(t) {
+    activeTab = t;
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    if(t === 'biz') {
+        document.getElementById('view-biz').classList.remove('hidden');
+        firmalariYukle();
+    } else if(t === 'settings') {
+        document.getElementById('view-settings').classList.remove('hidden');
+    } else {
+        document.getElementById('view-feed').classList.remove('hidden');
+        document.getElementById('feedTitle').innerText = t === 'nostalgia' ? "Köy Arşivi" : "Köy Akışı";
+        verileriYukle(t);
+    }
+}
+
+function toggleBizForm() {
+    const isBiz = document.getElementById("colSelect").value === 'businesses';
+    document.getElementById("bizFields").classList.toggle("hidden", !isBiz);
+}
+
+async function sil(id, col) {
+    if(confirm("Silinsin mi kanki?")) await db.collection(col).doc(id).delete();
+}
+</script>
+</body>
+</html>
+

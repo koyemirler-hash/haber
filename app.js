@@ -16,8 +16,8 @@ const auth = firebase.auth();
 // ─── CLOUDINARY CONFIG ───
 // Cloudinary panelinden "unsigned" yükleme şablonu oluşturun:
 // Settings > Upload > Upload presets > Add upload preset > Unsigned
-const CLOUD_NAME = "ddt1tvhyb";
-const UPLOAD_PRESET = "koyapp"; // Cloudinary'de bu isimde unsigned preset oluşturun
+const CLOUD_NAME = "ddt11vhyb";
+const UPLOAD_PRESET = "emirler_preset"; // Cloudinary'de bu isimde unsigned preset oluşturun
 
 // ─── SABITLER ───
 const ADMIN_EMAIL = "koyemirler@gmail.com";
@@ -522,4 +522,4 @@ function chatMediaTemizle() {
 function mesajlariDinle() {
     db.collection("chat").orderBy("time", "asc").limitToLast(60).onSnapshot(snap => {
         const box = document.getElementById("chatBox");
-        const atBottom = box.scrollHeight - box.scrollTop - box.clien
+        const atBottom = box.scrollHeight - box.scrollTop - b

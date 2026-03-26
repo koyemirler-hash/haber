@@ -507,9 +507,30 @@ function chatMediaSec(input) {
     const url = URL.createObjectURL(chatMediaFile);
     if (chatMediaFile.type.startsWith("video")) {
         preview.innerHTML = `<video src="${url}" style="max-height:70px;border-radius:8px;" controls></video>`;
-    } else {
+    } else 
+    {
         preview.innerHTML = `<img src="${url}" style="max-height:70px;border-radius:8px;">`;
     }
+    db.collection("announcements").onSnapshot(snap => {
+    // Sayfa ilk açıldığında değil, sadece yeni bir döküman eklendiğinde çalması için:
+    snap.docChanges().forEach(change => {
+        if (change.type === "added" && !snap.metadata.hasPendingWrites) {
+            document.getElementById('sndNotif').play();
+        }
+    });
+    // ... eski kodların
+});
+    
+// db.collection("chat").onSnapshot içindeki döngünün sonuna ekle
+db.collection("chat").orderBy("time","asc").onSnapshot(snap => {
+    const box = document.getElementById('chatBox');
+    // Eğer yeni bir mesaj geldiyse (snap.docChanges() ile kontrol edebiliriz)
+    if (!snap.metadata.hasPendingWrites) { // Kendi yazdığımızda değil, dışarıdan gelince
+        document.getElementById('sndMsg').play();
+    }
+    // ... eski kodların (mesajları yazdırma vs.)
+});
+    
 }
 
 function chatMediaTemizle() {

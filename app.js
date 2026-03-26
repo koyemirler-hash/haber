@@ -1,4 +1,3 @@
-// 1. FİREBASE YAPILANDIRMASI
 const firebaseConfig = {
     apiKey: "AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
     authDomain: "emirler-c5638.firebaseapp.com",
@@ -13,184 +12,200 @@ const storage = firebase.storage();
 
 let currentUserData = null;
 
-// 2. OTURUM VE CİHAZ KONTROLÜ
+// Başlangıç Kontrolü
+if(localStorage.getItem('termsAccepted')) {
+    document.getElementById('termsOverlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+}
+
+function onayVer() {
+    if(!document.getElementById('termsCheck').checked) return alert("Şartları kabul etmelisiniz!");
+    localStorage.setItem('termsAccepted', 'true');
+    location.reload();
+}
+
+// Oturum Takibi
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         const userDoc = await db.collection("users").doc(user.uid).get();
-        if (!userDoc.exists) return auth.signOut();
-        
+        if(!userDoc.exists) return auth.signOut();
         const data = userDoc.data();
-        
-        // Kara Liste Kontrolü
+
         if(data.isBlocked) {
-            alert("Hesabınız engellenmiştir!");
+            alert("Hesabınız engellendi!");
             auth.signOut();
             return;
         }
 
-        // Cihaz Kısıtlaması (Admin hariç herkese)
-        const canPass = await checkDevice(user.uid, data.rol);
-        if (!canPass) return;
+        // Cihaz Kısıtlaması (Admin hariç)
+        const myDeviceId = getDeviceId();
+        if(data.rol !== 'admin') {
+            if(!data.deviceId) {
+                await db.collection("users").doc(user.uid).update({ deviceId: myDeviceId });
+            } else if(data.deviceId !== myDeviceId) {
+                alert("Bu hesap başka bir cihaza tanımlıdır!");
+                auth.signOut();
+                return;
+            }
+        }
 
         currentUserData = data;
-        initApp(); // Uygulama arayüzünü yükle
+        showMainApp();
     } else {
-        showAuthPages(); // Giriş ekranına dön
+        showAuthPage();
     }
 });
 
-async function checkDevice(userUid, userRole) {
-    let myId = localStorage.getItem('device_id');
-    if(!myId) {
-        myId = 'dev_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('device_id', myId);
+function getDeviceId() {
+    let id = localStorage.getItem('emirler_device_id');
+    if(!id) {
+        id = 'dev_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('emirler_device_id', id);
     }
-
-    if (userRole === 'admin') return true;
-
-    const userDoc = await db.collection("users").doc(userUid).get();
-    const storedId = userDoc.data().deviceId;
-
-    if (!storedId) {
-        await db.collection("users").doc(userUid).update({ deviceId: myId });
-        return true;
-    } else if (storedId !== myId) {
-        alert("Bu hesap başka bir cihaza kayıtlıdır!");
-        auth.signOut();
-        return false;
-    }
-    return true;
+    return id;
 }
 
-// 3. KÖY MEYDANI (PAYLAŞIM SİSTEMİ)
+// Auth İşlemleri
+async function kayitOl() {
+    const email = document.getElementById('regEmail').value;
+    const pass = document.getElementById('regPass').value;
+    const name = document.getElementById('regName').value;
+    if(pass.length < 6) return alert("Şifre zayıf!");
+    try {
+        const res = await auth.createUserWithEmailAndPassword(email, pass);
+        await db.collection("users").doc(res.user.uid).set({
+            name, email, rol: 'user', isBlocked: false, deviceId: null
+        });
+    } catch(e) { alert(e.message); }
+}
+
+async function girisYap() {
+    const e = document.getElementById('logEmail').value;
+    const p = document.getElementById('logPass').value;
+    try { await auth.signInWithEmailAndPassword(e, p); } catch(e) { alert("Hatalı giriş!"); }
+}
+
+function cikisYap() { auth.signOut(); location.reload(); }
+
+// UI Yönetimi
+function toggleAuth(showReg) {
+    document.getElementById('loginForm').classList.toggle('hidden', showReg);
+    document.getElementById('registerForm').classList.toggle('hidden', !showReg);
+}
+
+function showMainApp() {
+    document.getElementById('authPage').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+    document.getElementById('navBar').classList.remove('hidden');
+    document.getElementById('userMailInfo').innerText = auth.currentUser.email;
+    
+    const isSpecial = ['admin','muhtar','yardimci'].includes(currentUserData.rol);
+    document.getElementById('adminPostPanel').classList.toggle('hidden', !isSpecial);
+    document.getElementById('adminMasterPanel').classList.toggle('hidden', currentUserData.rol !== 'admin');
+    tabDegistir('feed');
+}
+
+function showAuthPage() {
+    document.getElementById('authPage').classList.remove('hidden');
+    document.getElementById('mainContent').classList.add('hidden');
+    document.getElementById('navBar').classList.add('hidden');
+}
+
+function tabDegistir(tab) {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-' + tab).classList.remove('hidden');
+    if(tab === 'biz') firmalariYukle();
+    if(tab === 'settings' && currentUserData.rol === 'admin') adminListele();
+}
+
+// Fonksiyonlar (Meydan, Sohbet, Firma)
 async function paylas() {
     const title = document.getElementById('postTitle').value;
     const file = document.getElementById('postFile').files[0];
-    const role = currentUserData.rol;
-
-    if (!['admin', 'muhtar', 'yardimci'].includes(role)) {
-        return alert("Sadece yetkililer paylaşım yapabilir!");
-    }
-
     let url = "";
-    if (file) {
-        const ref = storage.ref(`posts/${Date.now()}_${file.name}`);
+    if(file) {
+        const ref = storage.ref(`posts/${Date.now()}`);
         await ref.put(file);
         url = await ref.getDownloadURL();
     }
-
     await db.collection("announcements").add({
-        author: currentUserData.name || "İsimsiz",
+        author: currentUserData.name,
         text: title,
         media: url,
-        type: file?.type.includes('video') ? 'video' : 'image',
-        likes: [],
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
-
-    document.getElementById('postTitle').value = "";
-    document.getElementById('postFile').value = "";
     alert("Paylaşıldı!");
 }
 
-// 4. CANLI SOHBET (WHATSAPP TARZI)
-function mesajGonder() {
-    const msg = document.getElementById('chatInput').value;
-    if (!msg) return;
+db.collection("announcements").orderBy("timestamp","desc").onSnapshot(snap => {
+    let html = "";
+    snap.forEach(doc => {
+        const p = doc.data();
+        html += `<div class="card"><b>${p.author}</b><p>${p.text}</p>${p.media ? `<img src="${p.media}" style="width:100%; border-radius:10px;">` : ""}</div>`;
+    });
+    document.getElementById('feedList').innerHTML = html;
+});
 
+function mesajGonder() {
+    const txt = document.getElementById('chatInput').value;
+    if(!txt) return;
     db.collection("chat").add({
         uid: auth.currentUser.uid,
         name: currentUserData.name,
-        text: msg,
+        text: txt,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById('chatInput').value = "";
 }
 
-// Mesajları Dinle
-db.collection("chat").orderBy("timestamp", "asc").onSnapshot(snap => {
+db.collection("chat").orderBy("timestamp","asc").onSnapshot(snap => {
     const box = document.getElementById('chatBox');
-    if(!box) return;
     box.innerHTML = "";
     snap.forEach(doc => {
         const m = doc.data();
         const isMe = m.uid === auth.currentUser.uid;
-        const canDelete = ['admin', 'muhtar'].includes(currentUserData.rol);
-
-        box.innerHTML += `
-            <div class="msg-wrapper ${isMe ? 'me' : 'other'}">
-                <div class="msg-bubble">
-                    <small>${m.name}</small>
-                    <p>${m.text}</p>
-                    ${canDelete ? `<span onclick="mesajSil('${doc.id}')">🗑️</span>` : ""}
-                </div>
-            </div>`;
+        box.innerHTML += `<div class="msg-bubble ${isMe ? 'me' : 'other'}"><small>${m.name}</small>${m.text}</div>`;
     });
     box.scrollTop = box.scrollHeight;
 });
 
-// 5. FİRMALAR (SLIDER)
 async function firmalariYukle() {
     const snap = await db.collection("businesses").get();
-    let liste = [];
-    snap.forEach(doc => liste.push(doc.data()));
-    
-    liste.sort(() => Math.random() - 0.5); // Her seferinde farklı sıra
-
-    const alan = document.getElementById('bizList');
-    if(!alan) return;
-    alan.innerHTML = liste.map(f => `
-        <div class="biz-item">
-            <div class="biz-content">
-                <h2>${f.name}</h2>
-                <p>${f.desc}</p>
-                <a href="tel:${f.phone}" class="btn">📞 ARA: ${f.phone}</a>
-            </div>
-        </div>
+    let docs = []; snap.forEach(d => docs.push(d.data()));
+    docs.sort(() => Math.random() - 0.5);
+    document.getElementById('bizList').innerHTML = docs.map(b => `
+        <div class="biz-item"><div class="biz-content"><h2>${b.name}</h2><p>${b.desc}</p><a href="tel:${b.phone}" class="btn">ARA: ${b.phone}</a></div></div>
     `).join('');
 }
 
-// 6. ADMİN FONKSİYONLARI (KARA LİSTE VE YETKİ)
+async function firmaEkle() {
+    await db.collection("businesses").add({
+        name: document.getElementById('bizName').value,
+        desc: document.getElementById('bizDesc').value,
+        phone: document.getElementById('bizPhone').value
+    });
+    alert("Eklendi!");
+}
+
 async function yetkiGuncelle() {
     const email = document.getElementById('targetEmail').value;
-    const yeniRol = document.getElementById('targetRole').value;
-    const snap = await db.collection("users").where("email", "==", email).get();
-    
-    if(snap.empty) return alert("Kullanıcı bulunamadı!");
-    await db.collection("users").doc(snap.docs[0].id).update({ rol: yeniRol });
-    alert("Yetki güncellendi!");
+    const rol = document.getElementById('targetRole').value;
+    const snap = await db.collection("users").where("email","==",email).get();
+    if(snap.empty) return alert("Yok!");
+    await db.collection("users").doc(snap.docs[0].id).update({ rol });
+    alert("Tamam!");
 }
 
-async function kullaniciEngel(userId, durum) {
-    await db.collection("users").doc(userId).update({ isBlocked: durum });
-    alert(durum ? "Engellendi" : "Engel Kaldırıldı");
-}
-
-// 7. YARDIMCI FONKSİYONLAR
-function tabDegistir(tabName) {
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById('view-' + tabName).classList.remove('hidden');
-    if(tabName === 'biz') firmalariYukle();
-}
-
-function initApp() {
-    document.getElementById('loginPage').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');
-    document.getElementById('navBar').classList.remove('hidden');
-    // Admin paneli sadece admine görünsün
-    if(currentUserData.rol === 'admin') {
-        document.getElementById('adminMasterPanel')?.classList.remove('hidden');
-    }
-    tabDegistir('feed');
-}
-
-function showAuthPages() {
-    document.getElementById('mainContent').classList.add('hidden');
-    document.getElementById('navBar').classList.add('hidden');
-    document.getElementById('loginPage').classList.remove('hidden');
-}
-
-async function cikisYap() {
-    await auth.signOut();
-    location.reload();
+function adminListele() {
+    db.collection("users").limit(10).onSnapshot(snap => {
+        let h = "";
+        snap.forEach(d => {
+            const u = d.data();
+            h += `<div style="display:flex; justify-content:space-between; margin-top:5px;">
+                <span>${u.name}</span>
+                <button onclick="db.collection('users').doc('${d.id}').update({isBlocked:${!u.isBlocked}})">${u.isBlocked ? 'Aç' : 'Engelle'}</button>
+            </div>`;
+        });
+        document.getElementById('adminUserList').innerHTML = h;
+    });
 }

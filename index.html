@@ -4,72 +4,126 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emirler Köyü Portalı</title>
-<link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 </head>
 <body>
-<header class="wa-header"><span>Emirler Köyü</span></header>
 
-<main>
-<!-- AKIŞ / DUYURULAR -->
-<section id="view-feed" class="view">
-    <div class="wa-status-bar" id="statusList"></div>
-    <div id="admin-post-panel" class="card hidden">
-        <input id="post-title" placeholder="Duyuru başlığı...">
-        <input type="file" id="post-file" accept="image/*,video/*">
-        <button class="btn-send" onclick="akisPaylas()">Yayınla</button>
+<!-- Açılış Şartları -->
+<div id="termsOverlay">
+  <h2>🏡 Emirler Köyü</h2>
+  <p>Kullanım Şartları</p>
+  <div class="terms-box">
+    1. Küfür yasaktır.<br>
+    2. Veriler şifreli saklanır.<br>
+    3. Admin onayı gereken paylaşımlar için muhtar devrede.
+  </div>
+  <label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
+  <button class="btn" onclick="onayVer()">Uygulamaya Gir</button>
+</div>
+
+<!-- Giriş -->
+<div id="loginPage" class="hidden">
+  <div class="card">
+    <h3>🔑 Üye Girişi</h3>
+    <input id="logEmail" type="email" placeholder="E-posta">
+    <input id="logPass" type="password" placeholder="Şifre">
+    <button class="btn" onclick="girisYap()">Giriş Yap</button>
+    <p id="errorMsg" class="error-msg"></p>
+  </div>
+</div>
+
+<!-- Uygulama Ana -->
+<div id="app" class="hidden">
+
+  <!-- Reklam Banner -->
+  <div id="adBanner" class="ad-banner hidden" onclick="reklamGit()"></div>
+
+  <!-- Akış -->
+  <section id="view-feed" class="view">
+    <div class="card feed-header">
+      <h3>Köy Meydanı</h3>
     </div>
-    <div id="feed-container"></div>
-</section>
-
-<!-- KÖY SOHBETİ -->
-<section id="view-chat" class="view hidden">
-    <div id="chat-messages" class="wa-chat-bg"></div>
-    <div class="wa-input-area">
-        <input type="text" id="chat-msg" placeholder="Mesaj yazın...">
-        <input type="file" id="chat-file" hidden accept="image/*">
-        <label for="chat-file" class="attach-btn">📎</label>
-        <button onclick="mesajGonder()">➤</button>
+    <div id="adminPostPanel" class="card hidden">
+      <input id="postTitle" placeholder="Duyuru Başlığı">
+      <input type="file" id="postFile" accept="image/*,video/*">
+      <button class="btn" onclick="akisPaylas()">Paylaş</button>
     </div>
-</section>
+    <div id="postList"></div>
+  </section>
 
-<!-- FİRMALAR -->
-<section id="view-biz" class="view hidden">
-    <div id="biz-list" class="biz-slider"></div>
-</section>
-
-<!-- AYARLAR -->
-<section id="view-settings" class="view hidden">
-    <div class="accordion">
-        <button class="acc-btn" onclick="toggleAcc('acc-adm')">🛡️ Yönetim Paneli</button>
-        <div id="acc-adm" class="acc-content hidden">
-            <p>Firma Ekle</p>
-            <input id="f-name" placeholder="Firma Adı">
-            <input id="f-tel" placeholder="Telefon">
-            <button class="btn" onclick="firmaEkle()">Kaydet</button>
-            <hr>
-            <div id="online-users-list"></div>
-        </div>
-
-        <button class="acc-btn" onclick="toggleAcc('acc-ads')">💰 Reklam Ayarları</button>
-        <div id="acc-ads" class="acc-content hidden">
-            <input id="ad-text" placeholder="Reklam Yazısı">
-            <button class="btn" onclick="reklamGuncelle()">Güncelle</button>
-        </div>
+  <!-- Sohbet -->
+  <section id="view-chat" class="view hidden">
+    <div class="card">
+      <h4>💬 Canlı Sohbet</h4>
+      <div id="chatBox" class="chat-box"></div>
+      <div class="chat-input">
+        <input id="msgInput" placeholder="Mesaj yazın...">
+        <button onclick="mesajGonder()">Gönder</button>
+      </div>
     </div>
-    <button class="btn-logout" onclick="auth.signOut()">Çıkış Yap</button>
-</section>
-</main>
+  </section>
 
-<nav class="bottom-nav">
-    <div onclick="tabGit('feed')">🏠 Akış</div>
-    <div onclick="tabGit('chat')">💬 Sohbet</div>
-    <div onclick="tabGit('biz')">🏢 Rehber</div>
-    <div onclick="tabGit('settings')">⚙️ Ayarlar</div>
+  <!-- Firmalar -->
+  <section id="view-biz" class="view hidden">
+    <div class="card">
+      <h3>🏢 Köy Firmaları</h3>
+    </div>
+    <div class="biz-container" id="bizList"></div>
+  </section>
+
+  <!-- Ayarlar -->
+  <section id="view-settings" class="view hidden">
+    <div class="card">
+      <h3>⚙️ Ayarlar</h3>
+
+      <!-- Admin Panel -->
+      <div id="adminPanel" class="admin-section hidden">
+        <h4>🛡️ Admin Paneli</h4>
+        <p><b>Kullanıcı Yetki</b></p>
+        <input id="targetEmail" placeholder="E-posta">
+        <select id="targetRole">
+          <option value="muhtar">Muhtar</option>
+          <option value="yardimci">Yardımcı</option>
+          <option value="user">Normal Üye</option>
+        </select>
+        <button class="btn" onclick="yetkiVer()">Yetki Ver</button>
+
+        <hr>
+        <p><b>💰 Reklam</b></p>
+        <input id="adTxt" placeholder="Reklam Yazısı">
+        <input id="adLnk" placeholder="Reklam Linki">
+        <label><input type="checkbox" id="adActive"> Göster</label>
+        <button class="btn" onclick="reklamKaydet()">Kaydet</button>
+      </div>
+
+      <!-- Online Kullanıcılar -->
+      <div class="admin-section">
+        <h4>👥 Kimler Online?</h4>
+        <div id="userList"></div>
+      </div>
+
+      <div class="card" style="text-align:center;">
+        <p>Uygulama Karekod</p>
+        <img src="karekod.png" width="120">
+      </div>
+
+      <button class="btn btn-logout" onclick="cikisYap()">🚪 Çıkış Yap</button>
+    </div>
+  </section>
+</div>
+
+<!-- Alt Menü -->
+<nav class="nav-footer hidden" id="navBar">
+  <span onclick="tabDegistir('feed')">🏠 Akış</span>
+  <span onclick="tabDegistir('chat')">💬 Sohbet</span>
+  <span onclick="tabDegistir('biz')">🏢 Firmalar</span>
+  <span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
 </nav>
 
 <script src="app.js"></script>

@@ -6,211 +6,308 @@
 <title>Emirler Köyü Portalı</title>
 <link rel="manifest" href="manifest.json">
 <style>
-:root { --p: #4a5568; --bg: #f8f9fa; --accent: #588157; --orange: #ff6000; --white: #ffffff; }
-body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin:0; padding-bottom:70px; overflow-x:hidden; }
-.card { background: var(--white); padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin:10px; }
+:root { --p:#4a5568; --bg:#f8f9fa; --accent:#588157; --orange:#ff6000; --white:#ffffff; }
+body { font-family:'Segoe UI',sans-serif; background:var(--bg); margin:0; padding-bottom:70px; }
+.card { background:var(--white); padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.05); margin:10px; }
 .hidden { display:none !important; }
-#termsOverlay { position: fixed; inset:0; background:white; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:25px; text-align:center; }
-.terms-box { height:200px; overflow-y:auto; border:1px solid #eee; padding:15px; font-size:13px; margin:15px 0; border-radius:10px; background:#fdfdfd; }
-#loginPage { position: fixed; inset:0; background: var(--bg); z-index:9000; display:flex; align-items:center; justify-content:center; }
-.biz-container { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:15px; padding:10px; }
-.biz-card { min-width:80%; scroll-snap-align:center; background:white; border-radius:20px; padding:20px; box-shadow:0 8px 20px rgba(0,0,0,0.1); border-top:5px solid var(--accent); }
+.terms-box { height:150px; overflow-y:auto; border:1px solid #eee; padding:15px; font-size:13px; margin:15px 0; border-radius:10px; background:#fdfdfd; }
+.ad-banner { background:var(--orange); color:white; text-align:center; padding:10px; font-weight:bold; cursor:pointer; }
 .chat-box { height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:10px; background:#e5ddd5; border-radius:10px; }
 .msg { max-width:75%; padding:8px 12px; border-radius:12px; font-size:14px; }
 .sent { align-self:flex-end; background:#dcf8c6; }
 .received { align-self:flex-start; background:white; }
-.admin-section { border:2px solid #e2e8f0; border-radius:15px; padding:15px; margin-top:15px; background:#f9fafb; }
-.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
-.online { background:#48bb78; } .offline { background:#cbd5e0; }
-input,textarea,select { width:100%; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:10px; }
-.btn { width:100%; padding:14px; background: var(--accent); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer; }
 .nav-footer { position:fixed; bottom:0; width:100%; background:white; display:flex; justify-content:space-around; padding:15px 0; border-top:1px solid #eee; z-index:1000; }
+input, select { width:100%; padding:12px; margin:8px 0; border:1px solid #ddd; border-radius:10px; }
+.btn { width:100%; padding:14px; background:var(--accent); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer; }
 </style>
-</head>
-<body>
-
-<div id="termsOverlay">
-<h2 style="color: var(--accent);">🏡 Emirler Köyü</h2>
-<p>Kullanım Şartları ve Gizlilik Sözleşmesi</p>
-<div class="terms-box">
-Bu uygulama Emirler Köyü sakinleri için geliştirilmiştir.<br><br>
-1. Küfür, hakaret ve siyasi paylaşımlar yasaktır.<br>
-2. Nostalji, eski köy resimleri ve anılar muhtar onayından geçer.<br>
-3. Kişisel verileriniz şifrelenmiş olarak saklanır.<br>
-4. Başkalarının telefon ve hesabını kullanmak yasaktır.<br>
-5. Spam ve reklam paylaşımları yasaktır.
-</div>
-<label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
-<button class="btn" style="margin-top:20px;" onclick="onayVer()">Uygulamaya Gir</button>
-</div>
-
-<div id="loginPage" class="hidden">
-<div class="card" style="width:80%; text-align:center;">
-<h3>🔑 Üye Girişi</h3>
-<input id="logEmail" type="email" placeholder="E-posta" value="koyemirler@gmail.com">
-<input id="logPass" type="password" placeholder="Şifre">
-<button class="btn" onclick="girisYap()">Giriş Yap</button>
-<p id="errorMsg" style="color:red; font-size:12px;"></p>
-</div>
-</div>
-
-<div id="app" class="hidden">
-<div id="adBanner" style="background:var(--orange); color:white; padding:10px; text-align:center; font-weight:bold; display:none;" onclick="reklamGit()"></div>
-
-<div id="view-feed" class="view">
-<div class="card" style="background:var(--accent); color:white; border-radius:0 0 20px 20px; margin:0; text-align:center;">
-<h3>Köy Meydanı</h3>
-</div>
-<div id="postList"></div>
-</div>
-
-<div id="view-chat" class="view hidden">
-<div class="card">
-<h4>💬 Canlı Sohbet</h4>
-<div id="chatBox" class="chat-box"></div>
-<div style="display:flex; gap:5px; margin-top:10px;">
-<input id="msgInput" placeholder="Bir şeyler yaz...">
-<button onclick="mesajGonder()" style="padding:10px; border-radius:10px; border:none; background:var(--accent); color:white;">Gönder</button>
-</div>
-</div>
-</div>
-
-<div id="view-biz" class="view hidden">
-<div class="card"><h3>🏢 Köy Firmaları</h3></div>
-<div class="biz-container" id="bizList"></div>
-</div>
-
-<div id="view-settings" class="view hidden">
-<div class="card">
-<h3>⚙️ Ayarlar</h3>
-<div id="adminPanel" class="hidden admin-section">
-<h4>🛡️ Admin Kontrol Paneli</h4>
-<p><b>Kullanıcı Yetkilendirme</b></p>
-<input id="targetEmail" placeholder="E-posta">
-<select id="targetRole">
-<option value="muhtar">Muhtar</option>
-<option value="yardimci">Yardımcı</option>
-<option value="user">Normal Üye</option>
-</select>
-<button class="btn" onclick="yetkiVer()">Yetki Tanımla</button>
-<hr>
-<p><b>💰 Reklam Ayarları</b></p>
-<input id="adTxt" placeholder="Reklam Yazısı">
-<input id="adLnk" placeholder="Reklam Linki">
-<label><input type="checkbox" id="adActive"> Reklamı Göster</label>
-<button class="btn" onclick="reklamKaydet()" style="background:#ff8a00">Kaydet</button>
-</div>
-
-<div class="admin-section">
-<h4>👥 Kimler Online?</h4>
-<div id="userList"></div>
-</div>
-
-<div class="card" style="text-align:center;">
-<p>Uygulama Karekodu</p>
-<img src="karekod.png" width="120">
-</div>
-
-<button class="btn" style="background:#e53e3e; margin-top:20px;" onclick="cikisYap()">🚪 Çıkış Yap</button>
-</div>
-</div>
-
-<div class="nav-footer hidden" id="navBar">
-<span onclick="tabDegistir('feed')">🏠 Akış</span>
-<span onclick="tabDegistir('chat')">💬 Sohbet</span>
-<span onclick="tabDegistir('biz')">🏢 Firmalar</span>
-<span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
-</div>
-
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+<!-- Açılış Şartları -->
+<div id="termsOverlay">
+  <h2>🏡 Emirler Köyü</h2>
+  <p>Kullanım Şartları</p>
+  <div class="terms-box">
+    1. Küfür yasaktır.<br>
+    2. Veriler şifreli saklanır.<br>
+    3. Admin onayı gereken paylaşımlar için muhtar devrede.
+  </div>
+  <label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
+  <button class="btn" onclick="onayVer()">Uygulamaya Gir</button>
+</div>
+
+<!-- Giriş -->
+<div id="loginPage" class="hidden">
+  <div class="card">
+    <h3>🔑 Üye Girişi</h3>
+    <input id="logEmail" type="email" placeholder="E-posta">
+    <input id="logPass" type="password" placeholder="Şifre">
+    <button class="btn" onclick="girisYap()">Giriş Yap</button>
+    <p id="errorMsg" style="color:red; font-size:12px;"></p>
+  </div>
+</div>
+
+<!-- Uygulama Ana -->
+<div id="app" class="hidden">
+  <div id="adBanner" class="ad-banner hidden" onclick="reklamGit()"></div>
+
+  <!-- Akış -->
+  <section id="view-feed" class="view">
+    <div class="card feed-header"><h3>Köy Meydanı</h3></div>
+    <div id="adminPostPanel" class="card hidden">
+      <input id="postTitle" placeholder="Duyuru Başlığı">
+      <input type="file" id="postFile" accept="image/*,video/*">
+      <button class="btn" onclick="akisPaylas()">Paylaş</button>
+    </div>
+    <div id="postList"></div>
+  </section>
+
+  <!-- Sohbet -->
+  <section id="view-chat" class="view hidden">
+    <div class="card">
+      <h4>💬 Canlı Sohbet</h4>
+      <div id="chatBox" class="chat-box"></div>
+      <div class="chat-input">
+        <input id="msgInput" placeholder="Mesaj yazın...">
+        <button class="btn" onclick="mesajGonder()">Gönder</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Firmalar -->
+  <section id="view-biz" class="view hidden">
+    <div class="card"><h3>🏢 Köy Firmaları</h3></div>
+    <div class="biz-container" id="bizList"></div>
+  </section>
+
+  <!-- Ayarlar -->
+  <section id="view-settings" class="view hidden">
+    <div class="card">
+      <h3>⚙️ Ayarlar</h3>
+
+      <!-- Admin Panel -->
+      <div id="adminPanel" class="admin-section hidden">
+        <h4>🛡️ Admin Paneli</h4>
+        <p><b>Kullanıcı Yetki</b></p>
+        <input id="targetEmail" placeholder="E-posta">
+        <select id="targetRole">
+          <option value="muhtar">Muhtar</option>
+          <option value="yardimci">Yardımcı</option>
+          <option value="user">Normal Üye</option>
+        </select>
+        <button class="btn" onclick="yetkiVer()">Yetki Ver</button>
+
+        <hr>
+        <p><b>💰 Reklam</b></p>
+        <input id="adTxt" placeholder="Reklam Yazısı">
+        <input id="adLnk" placeholder="Reklam Linki">
+        <label><input type="checkbox" id="adActive"> Göster</label>
+        <button class="btn" onclick="reklamKaydet()">Kaydet</button>
+      </div>
+
+      <!-- Online Kullanıcılar -->
+      <div class="admin-section">
+        <h4>👥 Kimler Online?</h4>
+        <div id="userList"></div>
+      </div>
+
+      <div class="card" style="text-align:center;">
+        <p>Uygulama Karekod</p>
+        <img src="karekod.png" width="120">
+      </div>
+
+      <button class="btn btn-logout" onclick="cikisYap()">🚪 Çıkış Yap</button>
+    </div>
+  </section>
+</div>
+
+<!-- Alt Menü -->
+<nav class="nav-footer hidden" id="navBar">
+  <span onclick="tabDegistir('feed')">🏠 Akış</span>
+  <span onclick="tabDegistir('chat')">💬 Sohbet</span>
+  <span onclick="tabDegistir('biz')">🏢 Firmalar</span>
+  <span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
+</nav>
 
 <script>
-// 🔑 Firebase
-const firebaseConfig = {apiKey:"AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",authDomain:"emirler-c5638.firebaseapp.com",projectId:"emirler-c5638",storageBucket:"emirler-c5638.firebasestorage.app",appId:"1:426225264136:web:ca5184984fc71b1e63853bd"};
+// Firebase ayarları
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
 firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore();
-const auth=firebase.auth();
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-// 🚀 Şartlar
-if(localStorage.getItem('termsAccepted')){
-document.getElementById('termsOverlay').classList.add('hidden');
-document.getElementById('loginPage').classList.remove('hidden');
+// Açılış şartları
+if(localStorage.getItem('termsAccepted')) {
+  document.getElementById('termsOverlay').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
 }
 function onayVer(){
-if(!document.getElementById('termsCheck').checked) return alert("Şartları kabul etmelisin kanki!");
-localStorage.setItem('termsAccepted','true');
-document.getElementById('termsOverlay').classList.add('hidden');
-document.getElementById('loginPage').classList.remove('hidden');
+  if(!document.getElementById('termsCheck').checked) return alert('Şartları kabul etmelisin!');
+  localStorage.setItem('termsAccepted','true');
+  document.getElementById('termsOverlay').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
 }
 
-// 🔑 Giriş-Çıkış
+// Giriş
 async function girisYap(){
-const email=document.getElementById('logEmail').value;
-const pass=document.getElementById('logPass').value;
-try{
-const res=await auth.signInWithEmailAndPassword(email,pass);
-await db.collection("users").doc(res.user.uid).set({name:email.split('@')[0],email,online:true,lastSeen:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
-location.reload();
-}catch(e){document.getElementById('errorMsg').innerText="Hatalı giriş!";}
+  const email=document.getElementById('logEmail').value;
+  const pass=document.getElementById('logPass').value;
+  try{
+    const res=await auth.signInWithEmailAndPassword(email,pass);
+    await db.collection('users').doc(res.user.uid).set({
+      name: email.split('@')[0],
+      email,
+      online:true,
+      lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+    location.reload();
+  } catch(e) {
+    document.getElementById('errorMsg').innerText='Hatalı giriş!';
+  }
 }
+
+// Çıkış
 async function cikisYap(){
-await db.collection("users").doc(auth.currentUser.uid).update({online:false});
-await auth.signOut();location.reload();
+  if(auth.currentUser){
+    await db.collection('users').doc(auth.currentUser.uid).update({online:false});
+    await auth.signOut();
+  }
+  location.reload();
 }
 
-// 🛡️ Admin & panel
-auth.onAuthStateChanged(async user=>{
-if(user){
-document.getElementById('loginPage').classList.add('hidden');
-document.getElementById('app').classList.remove('hidden');
-document.getElementById('navBar').classList.remove('hidden');
-const doc=await db.collection("users").doc(user.uid).get();
-if(user.email==="koyemirler@gmail.com") document.getElementById('adminPanel').classList.remove('hidden');
-reklamYukle(); tabDegistir('feed'); onlineListesiYukle(); mesajlariDinle();
-}});
+// Tab geçişi
+function tabDegistir(t){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  document.getElementById('view-'+t).classList.remove('hidden');
+}
 
+// Kullanıcı durumu ve admin
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('navBar').classList.remove('hidden');
+    if(user.email==='admin@koy.com') document.getElementById('adminPanel').classList.remove('hidden');
+    onlineListesiYukle();
+    mesajlariDinle();
+    postlariYukle();
+    reklamYukle();
+  }
+});
+
+// Online kullanıcı listesi
 function onlineListesiYukle(){
-db.collection("users").onSnapshot(snap=>{
-let html="";
-snap.forEach(doc=>{
-const u=doc.data();
-html+=`<div><span class="status-dot ${u.online?'online':'offline'}"></span> ${u.name}</div>`;
-});
-document.getElementById('userList').innerHTML=html;
-});
+  db.collection('users').onSnapshot(snap=>{
+    let html='';
+    snap.forEach(doc=>{
+      const u=doc.data();
+      html+=`<div><span style='width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;background:${u.online?'#48bb78':'#cbd5e0'}'></span>${u.name}</div>`;
+    });
+    document.getElementById('userList').innerHTML=html;
+  });
+}
 
-// 💰 Reklam
+// Reklam
 async function reklamYukle(){
-const doc=await db.collection("settings").doc("ads").get();
-if(doc.exists && doc.data().active){const ad=document.getElementById('adBanner'); ad.style.display="block"; ad.innerText=doc.data().text; window.adLink=doc.data().link;}
+  const doc=await db.collection('settings').doc('ads').get();
+  if(doc.exists && doc.data().active){
+    const ad=document.getElementById('adBanner');
+    ad.style.display='block';
+    ad.innerText=doc.data().text;
+    window.adLink=doc.data().link;
+  }
 }
 async function reklamKaydet(){
-await db.collection("settings").doc("ads").set({text:document.getElementById('adTxt').value,link:document.getElementById('adLnk').value,active:document.getElementById('adActive').checked});
-alert("Reklam güncellendi!");}
+  await db.collection('settings').doc('ads').set({
+    text:document.getElementById('adTxt').value,
+    link:document.getElementById('adLnk').value,
+    active:document.getElementById('adActive').checked
+  });
+  alert('Reklam güncellendi!');
+}
+function reklamGit(){ if(window.adLink) window.open(window.adLink,'_blank'); }
 
-// 💬 Sohbet
+// Sohbet
 function mesajlariDinle(){
-db.collection("chat").orderBy("time","asc").limitToLast(20).onSnapshot(snap=>{
-let html="";
-snap.forEach(doc=>{
-const m=doc.data();
-const isMe=m.uid===auth.currentUser.uid;
-html+=`<div class="msg ${isMe?'sent':'received'}"><b>${m.user}:</b><br>${m.text}</div>`;
-});
-const box=document.getElementById('chatBox'); box.innerHTML=html; box.scrollTop=box.scrollHeight;
-});
+  db.collection('chat').orderBy('time','asc').limitToLast(50).onSnapshot(snap=>{
+    let html='';
+    snap.forEach(doc=>{
+      const m=doc.data();
+      const isMe=auth.currentUser && m.uid===auth.currentUser.uid;
+      html+=`<div class='msg ${isMe?'sent':'received'}'><b>${m.user}:</b><br>${m.text}</div>`;
+    });
+    const box=document.getElementById('chatBox');
+    box.innerHTML=html;
+    box.scrollTop=box.scrollHeight;
+  });
 }
 async function mesajGonder(){
-const text=document.getElementById('msgInput').value;
-if(!text) return;
-await db.collection("chat").add({text,user:auth.currentUser.email.split('@')[0],uid:auth.currentUser.uid,time:firebase.firestore.FieldValue.serverTimestamp()});
-document.getElementById('msgInput').value='';
+  const text=document.getElementById('msgInput').value;
+  if(!text) return;
+  await db.collection('chat').add({
+    text,
+    user:auth.currentUser.email.split('@')[0],
+    uid:auth.currentUser.uid,
+    time:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.getElementById('msgInput').value='';
 }
 
-function tabDegistir(t){document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));document.getElementById('view-'+t).classList.remove('hidden');}
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
+// Akış
+function postlariYukle(){
+  db.collection('posts').orderBy('time','desc').onSnapshot(snap=>{
+    let html='';
+    snap.forEach(doc=>{
+      const p=doc.data();
+      html+=`<div class='card'><b>${p.title}</b><br>${p.user}<br>${p.file?`<a href='${p.file}' target='_blank'>📎 Dosya</a>`:''}</div>`;
+    });
+    document.getElementById('postList').innerHTML=html;
+  });
+}
+async function akisPaylas(){
+  const title=document.getElementById('postTitle').value;
+  const fileInput=document.getElementById('postFile');
+  let fileUrl='';
+  if(fileInput.files.length>0){
+    const file=fileInput.files[0];
+    const ref=storage.ref('posts/'+Date.now()+'_'+file.name);
+    await ref.put(file);
+    fileUrl=await ref.getDownloadURL();
+  }
+  await db.collection('posts').add({
+    title,
+    file:fileUrl,
+    user:auth.currentUser.email.split('@')[0],
+    time:firebase.firestore.FieldValue.serverTimestamp()
+  });
+  document.getElementById('postTitle').value='';
+  fileInput.value='';
+}
+
+// Admin yetki
+async function yetkiVer(){
+  const email=document.getElementById('targetEmail').value;
+  const role=document.getElementById('targetRole').value;
+  const snap=await db.collection('users').where('email','==',email).get();
+  if(snap.empty) return alert('Kullanıcı bulunamadı!');
+  snap.forEach(doc=>{
+    doc.ref.update({role});
+  });
+  alert('Yetki verildi!');
+}
 </script>
+
 </body>
 </html>

@@ -12,113 +12,51 @@ const storage = firebase.storage();
 
 let currentUserData = null;
 
-// Başlangıç Kontrolü
+// 1. Cihaz ID ve Onay
 if(localStorage.getItem('termsAccepted')) {
     document.getElementById('termsOverlay').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
 }
-
 function onayVer() {
-    if(!document.getElementById('termsCheck').checked) return alert("Şartları kabul etmelisiniz!");
+    if(!document.getElementById('termsCheck').checked) return alert("Şartları onayla!");
     localStorage.setItem('termsAccepted', 'true');
     location.reload();
 }
 
-// Oturum Takibi
+// 2. Auth Takibi
 auth.onAuthStateChanged(async (user) => {
     if (user) {
-        const userDoc = await db.collection("users").doc(user.uid).get();
-        if(!userDoc.exists) return auth.signOut();
-        const data = userDoc.data();
+        const doc = await db.collection("users").doc(user.uid).get();
+        if(!doc.exists) return auth.signOut();
+        const data = doc.data();
 
-        if(data.isBlocked) {
-            alert("Hesabınız engellendi!");
-            auth.signOut();
-            return;
-        }
+        if(data.isBlocked) { alert("Engellendiniz!"); return auth.signOut(); }
 
-        // Cihaz Kısıtlaması (Admin hariç)
-        const myDeviceId = getDeviceId();
+        // Cihaz Kilidi
+        let myId = localStorage.getItem('e_id') || 'd' + Math.random().toString(36).substr(2,7);
+        localStorage.setItem('e_id', myId);
         if(data.rol !== 'admin') {
-            if(!data.deviceId) {
-                await db.collection("users").doc(user.uid).update({ deviceId: myDeviceId });
-            } else if(data.deviceId !== myDeviceId) {
-                alert("Bu hesap başka bir cihaza tanımlıdır!");
-                auth.signOut();
-                return;
-            }
+            if(!data.deviceId) await db.collection("users").doc(user.uid).update({deviceId: myId});
+            else if(data.deviceId !== myId) { alert("Başka cihaz yasak!"); return auth.signOut(); }
         }
 
         currentUserData = data;
-        showMainApp();
-    } else {
-        showAuthPage();
-    }
+        initApp();
+    } else { showAuth(); }
 });
 
-function getDeviceId() {
-    let id = localStorage.getItem('emirler_device_id');
-    if(!id) {
-        id = 'dev_' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('emirler_device_id', id);
-    }
-    return id;
-}
-
-// Auth İşlemleri
-async function kayitOl() {
-    const email = document.getElementById('regEmail').value;
-    const pass = document.getElementById('regPass').value;
-    const name = document.getElementById('regName').value;
-    if(pass.length < 6) return alert("Şifre zayıf!");
-    try {
-        const res = await auth.createUserWithEmailAndPassword(email, pass);
-        await db.collection("users").doc(res.user.uid).set({
-            name, email, rol: 'user', isBlocked: false, deviceId: null
-        });
-    } catch(e) { alert(e.message); }
-}
-
-async function girisYap() {
-    const e = document.getElementById('logEmail').value;
-    const p = document.getElementById('logPass').value;
-    try { await auth.signInWithEmailAndPassword(e, p); } catch(e) { alert("Hatalı giriş!"); }
-}
-
-function cikisYap() { auth.signOut(); location.reload(); }
-
-// UI Yönetimi
-function toggleAuth(showReg) {
-    document.getElementById('loginForm').classList.toggle('hidden', showReg);
-    document.getElementById('registerForm').classList.toggle('hidden', !showReg);
-}
-
-function showMainApp() {
+function initApp() {
     document.getElementById('authPage').classList.add('hidden');
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('navBar').classList.remove('hidden');
     document.getElementById('userMailInfo').innerText = auth.currentUser.email;
     
-    const isSpecial = ['admin','muhtar','yardimci'].includes(currentUserData.rol);
-    document.getElementById('adminPostPanel').classList.toggle('hidden', !isSpecial);
-    document.getElementById('adminMasterPanel').classList.toggle('hidden', currentUserData.rol !== 'admin');
+    if(['admin','muhtar','yardimci'].includes(currentUserData.rol)) document.getElementById('adminPostPanel').classList.remove('hidden');
+    if(currentUserData.rol === 'admin') document.getElementById('adminMasterPanel').classList.remove('hidden');
     tabDegistir('feed');
 }
 
-function showAuthPage() {
-    document.getElementById('authPage').classList.remove('hidden');
-    document.getElementById('mainContent').classList.add('hidden');
-    document.getElementById('navBar').classList.add('hidden');
-}
-
-function tabDegistir(tab) {
-    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById('view-' + tab).classList.remove('hidden');
-    if(tab === 'biz') firmalariYukle();
-    if(tab === 'settings' && currentUserData.rol === 'admin') adminListele();
-}
-
-// Fonksiyonlar (Meydan, Sohbet, Firma)
+// 3. Meydan, Sohbet, Firmalar
 async function paylas() {
     const title = document.getElementById('postTitle').value;
     const file = document.getElementById('postFile').files[0];
@@ -132,80 +70,55 @@ async function paylas() {
         author: currentUserData.name,
         text: title,
         media: url,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        time: firebase.firestore.FieldValue.serverTimestamp()
     });
     alert("Paylaşıldı!");
 }
 
-db.collection("announcements").orderBy("timestamp","desc").onSnapshot(snap => {
-    let html = "";
-    snap.forEach(doc => {
-        const p = doc.data();
-        html += `<div class="card"><b>${p.author}</b><p>${p.text}</p>${p.media ? `<img src="${p.media}" style="width:100%; border-radius:10px;">` : ""}</div>`;
+db.collection("announcements").orderBy("time","desc").onSnapshot(snap => {
+    let h = "";
+    snap.forEach(d => {
+        const p = d.data();
+        h += `<div class="post-card"><div class="post-header">${p.author}</div><div class="post-content">${p.text}</div>${p.media ? `<img src="${p.media}" class="post-img">`:""}</div>`;
     });
-    document.getElementById('feedList').innerHTML = html;
+    document.getElementById('feedList').innerHTML = h;
 });
 
 function mesajGonder() {
-    const txt = document.getElementById('chatInput').value;
-    if(!txt) return;
+    const t = document.getElementById('chatInput').value;
+    if(!t) return;
     db.collection("chat").add({
         uid: auth.currentUser.uid,
         name: currentUserData.name,
-        text: txt,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        text: t,
+        time: firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById('chatInput').value = "";
 }
 
-db.collection("chat").orderBy("timestamp","asc").onSnapshot(snap => {
-    const box = document.getElementById('chatBox');
-    box.innerHTML = "";
-    snap.forEach(doc => {
-        const m = doc.data();
-        const isMe = m.uid === auth.currentUser.uid;
-        box.innerHTML += `<div class="msg-bubble ${isMe ? 'me' : 'other'}"><small>${m.name}</small>${m.text}</div>`;
+db.collection("chat").orderBy("time","asc").onSnapshot(snap => {
+    const b = document.getElementById('chatBox');
+    b.innerHTML = "";
+    snap.forEach(d => {
+        const m = d.data();
+        b.innerHTML += `<div class="msg-bubble ${m.uid === auth.currentUser.uid ? 'me':'other'}"><small>${m.name}</small><br>${m.text}</div>`;
     });
-    box.scrollTop = box.scrollHeight;
+    b.scrollTop = b.scrollHeight;
 });
 
-async function firmalariYukle() {
-    const snap = await db.collection("businesses").get();
-    let docs = []; snap.forEach(d => docs.push(d.data()));
-    docs.sort(() => Math.random() - 0.5);
-    document.getElementById('bizList').innerHTML = docs.map(b => `
-        <div class="biz-item"><div class="biz-content"><h2>${b.name}</h2><p>${b.desc}</p><a href="tel:${b.phone}" class="btn">ARA: ${b.phone}</a></div></div>
-    `).join('');
+function tabDegistir(t) {
+    document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+    document.getElementById('view-' + t).classList.remove('hidden');
 }
 
-async function firmaEkle() {
-    await db.collection("businesses").add({
-        name: document.getElementById('bizName').value,
-        desc: document.getElementById('bizDesc').value,
-        phone: document.getElementById('bizPhone').value
-    });
-    alert("Eklendi!");
+async function girisYap() {
+    const e = document.getElementById('logEmail').value;
+    const p = document.getElementById('logPass').value;
+    await auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
 }
-
-async function yetkiGuncelle() {
-    const email = document.getElementById('targetEmail').value;
-    const rol = document.getElementById('targetRole').value;
-    const snap = await db.collection("users").where("email","==",email).get();
-    if(snap.empty) return alert("Yok!");
-    await db.collection("users").doc(snap.docs[0].id).update({ rol });
-    alert("Tamam!");
-}
-
-function adminListele() {
-    db.collection("users").limit(10).onSnapshot(snap => {
-        let h = "";
-        snap.forEach(d => {
-            const u = d.data();
-            h += `<div style="display:flex; justify-content:space-between; margin-top:5px;">
-                <span>${u.name}</span>
-                <button onclick="db.collection('users').doc('${d.id}').update({isBlocked:${!u.isBlocked}})">${u.isBlocked ? 'Aç' : 'Engelle'}</button>
-            </div>`;
-        });
-        document.getElementById('adminUserList').innerHTML = h;
-    });
+function cikisYap() { auth.signOut(); location.reload(); }
+function showAuth() { document.getElementById('authPage').classList.remove('hidden'); }
+function toggleAuth(r) {
+    document.getElementById('loginForm').classList.toggle('hidden', r);
+    document.getElementById('registerForm').classList.toggle('hidden', !r);
 }

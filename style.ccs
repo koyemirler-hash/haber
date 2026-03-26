@@ -1,73 +1,133 @@
 :root {
-  --ana-renk: #588157; /* Pastel Yeşil */
-  --arka-plan: #f7f9fb;
-  --kart-bg: #ffffff;
-  --yazi-koyu: #2d3436;
-  --soft-shadow: 0 10px 20px rgba(0,0,0,0.05);
+  --ana-renk: #588157; /* Senin sevdiğin o pastel yeşil */
+  --vurgu: #a3b18a;
+  --arka-plan: #eff2f5;
+  --beyaz: #ffffff;
+  --yazi: #2b2d42;
+  --whatsapp-yesil: #dcf8c6;
 }
 
 body {
+  margin: 0;
   background-color: var(--arka-plan);
-  user-select: none; /* Uygulama hissi için metin seçmeyi kapatıyoruz */
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--yazi);
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Form gibi duran inputları modernize et */
-input[type="text"], input[type="email"], input[type="password"] {
-  background: #edf2f4;
-  border: 2px solid transparent;
-  border-radius: 15px; /* Yuvarlak köşeler */
+/* Giriş Ekranını Formluktan Kurtar */
+.card {
+  background: var(--beyaz);
+  border-radius: 25px; /* Köşeleri iyice yuvarla */
+  margin: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* Yumuşak gölge */
+  border: none;
+}
+
+/* İnputları Modernize Et */
+input {
+  width: 100%;
   padding: 15px;
-  transition: all 0.3s ease;
+  margin: 10px 0;
+  border: 2px solid #e9ecef;
+  border-radius: 15px;
+  background: #f8f9fa;
   font-size: 16px;
+  transition: 0.3s;
+  box-sizing: border-box;
 }
 
 input:focus {
   border-color: var(--ana-renk);
   background: white;
-  box-shadow: 0 5px 15px rgba(88, 129, 87, 0.1);
   outline: none;
+  box-shadow: 0 0 10px rgba(88, 129, 87, 0.1);
 }
 
-/* Butonları "Form Butonu" olmaktan çıkar */
+/* Butonları "Uygulama Butonu" Yap */
 .btn {
-  background: linear-gradient(135deg, #588157, #a3b18a);
-  border-radius: 15px;
+  width: 100%;
   padding: 16px;
-  border: none;
+  background: linear-gradient(135deg, var(--ana-renk), var(--vurgu));
   color: white;
-  font-weight: 700;
-  letter-spacing: 1px;
-  box-shadow: 0 8px 15px rgba(88, 129, 87, 0.2);
-  transform: translateY(0);
-  transition: all 0.2s;
-}
-
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 5px rgba(88, 129, 87, 0.2);
-}
-
-/* Kartları (Postları) Sosyal Medya Tarzına Getir */
-.card {
   border: none;
-  border-radius: 25px;
-  margin: 15px;
-  padding: 20px;
-  box-shadow: var(--soft-shadow);
-  background: var(--kart-bg);
+  border-radius: 18px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(88, 129, 87, 0.3);
+  margin-top: 10px;
 }
 
-/* Alt Menü (Navigasyon) Uygulama Dock'u Gibi Olsun */
+.btn:active { transform: scale(0.98); }
+
+/* Alt Menüyü iPhone Dock'u Yap */
 .nav-footer {
   position: fixed;
-  bottom: 15px; /* Alttan biraz boşluk bırakarak yüzer hale getir */
-  left: 15px;
-  right: 15px;
-  height: 65px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px); /* Cam efekti */
-  border-radius: 20px;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  height: 70px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(15px); /* Arkayı bulanıklaştır (Cam efekti) */
+  border-radius: 25px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   border: 1px solid rgba(255,255,255,0.3);
+  z-index: 1000;
 }
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6c757d;
+}
+
+/* WhatsApp Tarzı Sohbet Balonları */
+.chat-box {
+  height: calc(100vh - 180px);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #e5ddd5; /* Klasik WhatsApp arka planı */
+}
+
+.msg {
+  max-width: 80%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  font-size: 15px;
+  position: relative;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.sent {
+  align-self: flex-end;
+  background: var(--whatsapp-yesil);
+  border-bottom-right-radius: 4px;
+}
+
+.received {
+  align-self: flex-start;
+  background: var(--beyaz);
+  border-bottom-left-radius: 4px;
+}
+
+/* Köy Meydanı Kartları (Instagram Tarzı) */
+.feed-card {
+  background: white;
+  margin-bottom: 20px;
+  border-radius: 0; /* Feed'de tam genişlik daha modern durur */
+  overflow: hidden;
+}
+
+.feed-img { width: 100%; display: block; }

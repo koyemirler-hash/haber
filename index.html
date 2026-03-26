@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Emirler Köyü Portalı</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#588157">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Emirler">
+  <link rel="apple-touch-icon" href="ikon_192.png">
+  <link rel="icon" href="ikon_192.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- Kullanım Şartları -->
+<div id="termsOverlay" class="overlay-screen">
+  <div class="terms-card">
+    <div class="terms-logo">🏡</div>
+    <h2>Emirler Köyü</h2>
+    <p class="terms-sub">Köy Portalına Hoşgeldiniz</p>
+    <div class="terms-box">
+      <p>📌 Küfür ve hakaret kesinlikle yasaktır.</p>
+      <p>🔒 Kişisel verileriniz güvenle saklanır.</p>
+      <p>⚠️ Kurallara uymayan hesaplar kaldırılabilir.</p>
+      <p>👥 Bu uygulama Emirler köy sakinlerine aittir.</p>
+    </div>
+    <label class="terms-label">
+      <input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.
+    </label>
+    <button class="btn btn-primary" onclick="onayVer()">Uygulamaya Gir</button>
+  </div>
+</div>
+
+<!-- Giriş / Kayıt -->
+<div id="loginPage" class="overlay-screen hidden">
+  <div class="login-card">
+    <div class="login-logo">🏡</div>
+    <h2>Emirler Köyü</h2>
+    <div class="tab-switch">
+      <button class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">Giriş Yap</button>
+      <button class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">Kayıt Ol</button>
+    </div>
+    <div id="loginForm">
+      <input id="logEmail" type="email" placeholder="E-posta" class="input-field">
+      <input id="logPass" type="password" placeholder="Şifre" class="input-field">
+      <button class="btn btn-primary" onclick="girisYap()">Giriş Yap</button>
+    </div>
+    <div id="registerForm" class="hidden">
+      <input id="regName" type="text" placeholder="Ad Soyad" class="input-field">
+      <input id="regEmail" type="email" placeholder="E-posta" class="input-field">
+      <input id="regPass" type="password" placeholder="Şifre (min 6 karakter)" class="input-field">
+      <button class="btn btn-primary" onclick="kayitOl()">Kayıt Ol</button>
+    </div>
+    <p id="authError" class="error-msg"></p>
+  </div>
+</div>
+
+<!-- Ana Uygulama -->
+<div id="app" class="hidden">
+
+  <!-- AKIŞ BÖLÜMÜ -->
+  <section id="view-feed" class="view">
+    <div class="top-header">
+      <span class="header-title">🏠 Köy Meydanı</span>
+    </div>
+    <div id="postPanel" class="post-panel hidden">
+      <div class="post-panel-inner">
+        <input id="postTitle" placeholder="Başlık..." class="input-field">
+        <textarea id="postText" placeholder="Ne paylaşmak istersiniz?" class="textarea-field" rows="3"></textarea>
+        <label class="file-label">
+          📎 Fotoğraf / Video Ekle
+          <input type="file" id="postFile" accept="image/*,video/*" onchange="previewFile(this,'postPreview')">
+        </label>
+        <div id="postPreview" class="media-preview"></div>
+        <button class="btn btn-primary" id="postBtn" onclick="akisPaylas()">📢 Paylaş</button>
+      </div>
+    </div>
+    <div id="postList" class="post-list">
+      <div class="loading-spinner">⏳ Yükleniyor...</div>
+    </div>
+  </section>
+
+  <!-- SOHBET BÖLÜMÜ -->
+  <section id="view-chat" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">💬 Köy Sohbeti</span>
+    </div>
+    <div id="chatBox" class="chat-box">
+      <div class="loading-spinner">⏳ Yükleniyor...</div>
+    </div>
+    <div class="chat-media-preview-bar hidden" id="chatMediaBar">
+      <div id="chatMediaPreview"></div>
+      <button onclick="chatMediaTemizle()" class="media-clear-btn">✕ Kaldır</button>
+    </div>
+    <div class="chat-input-bar">
+      <label class="chat-attach" title="Medya Ekle">
+        📎
+        <input type="file" id="chatFile" accept="image/*,video/*" onchange="chatMediaSec(this)">
+      </label>
+      <input id="msgInput" placeholder="Mesaj yazın..." class="chat-input-field" onkeypress="enterMesaj(event)">
+      <button class="chat-send-btn" onclick="mesajGonder()" id="chatSendBtn">➤</button>
+    </div>
+  </section>
+
+  <!-- FİRMALAR BÖLÜMÜ -->
+  <section id="view-biz" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">🏢 Köy Firmaları</span>
+    </div>
+    <p class="swipe-hint">← Kaydırarak diğer firmaları görün →</p>
+    <div id="bizList" class="biz-container"></div>
+    <div id="bizEmpty" class="empty-state hidden">
+      <div class="empty-icon">🏢</div>
+      <p>Henüz firma eklenmemiş</p>
+    </div>
+  </section>
+
+  <!-- AYARLAR BÖLÜMÜ -->
+  <section id="view-settings" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">⚙️ Ayarlar</span>
+    </div>
+    <div class="settings-content">
+
+      <!-- Online Kullanıcılar -->
+      <div class="settings-card">
+        <h4>👥 Kullanıcılar</h4>
+        <div id="userList"><div class="loading-spinner">⏳</div></div>
+      </div>
+
+      <!-- QR Kod -->
+      <div class="settings-card text-center">
+        <h4>📱 Uygulama QR Kodu</h4>
+        <img src="karekod.png" class="qr-img" alt="QR Kod">
+        <p class="qr-url">koyemirler-hash.github.io/haber</p>
+      </div>
+
+      <!-- İletişim -->
+      <div class="settings-card">
+        <h4>📞 İletişim</h4>
+        <div class="contact-buttons">
+          <a href="tel:+905375120777" class="contact-btn phone-btn">
+            <span class="contact-icon">📞</span>
+            <span>Telefon ile Ara</span>
+          </a>
+          <a href="mailto:koyemirler@gmail.com" class="contact-btn email-btn">
+            <span class="contact-icon">✉️</span>
+            <span>E-Posta Gönder</span>
+          </a>
+          <a href="https://wa.me/905375120777" target="_blank" class="contact-btn whatsapp-btn">
+            <span class="contact-icon">💬</span>
+            <span>WhatsApp</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Hakkımızda -->
+      <div class="settings-card">
+        <h4>🏡 Hakkımızda</h4>
+        <p class="about-text">Emirler Köyü Portalı, köy sakinlerini bir araya getirmek, duyuruları paylaşmak ve iletişimi kolaylaştırmak için yapılmıştır.</p>
+        <p class="about-text">📍 Emirler Köyü, Türkiye</p>
+        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 2.0 · PWA</p>
+      </div>
+
+      <!-- Görüş & Öneri -->
+      <div class="settings-card">
+        <h4>💡 Görüş & Öneri</h4>
+        <textarea id="feedbackText" placeholder="Görüş veya önerinizi buraya yazın..." class="textarea-field" rows="3"></textarea>
+        <button class="btn btn-primary" onclick="gorusBildir()">Gönder 📨</button>
+      </div>
+
+      <!-- Admin Paneli -->
+      <div id="adminPanel" class="hidden">
+        <div class="settings-card admin-card">
+          <h4>🛡️ Admin Paneli</h4>
+
+          <div class="admin-section">
+            <p class="section-label">👤 Kullanıcı Yetki Yönetimi</p>
+            <input id="targetEmail" placeholder="Kullanıcı e-posta adresi" class="input-field">
+            <select id="targetRole" class="input-field">
+              <option value="muhtar">Muhtar</option>
+              <option value="yardimci">Yardımcı Admin</option>
+              <option value="user">Normal Üye</option>
+            </select>
+            <button class="btn btn-secondary" onclick="yetkiVer()">✅ Yetki Ver</button>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">🏢 Firma Ekle / Düzenle</p>
+            <input id="bizName" placeholder="Firma Adı *" class="input-field">
+            <input id="bizCat" placeholder="Kategori (Örn: Market, Kafe...)" class="input-field">
+            <input id="bizPhone" placeholder="Telefon" class="input-field" type="tel">
+            <input id="bizAddr" placeholder="Adres" class="input-field">
+            <textarea id="bizDesc" placeholder="Açıklama" class="textarea-field" rows="2"></textarea>
+            <label class="file-label">
+              📸 Firma Görseli
+              <input type="file" id="bizFile" accept="image/*" onchange="previewFile(this,'bizPreview')">
+            </label>
+            <div id="bizPreview" class="media-preview"></div>
+            <button class="btn btn-secondary" id="bizAddBtn" onclick="firmaEkle()">🏢 Firma Ekle</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Çıkış -->
+      <button class="btn btn-danger" onclick="cikisYap()">🚪 Çıkış Yap</button>
+    </div>
+  </section>
+
+  <!-- Yorum Modalı -->
+  <div id="commentsModal" class="modal hidden">
+    <div class="modal-overlay" onclick="modalKapat()"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4>💬 Yorumlar</h4>
+        <button class="modal-close-btn" onclick="modalKapat()">✕</button>
+      </div>
+      <div id="commentsList" class="comments-list"></div>
+      <div class="comment-input-bar">
+        <input id="commentInput" placeholder="Yorumunuzu yazın..." class="comment-input-field" onkeypress="if(event.key==='Enter')yorumGonder()">
+        <button class="comment-send-btn" onclick="yorumGonder()">Gönder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resim Tam Ekran -->
+  <div id="imgFullscreen" class="img-fullscreen hidden" onclick="this.classList.add('hidden')">
+    <img id="imgFullscreenSrc" src="">
+  </div>
+
+</div>
+
+<!-- Alt Navigasyon -->
+<nav class="nav-footer hidden" id="navBar">
+  <div class="nav-item active" id="nav-feed" onclick="tabDegistir('feed')">
+    <span class="nav-icon">🏠</span>
+    <span class="nav-label">Akış</span>
+  </div>
+  <div class="nav-item" id="nav-chat" onclick="tabDegistir('chat')">
+    <span class="nav-icon">💬</span>
+    <span class="nav-label">Sohbet</span>
+  </div>
+  <div class="nav-item" id="nav-biz" onclick="tabDegistir('biz')">
+    <span class="nav-icon">🏢</span>
+    <span class="nav-label">Firmalar</span>
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="tabDegistir('settings')">
+    <span class="nav-icon">⚙️</span>
+    <span class="nav-label">Ayarlar</span>
+  </div>
+</nav>
+
+<script src="app.js"></script>
+</body>
+</html>

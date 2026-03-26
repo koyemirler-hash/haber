@@ -1,0 +1,29 @@
+{
+  "name": "Emirler Köyü Portalı",
+  "short_name": "Emirler",
+  "description": "Emirler Köyü resmi uygulaması",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#588157",
+  "theme_color": "#588157",
+  "orientation": "portrait-primary",
+  "lang": "tr",
+  "categories": ["social", "news"],
+  "icons": [
+    {
+      "src": "ikon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "ikon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "related_applications": []
+}

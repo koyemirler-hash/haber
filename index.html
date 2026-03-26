@@ -13,76 +13,81 @@
 <body>
 
 <div id="termsOverlay" class="overlay">
-    <div class="modal">
-        <h3>🏡 Emirler Köyü</h3>
-        <div class="terms-box">1. Küfür yasaktır. 2. Veriler güvendedir. 3. Cihaz kilidi aktiftir.</div>
-        <label><input type="checkbox" id="termsCheck"> Okudum, kabul ediyorum.</label>
-        <button class="btn" onclick="onayVer()">Başlat</button>
+    <div class="modal shadow-lg">
+        <h2 class="text-green">🏡 Emirler Köyü</h2>
+        <div class="terms-scroll">
+            <p><b>Yasal Bilgilendirme:</b> Uygulamada yapılan tüm paylaşımlar kullanıcı sorumluluğundadır. Küfür ve hakaret kesinlikle yasaktır.</p>
+        </div>
+        <button class="btn btn-main" onclick="onayVer()">Kabul Ediyorum</button>
     </div>
 </div>
 
 <div id="app" class="hidden">
     <section id="authPage" class="view">
-        <div class="auth-card">
-            <h2>Hoş Geldiniz</h2>
-            <div id="loginForm">
-                <input type="email" id="logEmail" placeholder="E-posta">
-                <input type="password" id="logPass" placeholder="Şifre">
-                <button class="btn" onclick="girisYap()">Giriş Yap</button>
-                <p onclick="toggleAuth(true)">Kayıt Ol</p>
+        <div class="auth-container">
+            <img src="ikon_192.png" class="auth-logo">
+            <div id="loginForm" class="auth-box">
+                <input type="email" id="logEmail" placeholder="E-posta Adresiniz">
+                <input type="password" id="logPass" placeholder="Şifreniz">
+                <button class="btn btn-main" onclick="girisYap()">Giriş Yap</button>
+                <span class="toggle-link" onclick="toggleAuth(true)">Hesap Oluştur</span>
             </div>
-            <div id="registerForm" class="hidden">
+            <div id="registerForm" class="auth-box hidden">
                 <input type="text" id="regName" placeholder="Ad Soyad">
                 <input type="email" id="regEmail" placeholder="E-posta">
-                <input type="password" id="regPass" placeholder="Şifre">
-                <button class="btn" onclick="kayitOl()">Kayıt Ol</button>
-                <p onclick="toggleAuth(false)">Giriş Yap</p>
+                <input type="password" id="regPass" placeholder="Şifre (En az 6 haneli)">
+                <button class="btn btn-main" onclick="kayitOl()">Kayıt Ol</button>
+                <span class="toggle-link" onclick="toggleAuth(false)">Giriş Yap</span>
             </div>
         </div>
     </section>
 
     <main id="mainContent" class="hidden">
         <section id="view-feed" class="view">
-            <div class="top-bar">Köy Meydanı</div>
-            <div id="adminPostPanel" class="post-creator hidden">
-                <input type="text" id="postTitle" placeholder="Ne düşünüyorsun?">
-                <input type="file" id="postFile">
-                <button onclick="paylas()">Paylaş</button>
+            <div class="app-header">Köy Meydanı</div>
+            <div id="adminPostPanel" class="post-input-card hidden">
+                <textarea id="postTitle" placeholder="Bugün ne paylaşmak istersin?"></textarea>
+                <div class="post-actions">
+                    <input type="file" id="postFile" hidden>
+                    <label for="postFile" class="file-label">📷 Görsel Ekle</label>
+                    <button class="btn-send" onclick="paylas()">Paylaş</button>
+                </div>
             </div>
-            <div id="feedList" class="feed-container"></div>
+            <div id="feedList" class="feed-scroll"></div>
         </section>
 
         <section id="view-chat" class="view hidden">
             <div class="chat-container">
-                <div id="chatBox" class="chat-messages"></div>
-                <div class="chat-input-area">
-                    <input type="text" id="chatInput" placeholder="Mesaj yaz...">
+                <div id="chatBox" class="chat-area"></div>
+                <div class="chat-bar">
+                    <input type="text" id="chatInput" placeholder="Bir mesaj yaz...">
                     <button onclick="mesajGonder()">➤</button>
                 </div>
             </div>
         </section>
 
         <section id="view-biz" class="view hidden">
-            <div id="bizList" class="biz-slider"></div>
+            <div id="bizList" class="biz-page"></div>
         </section>
 
         <section id="view-settings" class="view hidden">
-            <div class="settings-card">
-                <p id="userMailInfo"></p>
-                <button class="btn-logout" onclick="cikisYap()">Çıkış Yap</button>
+            <div class="profile-card">
+                <div class="user-avatar">👤</div>
+                <h3 id="userMailInfo"></h3>
+                <button class="btn btn-danger" onclick="cikisYap()">Çıkış Yap</button>
             </div>
             <div id="adminMasterPanel" class="admin-panel hidden">
                 <h4>🛡️ Yönetim Paneli</h4>
-                <div id="adminUserList"></div>
+                <div id="adminUserList" class="admin-list"></div>
             </div>
         </section>
     </main>
 
-    <nav id="navBar" class="nav-bar hidden">
-        <div onclick="tabDegistir('feed')">🏠<span>Meydan</span></div>
-        <div onclick="tabDegistir('chat')">💬<span>Sohbet</span></div>
-        <div onclick="tabDegistir('biz')">🏢<span>Firmalar</span></div>
-        <div onclick="tabDegistir('settings')">⚙️<span>Ayarlar</span></div>
+    <nav id="navBar" class="bottom-nav hidden">
+        <div class="nav-btn" onclick="tabDegistir('feed')"><span>🏠</span>Meydan</div>
+        <div class="nav-btn" onclick="tabDegistir('chat')"><span>💬</span>Sohbet</div>
+        <div class="nav-btn" onclick="tabDegistir('biz')"><span>🏢</span>Firmalar</div>
+        <div class="nav-btn" onclick="tabDegistir('settings')"><span>⚙️</span>Ayarlar</div>
     </nav>
 </div>
 

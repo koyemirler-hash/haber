@@ -1,11 +1,15 @@
 {
   "name": "Emirler Köyü Portalı",
   "short_name": "Emirler",
-  "start_url": "index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f8f9fa",
   "theme_color": "#588157",
-  "icons":[
-    {"src":"https://cdn-icons-png.flaticon.com/512/609/609803.png","sizes":"512x512","type":"image/png"}
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/609/609803.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
   ]
 }

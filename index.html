@@ -1,197 +1,301 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Emirler Köyü Portalı</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
-
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emirler Köyü Portalı</title>
+<style>
+:root { --p: #4a5568; --bg: #f8f9fa; --accent: #588157; --orange: #ff6000; --white: #fff; }
+body { font-family:'Segoe UI',sans-serif; margin:0; padding:0; background:var(--bg); }
+.hidden { display:none !important; }
+.card { background:var(--white); border-radius:15px; padding:15px; margin:10px; box-shadow:0 4px 10px rgba(0,0,0,0.05); }
+.btn { padding:12px; background:var(--accent); color:white; border:none; border-radius:10px; cursor:pointer; }
+.nav-footer { position:fixed; bottom:0; width:100%; display:flex; justify-content:space-around; background:white; padding:10px 0; border-top:1px solid #eee; }
+.chat-box { height:400px; overflow-y:auto; border-radius:10px; background:#e5ddd5; padding:10px; display:flex; flex-direction:column; gap:8px; }
+.msg { max-width:70%; padding:8px 12px; border-radius:12px; font-size:14px; }
+.sent { align-self:flex-end; background:#dcf8c6; }
+.received { align-self:flex-start; background:white; }
+input,textarea,select { width:100%; padding:10px; margin:5px 0; border-radius:8px; border:1px solid #ddd; }
+.feed-header { background:var(--accent); color:white; border-radius:0 0 20px 20px; margin:0; text-align:center; }
+.biz-container { display:flex; overflow-x:auto; gap:10px; padding:10px; scroll-snap-type:x mandatory; }
+.biz-card { min-width:250px; border-radius:15px; background:white; padding:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1); scroll-snap-align:center; }
+.admin-section { border:2px solid #eee; border-radius:15px; padding:10px; margin-top:10px; background:#f9fafb; }
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+.online { background:#48bb78; } .offline { background:#cbd5e0; }
+</style>
+<link rel="manifest" href="manifest.json">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
-  <div id="termsOverlay" class="overlay">
-    <div class="card overlay-card">
-      <h2>🏡 Emirler Köyü</h2>
-      <p class="muted">Kullanım Şartları ve Gizlilik Bildirimi</p>
+<!-- Açılış Kuralları -->
+<div id="termsOverlay">
+  <h2>🏡 Emirler Köyü</h2>
+  <p>Kullanım Şartları ve Gizlilik Politikası</p>
+  <div class="card" style="height:200px; overflow-y:auto; font-size:13px;">
+    1. Küfür, hakaret ve siyasi paylaşım yasaktır.<br>
+    2. Paylaşımlar şifrelenmiş olarak saklanır.<br>
+    3. Admin onayı gerektiren paylaşımlar muhtar kontrolündedir.<br>
+    4. Kişisel veriler gizli tutulur.<br>
+    5. Konum, telefon ve mail bilgileri sadece izinli paylaşılır.<br>
+    6. Kullanıcı içeriklerinden uygulama sorumlu değildir.<br>
+    7. Her kullanıcı kendi hesabından sorumludur.<br>
+    8. Uygulama istatistikleri anonim olarak toplanabilir.<br>
+    9. Reklam ve sponsorlu içerikler gösterilebilir.<br>
+    10. Uygulama kullanımı sırasında cihaz performansına dikkat edin.
+  </div>
+  <label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
+  <button class="btn" onclick="onayVer()">Uygulamaya Gir</button>
+</div>
 
-      <div class="terms-box">
-        1. Küfür, hakaret, tehdit, taciz ve aşağılayıcı dil yasaktır.<br>
-        2. Paylaşılan tüm içeriklerin sorumluluğu kullanıcıya aittir.<br>
-        3. Kişisel veriler uygulama çalışması için gerekli ölçüde saklanır.<br>
-        4. Fotoğraf, video, bağlantı ve yazılı içeriklerde telif haklarına dikkat edilmelidir.<br>
-        5. Spam, reklam, sahte bilgi ve yanıltıcı paylaşım yasaktır.<br>
-        6. Başkalarının hesabını kullanmak, taklit etmek ve izinsiz giriş yapmak yasaktır.<br>
-        7. Uygulama yönetimi, uygun görmediği içerikleri kaldırabilir ve hesapları askıya alabilir.<br>
-        8. Köy Meydanı bölümünde yalnızca yetkili kişiler paylaşım yapabilir.<br>
-        9. Sohbet bölümünde herkes yazabilir, ancak topluluk kurallarına uymak zorunludur.<br>
-        10. Bu uygulama topluluk iletişimi amacıyla kullanılır.<br>
-        11. Gerekli durumlarda cihaz bazlı güvenlik kontrolleri uygulanabilir.<br>
-        12. Bu şartları kabul eden kullanıcı uygulamayı kullanabilir.
-      </div>
+<!-- Giriş / Kayıt -->
+<div id="loginPage" class="hidden">
+  <div class="card">
+    <h3>🔑 Üye Girişi / Kayıt</h3>
+    <input id="logEmail" type="email" placeholder="E-posta">
+    <input id="logName" type="text" placeholder="Ad Soyad">
+    <input id="logPass" type="password" placeholder="Şifre">
+    <button class="btn" onclick="girisYap()">Giriş / Kayıt Yap</button>
+    <p id="errorMsg" style="color:red;font-size:12px;"></p>
+  </div>
+</div>
 
-      <input id="termsAdminEmail" class="input" type="email" placeholder="Admin e-postası (varsa direkt geçiş)" />
-      <label class="checkline">
-        <input type="checkbox" id="termsCheck" />
-        Şartları okudum, kabul ediyorum.
-      </label>
-      <button class="btn" onclick="onayVer()">Uygulamaya Gir</button>
+<!-- Uygulama Ana -->
+<div id="app" class="hidden">
+
+  <!-- Reklam Banner -->
+  <div id="adBanner" class="card hidden" style="text-align:center; background:var(--orange); color:white; font-weight:bold;" onclick="reklamGit()"></div>
+
+  <!-- Akış -->
+  <section id="view-feed" class="view">
+    <div class="card feed-header"><h3>Köy Meydanı</h3></div>
+    <div id="adminPostPanel" class="card hidden">
+      <input id="postTitle" placeholder="Başlık">
+      <input type="file" id="postFile" accept="image/*,video/*">
+      <button class="btn" onclick="akisPaylas()">Paylaş</button>
     </div>
-  </div>
+    <div id="postList"></div>
+  </section>
 
-  <div id="loginPage" class="page hidden">
-    <div class="card auth-card">
-      <div class="auth-tabs">
-        <button class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">Giriş Yap</button>
-        <button class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">Yeni Kayıt</button>
-      </div>
-
-      <div id="loginTab" class="auth-panel">
-        <h3>🔑 Üye Girişi</h3>
-        <input id="logEmail" class="input" type="email" placeholder="E-posta" />
-        <input id="logPass" class="input" type="password" placeholder="Şifre" />
-        <button class="btn" onclick="girisYap()">Giriş Yap</button>
-        <p id="loginError" class="error"></p>
-      </div>
-
-      <div id="registerTab" class="auth-panel hidden">
-        <h3>📝 Yeni Kayıt</h3>
-        <input id="regName" class="input" type="text" placeholder="Ad" />
-        <input id="regSurname" class="input" type="text" placeholder="Soyad" />
-        <input id="regPhone" class="input" type="tel" placeholder="Telefon" />
-        <input id="regEmail" class="input" type="email" placeholder="E-posta" />
-        <input id="regPass" class="input" type="password" placeholder="Şifre" />
-        <button class="btn" onclick="uyeOl()">Kayıt Ol</button>
-        <p id="registerError" class="error"></p>
+  <!-- Sohbet -->
+  <section id="view-chat" class="view hidden">
+    <div class="card" style="height:80vh;">
+      <h4>💬 Canlı Sohbet</h4>
+      <div id="chatBox" class="chat-box"></div>
+      <div style="display:flex;gap:5px;margin-top:10px;">
+        <input id="msgInput" placeholder="Mesaj yazın...">
+        <button class="btn" onclick="mesajGonder()">Gönder</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div id="app" class="page hidden">
-    <header class="topbar">
-      <div>
-        <div class="title">Emirler Köyü</div>
-        <div class="subtitle" id="userBadge">Bağlanıyor...</div>
+  <!-- Firmalar -->
+  <section id="view-biz" class="view hidden">
+    <div class="card"><h3>🏢 Köy Firmaları</h3></div>
+    <div class="biz-container" id="bizList"></div>
+  </section>
+
+  <!-- Ayarlar -->
+  <section id="view-settings" class="view hidden">
+    <div class="card">
+      <h3>⚙️ Ayarlar</h3>
+
+      <div id="adminPanel" class="admin-section hidden">
+        <h4>🛡️ Admin Paneli</h4>
+        <p><b>Kullanıcı Yetki</b></p>
+        <input id="targetEmail" placeholder="E-posta">
+        <select id="targetRole">
+          <option value="muhtar">Muhtar</option>
+          <option value="yardimci">Yardımcı</option>
+          <option value="user">Normal Üye</option>
+        </select>
+        <button class="btn" onclick="yetkiVer()">Yetki Ver</button>
+
+        <hr>
+        <p><b>💰 Reklam</b></p>
+        <input id="adTxt" placeholder="Reklam Yazısı">
+        <input id="adLnk" placeholder="Reklam Linki">
+        <label><input type="checkbox" id="adActive"> Göster</label>
+        <button class="btn" onclick="reklamKaydet()">Kaydet</button>
+
+        <hr>
+        <p><b>🏢 Firma Yönetimi</b></p>
+        <input id="bizTitle" placeholder="Firma Başlığı">
+        <input id="bizImg" type="file">
+        <input id="bizPhone" placeholder="WhatsApp / Telefon">
+        <input id="bizMail" placeholder="E-Mail">
+        <input id="bizURL" placeholder="URL">
+        <label><input type="checkbox" id="bizActive"> Göster</label>
+        <button class="btn" onclick="firmaKaydet()">Kaydet</button>
       </div>
-      <button class="mini-btn" onclick="togglePreviewMode()" id="previewBtn">Başkasının Gözünden Gör</button>
-    </header>
 
-    <main class="main">
-      <section id="view-feed" class="view">
-        <div class="card hero-card">
-          <h3>🏘️ Köy Meydanı</h3>
-          <p>Yetkili paylaşımlar, beğeni, emoji ve yorumlar burada.</p>
-        </div>
+      <div class="admin-section">
+        <h4>👥 Kimler Online?</h4>
+        <div id="userList"></div>
+      </div>
 
-        <div id="feedComposer" class="card hidden">
-          <h4>Yeni Paylaşım</h4>
-          <input id="postTitle" class="input" type="text" placeholder="Başlık" />
-          <textarea id="postBody" class="input textarea" placeholder="Yazı / açıklama"></textarea>
-          <input id="postMedia" class="input" type="file" accept="image/*,video/*" />
-          <button class="btn" onclick="akisPaylas()">Paylaş</button>
-        </div>
+      <button class="btn" style="background:#e53e3e;margin-top:10px;" onclick="cikisYap()">🚪 Çıkış Yap</button>
+    </div>
+  </section>
+</div>
 
-        <div id="postList"></div>
-      </section>
+<nav class="nav-footer hidden" id="navBar">
+  <span onclick="tabDegistir('feed')">🏠 Akış</span>
+  <span onclick="tabDegistir('chat')">💬 Sohbet</span>
+  <span onclick="tabDegistir('biz')">🏢 Firmalar</span>
+  <span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
+</nav>
 
-      <section id="view-chat" class="view hidden">
-        <div class="card hero-card">
-          <h3>💬 Canlı Sohbet</h3>
-          <p>WhatsApp tarzı, medya destekli, emoji tepkili sohbet.</p>
-        </div>
+<script>
+// Firebase
+const firebaseConfig = { apiKey:"", authDomain:"", projectId:"", storageBucket:"" };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-        <div class="card chat-card">
-          <div id="chatBox" class="chat-box"></div>
+// Açılış Kuralları
+if(localStorage.getItem('termsAccepted')) {
+  document.getElementById('termsOverlay').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+}
+function onayVer() {
+  if(!document.getElementById('termsCheck').checked) return alert("Şartları kabul etmelisin!");
+  localStorage.setItem('termsAccepted','true');
+  document.getElementById('termsOverlay').classList.add('hidden');
+  document.getElementById('loginPage').classList.remove('hidden');
+}
 
-          <div id="chatReplyPreview" class="reply-preview hidden"></div>
+// Giriş / Kayıt
+async function girisYap() {
+  const email = document.getElementById('logEmail').value;
+  const name = document.getElementById('logName').value;
+  const pass = document.getElementById('logPass').value;
+  if(!email || !name || !pass) { document.getElementById('errorMsg').innerText="Boş alan bırakma!"; return; }
+  try {
+    let userCredential = await auth.signInWithEmailAndPassword(email, pass).catch(async()=>{
+      // kayıt yoksa
+      userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+      await db.collection('users').doc(userCredential.user.uid).set({ name, email, online:true, role:'user' });
+    });
+    await db.collection('users').doc(userCredential.user.uid).update({ online:true });
+    document.getElementById('loginPage').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('navBar').classList.remove('hidden');
+    adminKontrol(email);
+    tabDegistir('feed');
+    onlineListesiYukle();
+    mesajlariDinle();
+    feedYukle();
+    firmaYukle();
+    reklamYukle();
+  } catch(e){ document.getElementById('errorMsg').innerText="Hata!"; }
+}
 
-          <div class="chat-compose">
-            <textarea id="msgInput" class="input textarea chat-input" placeholder="Mesaj yazın..."></textarea>
-            <input id="chatMedia" class="input" type="file" accept="image/*,video/*" />
-            <button class="btn" onclick="mesajGonder()">Gönder</button>
-          </div>
-        </div>
-      </section>
+// Çıkış
+async function cikisYap() {
+  const user = auth.currentUser;
+  if(user) await db.collection('users').doc(user.uid).update({ online:false });
+  await auth.signOut();
+  location.reload();
+}
 
-      <section id="view-biz" class="view hidden">
-        <div class="card hero-card">
-          <h3>🏢 Firmalar</h3>
-          <p>Sağa sola kaydırmalı firma / reklam alanı.</p>
-        </div>
+// Admin Kontrol
+function adminKontrol(email) {
+  if(email==='koyemirler@gmail.com') document.getElementById('adminPanel').classList.remove('hidden');
+}
 
-        <div id="businessFeature" class="card feature-card hidden"></div>
-        <div id="bizList" class="biz-container"></div>
-      </section>
+// Tab
+function tabDegistir(t){ document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden')); document.getElementById('view-'+t).classList.remove('hidden'); }
 
-      <section id="view-settings" class="view hidden">
-        <div class="card">
-          <h3>⚙️ Ayarlar</h3>
+// Online Liste
+function onlineListesiYukle() {
+  db.collection('users').onSnapshot(snap=>{
+    let html=""; snap.forEach(d=>{ const u=d.data(); html+=`<div><span class="status-dot ${u.online?'online':'offline'}"></span>${u.name}</div>`; });
+    document.getElementById('userList').innerHTML=html;
+  });
+}
 
-          <button class="accordion-btn" onclick="toggleAcc('acc-admin')">🛡️ Admin Paneli</button>
-          <div id="acc-admin" class="accordion hidden">
-            <div id="adminPanel" class="admin-section hidden">
-              <h4>Kullanıcı Yetki</h4>
-              <input id="targetEmail" class="input" type="email" placeholder="E-posta" />
-              <select id="targetRole" class="input">
-                <option value="muhtar">Muhtar</option>
-                <option value="yardimci">Yardımcı</option>
-                <option value="user">Normal Üye</option>
-              </select>
-              <button class="btn" onclick="yetkiVer()">Yetki Ver</button>
+// Cloudinary Upload
+async function uploadToCloudinary(file) {
+  const formData=new FormData(); formData.append("file",file); formData.append("upload_preset","<your_preset>");
+  const res=await fetch("https://api.cloudinary.com/v1_1/<cloud_name>/upload",{method:"POST",body:formData});
+  const data=await res.json(); return data.secure_url;
+}
 
-              <hr>
+// Akış
+async function akisPaylas() {
+  const title=document.getElementById('postTitle').value;
+  const file=document.getElementById('postFile').files[0];
+  let url="";
+  if(file) url=await uploadToCloudinary(file);
+  await db.collection('feed').add({ title, url, uid:auth.currentUser.uid, user:auth.currentUser.email.split('@')[0], time:firebase.firestore.FieldValue.serverTimestamp(), comments:[], likes:[] });
+  document.getElementById('postTitle').value=""; document.getElementById('postFile').value=null;
+  feedYukle();
+}
 
-              <h4>Firma Ekle / Düzenle</h4>
-              <input id="bizId" class="input hidden" type="text" />
-              <input id="bizName" class="input" type="text" placeholder="Firma / Reklam Başlığı" />
-              <textarea id="bizDesc" class="input textarea" placeholder="Açıklama / yazı"></textarea>
-              <input id="bizImage" class="input" type="file" accept="image/*" />
-              <input id="bizPhone" class="input" type="tel" placeholder="Telefon" />
-              <input id="bizWhatsapp" class="input" type="text" placeholder="WhatsApp numarası" />
-              <input id="bizEmail" class="input" type="email" placeholder="Gmail" />
-              <input id="bizUrl" class="input" type="url" placeholder="URL" />
-              <label class="checkline">
-                <input id="bizActive" type="checkbox" checked />
-                Aktif göster
-              </label>
-              <button class="btn" onclick="firmaKaydet()">Firmayı Kaydet</button>
+// Feed Listeleme
+function feedYukle(){
+  db.collection('feed').orderBy('time','desc').onSnapshot(snap=>{
+    let html="";
+    snap.forEach(d=>{
+      const p=d.data();
+      html+=`<div class="card"><b>${p.user}</b><br>${p.title}<br>`;
+      if(p.url) html+=`<img src="${p.url}" width="100%">`;
+      html+=`</div>`;
+    });
+    document.getElementById('postList').innerHTML=html;
+  });
+}
 
-              <div id="businessAdminList" class="admin-list"></div>
-            </div>
-          </div>
+// Sohbet
+function mesajlariDinle() {
+  db.collection('chat').orderBy('time','asc').onSnapshot(snap=>{
+    let html=""; snap.forEach(d=>{
+      const m=d.data(); const isMe=m.uid===auth.currentUser.uid;
+      html+=`<div class="msg ${isMe?'sent':'received'}"><b>${m.user}:</b> ${m.text}</div>`;
+    });
+    const box=document.getElementById('chatBox'); box.innerHTML=html; box.scrollTop=box.scrollHeight;
+  });
+}
+async function mesajGonder() {
+  const text=document.getElementById('msgInput').value;
+  if(!text) return;
+  await db.collection('chat').add({ text, user:auth.currentUser.email.split('@')[0], uid:auth.currentUser.uid, time:firebase.firestore.FieldValue.serverTimestamp() });
+  document.getElementById('msgInput').value="";
+}
 
-          <button class="accordion-btn" onclick="toggleAcc('acc-users')">👥 Kimler Online?</button>
-          <div id="acc-users" class="accordion hidden">
-            <div id="userList" class="user-list"></div>
-          </div>
+// Firmalar
+async function firmaKaydet() {
+  const title=document.getElementById('bizTitle').value;
+  const file=document.getElementById('bizImg').files[0];
+  let url=""; if(file) url=await uploadToCloudinary(file);
+  await db.collection('biz').add({ title, url, phone:document.getElementById('bizPhone').value, mail:document.getElementById('bizMail').value, link:document.getElementById('bizURL').value, active:document.getElementById('bizActive').checked });
+  firmaYukle();
+}
+function firmaYukle() {
+  db.collection('biz').where('active','==',true).onSnapshot(snap=>{
+    let html=""; snap.forEach(d=>{ const b=d.data();
+      html+=`<div class="biz-card"><b>${b.title}</b><br>${b.url?`<img src="${b.url}" width="100%">`:''}<br>${b.phone?`📞 ${b.phone}`:''} ${b.mail?`📧 ${b.mail}`:''} ${b.link?`🔗 <a href="${b.link}" target="_blank">Git</a>`:''}</div>`;
+    });
+    document.getElementById('bizList').innerHTML=html;
+  });
+}
 
-          <button class="accordion-btn" onclick="toggleAcc('acc-profile')">👁️ Normal Kullanıcı Görünümü</button>
-          <div id="acc-profile" class="accordion hidden">
-            <button class="btn secondary" onclick="togglePreviewMode()">Başkasının Gözünden Gör / Çık</button>
-          </div>
+// Reklam
+async function reklamKaydet() {
+  await db.collection('settings').doc('ads').set({ text:document.getElementById('adTxt').value, link:document.getElementById('adLnk').value, active:document.getElementById('adActive').checked });
+  reklamYukle();
+}
+async function reklamYukle() {
+  const doc=await db.collection('settings').doc('ads').get();
+  const ad=document.getElementById('adBanner');
+  if(doc.exists && doc.data().active){ ad.style.display="block"; ad.innerText=doc.data().text; window.adLink=doc.data().link; }
+  else ad.style.display="none";
+}
+function reklamGit(){ if(window.adLink) window.open(window.adLink,"_blank"); }
 
-          <div class="qr-box">
-            <p>Uygulama Karekod</p>
-            <img src="karekod.png" alt="Karekod" width="120" />
-          </div>
-
-          <button class="btn danger" onclick="cikisYap()">🚪 Çıkış Yap</button>
-        </div>
-      </section>
-    </main>
-
-    <nav class="nav-footer" id="navBar">
-      <button onclick="tabDegistir('feed')">🏠 Akış</button>
-      <button onclick="tabDegistir('chat')">💬 Sohbet</button>
-      <button onclick="tabDegistir('biz')">🏢 Firmalar</button>
-      <button onclick="tabDegistir('settings')">⚙️ Ayarlar</button>
-    </nav>
-  </div>
-
-  <script src="app.js"></script>
+</script>
 </body>
 </html>

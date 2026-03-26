@@ -1,76 +1,77 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emirler Köyü</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emirler Köyü Portalı</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 </head>
 <body>
-    <header class="wa-header">
-        <span>Emirler Köyü</span>
-    </header>
+<header class="wa-header"><span>Emirler Köyü</span></header>
 
-    <main>
-        <section id="view-feed" class="view">
-            <div class="wa-status-bar" id="statusList"></div>
-            
-            <div id="admin-post-panel" class="card hidden">
-                <input id="post-title" placeholder="Duyuru başlığı...">
-                <input type="file" id="post-file" accept="image/*,video/*">
-                <button class="btn-send" onclick="akisPaylas()">Yayınla</button>
-            </div>
-            
-            <div id="feed-container"></div>
-        </section>
+<main>
+<!-- AKIŞ / DUYURULAR -->
+<section id="view-feed" class="view">
+    <div class="wa-status-bar" id="statusList"></div>
+    <div id="admin-post-panel" class="card hidden">
+        <input id="post-title" placeholder="Duyuru başlığı...">
+        <input type="file" id="post-file" accept="image/*,video/*">
+        <button class="btn-send" onclick="akisPaylas()">Yayınla</button>
+    </div>
+    <div id="feed-container"></div>
+</section>
 
-        <section id="view-chat" class="view hidden">
-            <div id="chat-messages" class="wa-chat-bg"></div>
-            <div class="wa-input-area">
-                <input type="text" id="chat-msg" placeholder="Mesaj yazın...">
-                <input type="file" id="chat-file" hidden accept="image/*">
-                <label for="chat-file" class="attach-btn">📎</label>
-                <button onclick="mesajGonder()">➤</button>
-            </div>
-        </section>
+<!-- KÖY SOHBETİ -->
+<section id="view-chat" class="view hidden">
+    <div id="chat-messages" class="wa-chat-bg"></div>
+    <div class="wa-input-area">
+        <input type="text" id="chat-msg" placeholder="Mesaj yazın...">
+        <input type="file" id="chat-file" hidden accept="image/*">
+        <label for="chat-file" class="attach-btn">📎</label>
+        <button onclick="mesajGonder()">➤</button>
+    </div>
+</section>
 
-        <section id="view-biz" class="view hidden">
-            <div id="biz-list"></div>
-        </section>
+<!-- FİRMALAR -->
+<section id="view-biz" class="view hidden">
+    <div id="biz-list" class="biz-slider"></div>
+</section>
 
-        <section id="view-settings" class="view hidden">
-            <div class="accordion">
-                <button class="acc-btn" onclick="toggleAcc('acc-adm')">🛡️ Yönetim Paneli</button>
-                <div id="acc-adm" class="acc-content hidden">
-                    <p>Firma Ekle</p>
-                    <input id="f-name" placeholder="Firma Adı">
-                    <input id="f-tel" placeholder="Telefon">
-                    <button class="btn" onclick="firmaEkle()">Kaydet</button>
-                    <hr>
-                    <div id="online-users-list"></div>
-                </div>
+<!-- AYARLAR -->
+<section id="view-settings" class="view hidden">
+    <div class="accordion">
+        <button class="acc-btn" onclick="toggleAcc('acc-adm')">🛡️ Yönetim Paneli</button>
+        <div id="acc-adm" class="acc-content hidden">
+            <p>Firma Ekle</p>
+            <input id="f-name" placeholder="Firma Adı">
+            <input id="f-tel" placeholder="Telefon">
+            <button class="btn" onclick="firmaEkle()">Kaydet</button>
+            <hr>
+            <div id="online-users-list"></div>
+        </div>
 
-                <button class="acc-btn" onclick="toggleAcc('acc-ads')">💰 Reklam Ayarları</button>
-                <div id="acc-ads" class="acc-content hidden">
-                    <input id="ad-text" placeholder="Reklam Yazısı">
-                    <button class="btn" onclick="reklamGuncelle()">Güncelle</button>
-                </div>
-            </div>
-            <button class="btn-logout" onclick="auth.signOut()">Çıkış Yap</button>
-        </section>
-    </main>
+        <button class="acc-btn" onclick="toggleAcc('acc-ads')">💰 Reklam Ayarları</button>
+        <div id="acc-ads" class="acc-content hidden">
+            <input id="ad-text" placeholder="Reklam Yazısı">
+            <button class="btn" onclick="reklamGuncelle()">Güncelle</button>
+        </div>
+    </div>
+    <button class="btn-logout" onclick="auth.signOut()">Çıkış Yap</button>
+</section>
+</main>
 
-    <nav class="bottom-nav">
-        <div onclick="tabGit('feed')">🏠 Akış</div>
-        <div onclick="tabGit('chat')">💬 Sohbet</div>
-        <div onclick="tabGit('biz')">🏢 Rehber</div>
-        <div onclick="tabGit('settings')">⚙️ Ayarlar</div>
-    </nav>
+<nav class="bottom-nav">
+    <div onclick="tabGit('feed')">🏠 Akış</div>
+    <div onclick="tabGit('chat')">💬 Sohbet</div>
+    <div onclick="tabGit('biz')">🏢 Rehber</div>
+    <div onclick="tabGit('settings')">⚙️ Ayarlar</div>
+</nav>
 
-    <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

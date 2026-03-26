@@ -12,40 +12,45 @@ const storage = firebase.storage();
 
 let currentUserData = null;
 
-// 1. Cihaz ID ve Onay
-if(localStorage.getItem('termsAccepted')) {
-    document.getElementById('termsOverlay').classList.add('hidden');
+// 1. Cihaz ID ve Onay Yönetimi
+if(localStorage.getItem('ok_accepted')) {
+    document.getElementById('termsOverlay').style.display = 'none';
     document.getElementById('app').classList.remove('hidden');
 }
+
 function onayVer() {
-    if(!document.getElementById('termsCheck').checked) return alert("Şartları onayla!");
-    localStorage.setItem('termsAccepted', 'true');
+    localStorage.setItem('ok_accepted', 'true');
     location.reload();
 }
 
-// 2. Auth Takibi
+// 2. Oturum Kontrolü
 auth.onAuthStateChanged(async (user) => {
     if (user) {
         const doc = await db.collection("users").doc(user.uid).get();
-        if(!doc.exists) return auth.signOut();
+        if(!doc.exists) { auth.signOut(); return; }
         const data = doc.data();
 
-        if(data.isBlocked) { alert("Engellendiniz!"); return auth.signOut(); }
+        if(data.isBlocked) { alert("Engellendiniz!"); auth.signOut(); return; }
 
-        // Cihaz Kilidi
-        let myId = localStorage.getItem('e_id') || 'd' + Math.random().toString(36).substr(2,7);
-        localStorage.setItem('e_id', myId);
+        // Cihaz Kilidi (Tek cihaz kuralı)
+        let deviceId = localStorage.getItem('e_device') || 'dv-' + Math.random().toString(36).substr(2,9);
+        localStorage.setItem('e_device', deviceId);
+        
         if(data.rol !== 'admin') {
-            if(!data.deviceId) await db.collection("users").doc(user.uid).update({deviceId: myId});
-            else if(data.deviceId !== myId) { alert("Başka cihaz yasak!"); return auth.signOut(); }
+            if(!data.deviceId) await db.collection("users").doc(user.uid).update({deviceId});
+            else if(data.deviceId !== deviceId) { alert("Güvenlik: Başka cihazdan giriş yapılamaz."); auth.signOut(); return; }
         }
 
         currentUserData = data;
-        initApp();
-    } else { showAuth(); }
+        loadApp();
+    } else {
+        document.getElementById('authPage').classList.remove('hidden');
+        document.getElementById('mainContent').classList.add('hidden');
+        document.getElementById('navBar').classList.add('hidden');
+    }
 });
 
-function initApp() {
+function loadApp() {
     document.getElementById('authPage').classList.add('hidden');
     document.getElementById('mainContent').classList.remove('hidden');
     document.getElementById('navBar').classList.remove('hidden');
@@ -56,56 +61,68 @@ function initApp() {
     tabDegistir('feed');
 }
 
-// 3. Meydan, Sohbet, Firmalar
+// 3. Meydan Paylaşımları
 async function paylas() {
-    const title = document.getElementById('postTitle').value;
+    const text = document.getElementById('postTitle').value;
     const file = document.getElementById('postFile').files[0];
+    if(!text && !file) return;
+
     let url = "";
     if(file) {
-        const ref = storage.ref(`posts/${Date.now()}`);
+        const ref = storage.ref(`feed/${Date.now()}`);
         await ref.put(file);
         url = await ref.getDownloadURL();
     }
     await db.collection("announcements").add({
         author: currentUserData.name,
-        text: title,
-        media: url,
+        content: text,
+        img: url,
         time: firebase.firestore.FieldValue.serverTimestamp()
     });
+    document.getElementById('postTitle').value = "";
+    document.getElementById('postFile').value = "";
     alert("Paylaşıldı!");
 }
 
 db.collection("announcements").orderBy("time","desc").onSnapshot(snap => {
-    let h = "";
+    let html = "";
     snap.forEach(d => {
         const p = d.data();
-        h += `<div class="post-card"><div class="post-header">${p.author}</div><div class="post-content">${p.text}</div>${p.media ? `<img src="${p.media}" class="post-img">`:""}</div>`;
+        html += `<div class="post-card">
+            <div class="post-user">${p.author}</div>
+            <div class="post-txt">${p.content}</div>
+            ${p.img ? `<img src="${p.img}" class="post-img">` : ""}
+        </div>`;
     });
-    document.getElementById('feedList').innerHTML = h;
+    document.getElementById('feedList').innerHTML = html;
 });
 
+// 4. Sohbet İşlemleri
 function mesajGonder() {
-    const t = document.getElementById('chatInput').value;
-    if(!t) return;
+    const m = document.getElementById('chatInput').value;
+    if(!m) return;
     db.collection("chat").add({
         uid: auth.currentUser.uid,
         name: currentUserData.name,
-        text: t,
+        msg: m,
         time: firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById('chatInput').value = "";
 }
 
 db.collection("chat").orderBy("time","asc").onSnapshot(snap => {
-    const b = document.getElementById('chatBox');
-    b.innerHTML = "";
+    const box = document.getElementById('chatBox');
+    box.innerHTML = "";
     snap.forEach(d => {
-        const m = d.data();
-        b.innerHTML += `<div class="msg-bubble ${m.uid === auth.currentUser.uid ? 'me':'other'}"><small>${m.name}</small><br>${m.text}</div>`;
+        const c = d.data();
+        box.innerHTML += `<div class="msg ${c.uid === auth.currentUser.uid ? 'me':'other'}">
+            <small style="font-size:10px; color:gray">${c.name}</small><br>${c.msg}
+        </div>`;
     });
-    b.scrollTop = b.scrollHeight;
+    box.scrollTop = box.scrollHeight;
 });
 
+// 5. Fonksiyonlar
 function tabDegistir(t) {
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     document.getElementById('view-' + t).classList.remove('hidden');
@@ -114,11 +131,22 @@ function tabDegistir(t) {
 async function girisYap() {
     const e = document.getElementById('logEmail').value;
     const p = document.getElementById('logPass').value;
-    await auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+    await auth.signInWithEmailAndPassword(e, p).catch(err => alert("Hata: " + err.message));
 }
-function cikisYap() { auth.signOut(); location.reload(); }
-function showAuth() { document.getElementById('authPage').classList.remove('hidden'); }
+
+async function kayitOl() {
+    const e = document.getElementById('regEmail').value;
+    const p = document.getElementById('regPass').value;
+    const n = document.getElementById('regName').value;
+    const res = await auth.createUserWithEmailAndPassword(e, p);
+    await db.collection("users").doc(res.user.uid).set({
+        name: n, email: e, rol: 'user', isBlocked: false, deviceId: null
+    });
+}
+
 function toggleAuth(r) {
     document.getElementById('loginForm').classList.toggle('hidden', r);
     document.getElementById('registerForm').classList.toggle('hidden', !r);
 }
+
+function cikisYap() { auth.signOut(); location.reload(); }

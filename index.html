@@ -13,17 +13,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
-<style>
-.hidden { display: none; }
-.btn { padding: 8px 16px; margin: 5px; cursor: pointer; }
-.card { padding: 10px; margin: 10px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px #ccc; }
-.view { margin-bottom: 60px; }
-.nav-footer { position: fixed; bottom: 0; width: 100%; display: flex; justify-content: space-around; background: #eee; padding: 10px; }
-.ad-banner { background: #ddd; text-align: center; padding: 5px; margin: 5px 0; cursor: pointer; }
-.chat-box { max-height: 60vh; overflow-y: auto; border: 1px solid #ccc; padding: 5px; }
-.chat-input { display: flex; gap: 5px; }
-</style>
-
 </head>
 <body>
 
@@ -98,13 +87,14 @@
     <div class="card">
       <h3>🏢 Köy Firmaları</h3>
     </div>
-    <div class="biz-container" id="bizList" style="display:flex; overflow-x:auto; gap:10px;"></div>
+    <div class="biz-container" id="bizList"></div>
   </section>
 
   <!-- Ayarlar -->
   <section id="view-settings" class="view hidden">
     <div class="card">
       <h3>⚙️ Ayarlar</h3>
+
       <div id="adminPanel" class="admin-section hidden">
         <h4>🛡️ Admin Paneli</h4>
         <p><b>Kullanıcı Yetki</b></p>

@@ -1,19 +1,10 @@
-const CACHE_NAME = "emirler-v2";
-
-self.addEventListener("install", e => {
-  self.skipWaiting();
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open('emirler-v1').then(cache => cache.addAll(['index.html','style.css','app.js','manifest.json']))
+  );
 });
-
-self.addEventListener("activate", e => {
-  caches.keys().then(keys => {
-    keys.forEach(k => {
-      if(k !== CACHE_NAME) caches.delete(k);
-    });
-  });
-});
-
-self.addEventListener("fetch", e => {
+self.addEventListener('fetch', e => {
   e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
+    caches.match(e.request).then(res => res || fetch(e.request))
   );
 });

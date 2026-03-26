@@ -1,140 +1,132 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Emirler Köyü Portalı</title>
-<link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emirler Köyü Portalı</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
-<!-- Açılış Şartları -->
 <div id="termsOverlay">
-  <h2>🏡 Emirler Köyü</h2>
-  <p>Kullanım Şartları</p>
-  <div class="terms-box">
-    1. Küfür ve hakaret yasaktır.<br>
-    2. Kişisel verileriniz güvenle saklanır.<br>
-    3. Admin onayı gereken paylaşımlar için muhtar devrede.<br>
-    4. Paylaşımlardan doğacak sorumluluk kullanıcıya aittir.<br>
-    5. Dolandırıcılık ve yasa dışı içerikler paylaşmak yasaktır.<br>
-    6. Türkiye Cumhuriyeti kanunları geçerlidir.<br>
-    7. Verilerin kullanımı ve paylaşımı için kullanıcı rızası gereklidir.
-  </div>
-  <label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
-  <button class="btn" onclick="onayVer()">Uygulamaya Gir</button>
-</div>
-
-<!-- Giriş ve Kayıt -->
-<div id="loginPage" class="hidden">
-  <div class="card">
-    <h3>🔑 Üye Girişi</h3>
-    <input id="logEmail" type="email" placeholder="E-posta">
-    <input id="logPass" type="password" placeholder="Şifre">
-    <button class="btn" onclick="girisYap()">Giriş Yap</button>
-    <p id="errorMsg" class="error-msg"></p>
-    <hr>
-    <h4>📝 Yeni Kayıt</h4>
-    <input id="regName" placeholder="Ad Soyad">
-    <input id="regEmail" type="email" placeholder="E-posta">
-    <input id="regPass" type="password" placeholder="Şifre">
-    <button class="btn" onclick="kayitOl()">Kayıt Ol</button>
-    <p id="regError" class="error-msg"></p>
+  <div class="terms-card">
+    <h2>🏡 Emirler Köyü Portalı</h2>
+    <h3>Kullanım ve Gizlilik Sözleşmesi</h3>
+    <div class="terms-box">
+      <p><b>1. Sorumluluk:</b> 5651 Sayılı Kanun uyarınca, paylaşılan her türlü içerikten (yazı, görsel, video) paylaşan kullanıcı bizzat sorumludur.</p>
+      <p><b>2. KVKK:</b> Verileriniz 6698 Sayılı Kişisel Verilerin Korunması Kanunu kapsamında sadece uygulama işleyişi için saklanır.</p>
+      <p><b>3. Bilişim Suçları:</b> Küfür, hakaret ve huzur bozucu içerikler Türk Ceza Kanunu kapsamında suç teşkil eder ve adminler tarafından ilgili makamlara bildirebilir.</p>
+      <p><b>4. Cihaz Kaydı:</b> Güvenlik nedeniyle hesabınız ilk giriş yaptığınız cihaza tanımlanır.</p>
+    </div>
+    <label><input type="checkbox" id="termsCheck"> Okudum, tüm sorumluluğu kabul ediyorum.</label>
+    <button class="btn" onclick="onayVer()">Onayla ve Başlat</button>
   </div>
 </div>
 
-<!-- Ana Uygulama -->
 <div id="app" class="hidden">
-
-  <!-- Reklam Banner -->
-  <div id="adBanner" class="ad-banner hidden" onclick="reklamGit()"></div>
-
-  <!-- Köy Meydanı -->
-  <section id="view-feed" class="view">
-    <div class="card feed-header">
-      <h3>Köy Meydanı</h3>
-    </div>
-    <div id="adminPostPanel" class="card hidden">
-      <input id="postTitle" placeholder="Duyuru Başlığı">
-      <input type="file" id="postFile" accept="image/*,video/*">
-      <button class="btn" onclick="akisPaylas()">Paylaş</button>
-    </div>
-    <div id="postList"></div>
-  </section>
-
-  <!-- Canlı Sohbet -->
-  <section id="view-chat" class="view hidden">
-    <div class="card" style="height: 80vh;">
-      <h4>💬 Canlı Sohbet</h4>
-      <div id="chatBox" class="chat-box"></div>
-      <div class="chat-input">
-        <input id="msgInput" placeholder="Mesaj yazın...">
-        <button onclick="mesajGonder()">Gönder</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- Firmalar -->
-  <section id="view-biz" class="view hidden">
+  
+  <section id="loginPage" class="view">
     <div class="card">
-      <h3>🏢 Köy Firmaları</h3>
+      <img src="ikon_192.png" width="80" style="display:block; margin:0 auto 20px;">
+      <h2 style="text-align:center;">Giriş Yap</h2>
+      <input type="email" id="logEmail" placeholder="E-posta">
+      <input type="password" id="logPass" placeholder="Şifre">
+      <button class="btn" onclick="girisYap()">Giriş</button>
+      <p onclick="toggleAuth()" style="text-align:center; cursor:pointer; font-size:13px; margin-top:15px;">Hesabın yok mu? Kayıt Ol</p>
+      <button id="pwaBtn" class="btn hidden" style="background:#ff6000; margin-top:20px;">📲 Uygulamayı Yükle</button>
     </div>
-    <div class="biz-container" id="bizList"></div>
   </section>
 
-  <!-- Ayarlar -->
-  <section id="view-settings" class="view hidden">
+  <section id="registerPage" class="view hidden">
     <div class="card">
-      <h3>⚙️ Ayarlar</h3>
+      <h2 style="text-align:center;">Yeni Kayıt</h2>
+      <input type="text" id="regName" placeholder="Ad Soyad">
+      <input type="email" id="regEmail" placeholder="E-posta">
+      <input type="password" id="regPass" placeholder="Şifre (En az 6 hane)">
+      <button class="btn" onclick="kayitOl()">Kayıt Ol</button>
+      <p onclick="toggleAuth()" style="text-align:center; cursor:pointer; font-size:13px; margin-top:15px;">Zaten hesabım var</p>
+    </div>
+  </section>
 
-      <div id="adminPanel" class="admin-section hidden">
-        <h4>🛡️ Admin Paneli</h4>
-        <p><b>Kullanıcı Yetki</b></p>
-        <input id="targetEmail" placeholder="E-posta">
-        <select id="targetRole">
-          <option value="muhtar">Muhtar</option>
-          <option value="yardimci">Yardımcı</option>
-          <option value="user">Normal Üye</option>
-        </select>
-        <button class="btn" onclick="yetkiVer()">Yetki Ver</button>
-        <hr>
-        <p><b>💰 Reklam</b></p>
-        <input id="adTxt" placeholder="Reklam Yazısı">
-        <input id="adLnk" placeholder="Reklam Linki">
-        <label><input type="checkbox" id="adActive"> Göster</label>
-        <button class="btn" onclick="reklamKaydet()">Kaydet</button>
+  <main id="mainContent" class="hidden">
+    
+    <section id="view-feed" class="view">
+      <div class="feed-header"><h3>Köy Meydanı</h3></div>
+      <div id="adminPostPanel" class="card hidden">
+        <input type="text" id="postTitle" placeholder="Duyuru veya mesaj...">
+        <input type="file" id="postFile" accept="image/*,video/*">
+        <button class="btn" onclick="paylas()">Paylaş</button>
+      </div>
+      <div id="feedList"></div>
+    </section>
+
+    <section id="view-chat" class="view hidden">
+      <div class="chat-container">
+        <div id="chatBox" class="chat-box"></div>
+        <div class="chat-input-area">
+          <input type="text" id="chatInput" placeholder="Mesaj yazın...">
+          <button onclick="mesajGonder()">➤</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-biz" class="view hidden">
+      <div class="biz-slider" id="bizList"></div>
+    </section>
+
+    <section id="view-settings" class="view hidden">
+      <div class="card">
+        <h4>Profilim</h4>
+        <p id="userMailInfo"></p>
+        <button class="btn btn-logout" onclick="cikisYap()">🚪 Çıkış Yap</button>
       </div>
 
-      <div class="admin-section">
-        <h4>👥 Kimler Online?</h4>
-        <div id="userList"></div>
-      </div>
+      <div id="adminMasterPanel" class="hidden">
+        <div class="card admin-card">
+          <h4>🛡️ Admin Yetki Paneli</h4>
+          <input id="targetEmail" placeholder="Kullanıcı E-postası">
+          <select id="targetRole">
+            <option value="user">Normal Üye</option>
+            <option value="muhtar">Muhtar</option>
+            <option value="yardimci">Yardımcı</option>
+          </select>
+          <button class="btn" onclick="yetkiVer()">Yetkiyi Güncelle</button>
+        </div>
 
+        <div class="card admin-card">
+          <h4>👥 Kullanıcı Yönetimi & Online</h4>
+          <div id="adminUserList"></div>
+        </div>
+
+        <div class="card admin-card">
+          <h4>💰 Reklam & Firmalar</h4>
+          <input id="bizName" placeholder="Firma Adı">
+          <input id="bizDesc" placeholder="Açıklama">
+          <input id="bizPhone" placeholder="Telefon">
+          <button class="btn" onclick="firmaEkle()">Firma Ekle</button>
+        </div>
+      </div>
+      
       <div class="card" style="text-align:center;">
         <p>Uygulama Karekod</p>
         <img src="karekod.png" width="120">
       </div>
+    </section>
 
-      <button class="btn btn-logout" onclick="cikisYap()">🚪 Çıkış Yap</button>
-    </div>
-  </section>
+  </main>
+
+  <nav class="nav-footer hidden" id="navBar">
+    <div onclick="tabDegistir('feed')">🏡 Meydan</div>
+    <div onclick="tabDegistir('chat')">💬 Sohbet</div>
+    <div onclick="tabDegistir('biz')">🏢 Firmalar</div>
+    <div onclick="tabDegistir('settings')">⚙️ Ayarlar</div>
+  </nav>
 </div>
-
-<!-- Alt Menü -->
-<nav class="nav-footer hidden" id="navBar">
-  <span onclick="tabDegistir('feed')">🏠 Akış</span>
-  <span onclick="tabDegistir('chat')">💬 Sohbet</span>
-  <span onclick="tabDegistir('biz')">🏢 Firmalar</span>
-  <span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
-</nav>
 
 <script src="app.js"></script>
 </body>

@@ -1,21 +1,28 @@
-:root { --wa-teal: #075e54; --wa-light: #25d366; --wa-bg: #e5ddd5; --white: #ffffff; }
-body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding-bottom: 70px; }
-.wa-header { background: var(--wa-teal); color: white; padding: 15px; font-weight: bold; font-size: 20px; }
+:root { --wa-teal:#075e54; --wa-light:#25d366; --wa-bg:#e5ddd5; --white:#fff; }
+body { font-family: 'Segoe UI', sans-serif; background:#f0f2f5; margin:0; padding-bottom:70px; }
+.wa-header { background:var(--wa-teal); color:white; padding:15px; font-weight:bold; font-size:20px; }
 
-/* Akış & Status */
-.wa-status-bar { display: flex; gap: 15px; overflow-x: auto; padding: 15px; background: white; border-bottom: 1px solid #ddd; }
-.status-item { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--wa-light); padding: 2px; }
+/* Status Bar */
+.wa-status-bar { display:flex; gap:15px; overflow-x:auto; padding:15px; background:white; border-bottom:1px solid #ddd; }
+.status-item { width:55px; height:55px; border-radius:50%; border:2px solid var(--wa-light); padding:2px; }
 
-/* Sohbet Balonları */
-.wa-chat-bg { height: calc(100vh - 180px); overflow-y: auto; background: var(--wa-bg); padding: 10px; display: flex; flex-direction: column; gap: 8px; }
-.msg { max-width: 80%; padding: 8px 12px; border-radius: 10px; font-size: 14px; position: relative; }
-.msg.me { align-self: flex-end; background: #dcf8c6; }
-.msg.other { align-self: flex-start; background: white; }
+/* Chat */
+.wa-chat-bg { height:calc(100vh-180px); overflow-y:auto; background:var(--wa-bg); padding:10px; display:flex; flex-direction:column; gap:8px; }
+.msg { max-width:80%; padding:8px 12px; border-radius:10px; font-size:14px; position:relative; }
+.msg.me { align-self:flex-end; background:#dcf8c6; }
+.msg.other { align-self:flex-start; background:white; }
+
+/* Cards */
+.card { background:white; padding:10px; margin:10px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
 
 /* Accordion */
-.acc-btn { width: 100%; padding: 15px; background: white; border: none; border-bottom: 1px solid #eee; text-align: left; font-weight: bold; cursor: pointer; }
-.acc-content { padding: 15px; background: #fafafa; border-bottom: 1px solid #ddd; }
+.acc-btn { width:100%; padding:15px; background:white; border:none; border-bottom:1px solid #eee; text-align:left; font-weight:bold; cursor:pointer; }
+.acc-content { padding:15px; background:#fafafa; border-bottom:1px solid #ddd; }
 
 /* Bottom Nav */
-.bottom-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #ddd; }
-.hidden { display: none !important; }
+.bottom-nav { position:fixed; bottom:0; width:100%; background:white; display:flex; justify-content:space-around; padding:15px 0; border-top:1px solid #ddd; }
+.hidden { display:none !important; }
+
+/* Firmalar Slider */
+.biz-slider { display:flex; overflow-x:auto; gap:10px; padding:10px; }
+.biz-item { min-width:150px; padding:10px; background:white; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center; }

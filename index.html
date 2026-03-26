@@ -3,129 +3,304 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Emirler Köyü Portalı</title>
+<title>Emirler Köyü Sosyal</title>
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css">
+<style>
+:root {
+    --accent: #588157; --bg: #f8f9fa; --white: #ffffff; --orange: #ff6000;
+}
+body { margin:0; font-family:'Segoe UI', sans-serif; background: var(--bg); padding-bottom:70px; }
+.hidden { display:none !important; }
+header { background: var(--accent); color:white; padding:15px; font-weight:bold; text-align:center; font-size:20px; }
+.card { background: var(--white); margin:10px; padding:15px; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.05); }
+.view { display:none; padding-bottom:70px; }
+nav { position:fixed; bottom:0; width:100%; background:white; display:flex; justify-content:space-around; padding:15px 0; border-top:1px solid #ddd; z-index:1000; }
+input,textarea,select,button { font-family:'Segoe UI', sans-serif; }
+button { cursor:pointer; }
+textarea,input { width:100%; padding:10px; margin:5px 0; border-radius:10px; border:1px solid #ccc; }
+.btn { background: var(--accent); color:white; border:none; border-radius:10px; padding:10px; margin-top:5px; }
+.chat-box { height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:5px; background:#e5ddd5; border-radius:10px; padding:10px; }
+.msg { max-width:70%; padding:8px 12px; border-radius:12px; font-size:14px; }
+.sent { align-self:flex-end; background:#dcf8c6; }
+.received { align-self:flex-start; background:white; }
+.biz-container { display:flex; overflow-x:auto; gap:15px; padding:10px; }
+.biz-card { min-width:150px; background:white; border-radius:15px; padding:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:5px; }
+.online { background:#48bb78; } .offline { background:#cbd5e0; }
+</style>
+</head>
+<body>
+
+<header>🏡 Emirler Köyü</header>
+
+<div id="loginPage" class="card">
+<h3>🔑 Giriş Yap</h3>
+<input id="email" type="email" placeholder="E-posta">
+<input id="pass" type="password" placeholder="Şifre">
+<button class="btn" onclick="login()">Giriş Yap</button>
+<p id="err" style="color:red;font-size:13px;"></p>
+</div>
+
+<div id="app" class="hidden">
+<div id="view-feed" class="view">
+    <div class="card" style="background:var(--accent); color:white; text-align:center;">Köy Akışı</div>
+    <div id="postPanel" class="card hidden">
+        <textarea id="postText" placeholder="Duyuru yaz..."></textarea>
+        <button class="btn" onclick="sharePost()">Paylaş</button>
+    </div>
+    <div id="posts"></div>
+</div>
+
+<div id="view-chat" class="view">
+<div class="card">
+<h4>💬 Sohbet</h4>
+<div class="chat-box" id="chatBox"></div>
+<textarea id="chatInput" placeholder="Mesaj yaz..."></textarea>
+<button class="btn" onclick="sendMsg()">Gönder</button>
+</div>
+</div>
+
+<div id="view-biz" class="view">
+<div class="card"><h4>🏢 Firmalar</h4></div>
+<div class="biz-container" id="bizList"></div>
+</div>
+
+<div id="view-settings" class="view">
+<div class="card">
+<h4>⚙️ Ayarlar</h4>
+<div id="adminPanel" class="hidden">
+<p><b>Kullanıcı Yetkisi</b></p>
+<input id="targetEmail" placeholder="E-posta">
+<select id="targetRole">
+<option value="muhtar">Muhtar</option>
+<option value="yardimci">Yardımcı</option>
+<option value="user">Normal Üye</option>
+</select>
+<button class="btn" onclick="setRole()">Yetki Ver</button>
+<hr>
+<p><b>💰 Reklam</b></p>
+<input id="adTxt" placeholder="Reklam Yazısı">
+<input id="adLnk" placeholder="Link">
+<label><input type="checkbox" id="adActive"> Göster</label>
+<button class="btn" onclick="saveAd()">Kaydet</button>
+</div>
+<p><b>👥 Online Kullanıcılar</b></p>
+<div id="userList"></div>
+<button class="btn" style="background:#e53e3e;" onclick="logout()">Çıkış Yap</button>
+</div>
+</div>
+
+<nav>
+<span onclick="tab('feed')">🏠 Akış</span>
+<span onclick="tab('chat')">💬 Sohbet</span>
+<span onclick="tab('biz')">🏢 Firmalar</span>
+<span onclick="tab('settings')">⚙️ Ayarlar</span>
+</nav>
 
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
-</head>
-<body>
 
-<!-- Açılış Şartları -->
-<div id="termsOverlay">
-  <h2>🏡 Emirler Köyü</h2>
-  <p>Kullanım Şartları</p>
-  <div class="terms-box">
-    1. Küfür yasaktır.<br>
-    2. Veriler şifreli saklanır.<br>
-    3. Admin onayı gereken paylaşımlar için muhtar devrede.
-  </div>
-  <label><input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.</label>
-  <button class="btn" onclick="onayVer()">Uygulamaya Gir</button>
+<script>
+const firebaseConfig = {
+apiKey:"AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
+authDomain:"emirler-c5638.firebaseapp.com",
+projectId:"emirler-c5638",
+storageBucket:"emirler-c5638.firebasestorage.app",
+appId:"1:426225264136:web:ca5184984fc71b1e63853bd"
+};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.firestore();
+
+let currentUser=null;
+let currentRole='user';
+
+function login(){
+const email=document.getElementById('email').value;
+const pass=document.getElementById('pass').value;
+auth.signInWithEmailAndPassword(email,pass)
+.then(res=>{
+currentUser=res.user;
+db.collection("users").doc(currentUser.uid).set({email,name:email.split('@')[0],role:'user',online:true},{merge:true});
+initApp();
+})
+.catch(e=>document.getElementById('err').innerText="Hatalı giriş!");
+}
+
+function logout(){
+db.collection("users").doc(currentUser.uid).update({online:false});
+auth.signOut();
+location.reload();
+}
+
+auth.onAuthStateChanged(user=>{
+if(user){
+currentUser=user;
+db.collection("users").doc(user.uid).get().then(doc=>{
+currentRole=doc.data().role||'user';
+initApp();
+});
+}
+});
+
+function initApp(){
+document.getElementById('loginPage').classList.add('hidden');
+document.getElementById('app').classList.remove('hidden');
+document.getElementById('postPanel').classList.remove('hidden');
+if(currentRole!=='user') document.getElementById('adminPanel').classList.remove('hidden');
+loadPosts();
+loadChat();
+loadBiz();
+loadUsers();
+tab('feed');
+}
+
+// 🔥 Akış
+function sharePost(){
+const txt=document.getElementById('postText').value;
+if(!txt) return;
+db.collection("posts").add({
+text:txt,user:currentUser.email.split('@')[0],uid:currentUser.uid,time:firebase.firestore.FieldValue.serverTimestamp(),likes:[],comments:[]
+});
+document.getElementById('postText').value='';
+}
+
+function loadPosts(){
+db.collection("posts").orderBy("time","desc").onSnapshot(snap=>{
+let html='';
+snap.forEach(doc=>{
+const p=doc.data();
+let buttons='';
+if(currentRole!=='user' || p.uid===currentUser.uid){
+buttons+=`<button onclick="deletePost('${doc.id}')">Sil</button> <button onclick="editPost('${doc.id}')">Düzenle</button>`;
+}
+html+=`<div class="card">
+<b>${p.user}</b><p>${p.text}</p>
+<div>
+<button onclick="likePost('${doc.id}')">❤️ ${p.likes.length}</button>
+<button onclick="showComments('${doc.id}')">💬 ${p.comments.length}</button>
+${buttons}
 </div>
+<div id="comments-${doc.id}"></div>
+</div>`;
+});
+document.getElementById('posts').innerHTML=html;
+});
 
-<!-- Giriş -->
-<div id="loginPage" class="hidden">
-  <div class="card">
-    <h3>🔑 Üye Girişi</h3>
-    <input id="logEmail" type="email" placeholder="E-posta">
-    <input id="logPass" type="password" placeholder="Şifre">
-    <button class="btn" onclick="girisYap()">Giriş Yap</button>
-    <p id="errorMsg" class="error-msg"></p>
-  </div>
-</div>
+}
 
-<!-- Uygulama Ana -->
-<div id="app" class="hidden">
+function likePost(id){
+const ref=db.collection("posts").doc(id);
+ref.get().then(doc=>{
+let likes=doc.data().likes||[];
+if(likes.includes(currentUser.uid)) likes=likes.filter(u=>u!==currentUser.uid);
+else likes.push(currentUser.uid);
+ref.update({likes});
+});
+}
 
-  <!-- Reklam Banner -->
-  <div id="adBanner" class="ad-banner hidden" onclick="reklamGit()"></div>
+function showComments(id){
+const ref=db.collection("posts").doc(id);
+ref.get().then(doc=>{
+const comments=doc.data().comments||[];
+let html='<div>';
+comments.forEach(c=>{
+html+=`<div><b>${c.user}:</b> ${c.text}</div>`;
+});
+html+=`<input placeholder="Yorum yaz..." onkeypress="if(event.key==='Enter'){addComment('${id}',this.value);this.value='';}">`;
+html+='</div>';
+document.getElementById('comments-'+id).innerHTML=html;
+});
+}
 
-  <!-- Akış -->
-  <section id="view-feed" class="view">
-    <div class="card feed-header">
-      <h3>Köy Meydanı</h3>
-    </div>
-    <div id="adminPostPanel" class="card hidden">
-      <input id="postTitle" placeholder="Duyuru Başlığı">
-      <input type="file" id="postFile" accept="image/*,video/*">
-      <button class="btn" onclick="akisPaylas()">Paylaş</button>
-    </div>
-    <div id="postList"></div>
-  </section>
+function addComment(id,text){
+if(!text) return;
+const ref=db.collection("posts").doc(id);
+ref.get().then(doc=>{
+const comments=doc.data().comments||[];
+comments.push({user:currentUser.email.split('@')[0],text});
+ref.update({comments});
+});
+}
 
-  <!-- Sohbet -->
-  <section id="view-chat" class="view hidden">
-    <div class="card">
-      <h4>💬 Canlı Sohbet</h4>
-      <div id="chatBox" class="chat-box"></div>
-      <div class="chat-input">
-        <input id="msgInput" placeholder="Mesaj yazın...">
-        <button onclick="mesajGonder()">Gönder</button>
-      </div>
-    </div>
-  </section>
+// Düzenle ve Sil
+function deletePost(id){ db.collection("posts").doc(id).delete(); }
+function editPost(id){ 
+const txt=prompt("Yeni yazı:"); 
+if(txt) db.collection("posts").doc(id).update({text:txt});
+}
 
-  <!-- Firmalar -->
-  <section id="view-biz" class="view hidden">
-    <div class="card">
-      <h3>🏢 Köy Firmaları</h3>
-    </div>
-    <div class="biz-container" id="bizList"></div>
-  </section>
+// Sohbet
+function loadChat(){
+db.collection("chat").orderBy("time","asc").onSnapshot(snap=>{
+let html='';
+snap.forEach(doc=>{
+const m=doc.data();
+html+=`<div class="msg ${m.uid===currentUser.uid?'sent':'received'}"><b>${m.user}:</b> ${m.text}</div>`;
+});
+document.getElementById('chatBox').innerHTML=html;
+document.getElementById('chatBox').scrollTop=document.getElementById('chatBox').scrollHeight;
+});
+}
 
-  <!-- Ayarlar -->
-  <section id="view-settings" class="view hidden">
-    <div class="card">
-      <h3>⚙️ Ayarlar</h3>
+function sendMsg(){
+const text=document.getElementById('chatInput').value;
+if(!text) return;
+db.collection("chat").add({
+text,user:currentUser.email.split('@')[0],uid:currentUser.uid,time:firebase.firestore.FieldValue.serverTimestamp()
+});
+document.getElementById('chatInput').value='';
+}
 
-      <!-- Admin Panel -->
-      <div id="adminPanel" class="admin-section hidden">
-        <h4>🛡️ Admin Paneli</h4>
-        <p><b>Kullanıcı Yetki</b></p>
-        <input id="targetEmail" placeholder="E-posta">
-        <select id="targetRole">
-          <option value="muhtar">Muhtar</option>
-          <option value="yardimci">Yardımcı</option>
-          <option value="user">Normal Üye</option>
-        </select>
-        <button class="btn" onclick="yetkiVer()">Yetki Ver</button>
+// Firmalar
+function loadBiz(){
+db.collection("businesses").onSnapshot(snap=>{
+let html='';
+snap.forEach(doc=>{
+const b=doc.data();
+html+=`<div class="biz-card"><b>${b.name}</b><br>${b.tel}</div>`;
+});
+document.getElementById('bizList').innerHTML=html;
+});
 
-        <hr>
-        <p><b>💰 Reklam</b></p>
-        <input id="adTxt" placeholder="Reklam Yazısı">
-        <input id="adLnk" placeholder="Reklam Linki">
-        <label><input type="checkbox" id="adActive"> Göster</label>
-        <button class="btn" onclick="reklamKaydet()">Kaydet</button>
-      </div>
+// Online kullanıcılar
+function loadUsers(){
+db.collection("users").onSnapshot(snap=>{
+let html='';
+snap.forEach(doc=>{
+const u=doc.data();
+html+=`<div><span class="status-dot ${u.online?'online':'offline'}"></span>${u.name}</div>`;
+});
+document.getElementById('userList').innerHTML=html;
+});
 
-      <!-- Online Kullanıcılar -->
-      <div class="admin-section">
-        <h4>👥 Kimler Online?</h4>
-        <div id="userList"></div>
-      </div>
+// Admin yetki
+function setRole(){
+const email=document.getElementById('targetEmail').value;
+const role=document.getElementById('targetRole').value;
+db.collection("users").where("email","==",email).get().then(snap=>{
+snap.forEach(doc=>{ doc.ref.update({role}); });
+alert("Yetki güncellendi!");
+});
+}
 
-      <div class="card" style="text-align:center;">
-        <p>Uygulama Karekod</p>
-        <img src="karekod.png" width="120">
-      </div>
+// Reklam
+function saveAd(){
+db.collection("settings").doc("ads").set({
+text:document.getElementById('adTxt').value,
+link:document.getElementById('adLnk').value,
+active:document.getElementById('adActive').checked
+});
+alert("Reklam kaydedildi!");
+}
 
-      <button class="btn btn-logout" onclick="cikisYap()">🚪 Çıkış Yap</button>
-    </div>
-  </section>
-</div>
+// Tab
+function tab(t){ document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden')); document.getElementById('view-'+t).classList.remove('hidden'); }
 
-<!-- Alt Menü -->
-<nav class="nav-footer hidden" id="navBar">
-  <span onclick="tabDegistir('feed')">🏠 Akış</span>
-  <span onclick="tabDegistir('chat')">💬 Sohbet</span>
-  <span onclick="tabDegistir('biz')">🏢 Firmalar</span>
-  <span onclick="tabDegistir('settings')">⚙️ Ayarlar</span>
-</nav>
+// Service Worker
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
+</script>
 
-<script src="app.js"></script>
 </body>
 </html>

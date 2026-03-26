@@ -1,108 +1,148 @@
 // ══════════════════════════════════════════
-//  EMİRLER KÖYÜ PORTALI - app.js v2.2 (Giriş Fix)
+//  EMİRLER KÖYÜ PORTALI - app.js v2.0
 // ══════════════════════════════════════════
 
-// ─── FIREBASE BAŞLATMA ───
+// ─── FIREBASE CONFIG ───
 const firebaseConfig = {
     apiKey: "AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
     authDomain: "emirler-c5638.firebaseapp.com",
     projectId: "emirler-c5638",
     appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
 };
-
-// Mükerrer başlatmayı önle
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// ─── SABİTLER ───
-const ADMIN_EMAIL = "koyemirler@gmail.com";
+// ─── CLOUDINARY CONFIG ───
+// Cloudinary panelinden "unsigned" yükleme şablonu oluşturun:
+// Settings > Upload > Upload presets > Add upload preset > Unsigned
 const CLOUD_NAME = "ddt11vhyb";
-const UPLOAD_PRESET = "emirler_preset";
-const EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍"];
+const UPLOAD_PRESET = "emirler_preset"; // Cloudinary'de bu isimde unsigned preset oluşturun
 
+// ─── SABITLER ───
+const ADMIN_EMAIL = "koyemirler@gmail.com";
+const EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍"];
+const YASAKLi_KELIMELER = ["küfür", "aptal", "salak", "mal", "orospu", "siktir", "oç", "amk", "amq"];
+
+// ─── DURUM ───
 let currentUser = null;
 let userProfile = null;
+let chatMediaFile = null;
+let currentPostId = null;
+let commentsUnsubscribe = null;
 
-// Ses Fonksiyonları
-const playSnd = (id) => {
-    const s = document.getElementById(id);
-    if(s) s.play().catch(() => {});
-};
+// ═══════════════════════════════════════════
+//  YARDIMCI FONKSİYONLAR
+// ═══════════════════════════════════════════
 
-// ─── AUTH STATE (ANA GİRİŞ MOTORU) ───
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        currentUser = user;
-        try {
-            // Kullanıcı verisini çek
-            const doc = await db.collection("users").doc(user.uid).get();
-            
-            if (doc.exists) {
-                userProfile = doc.data();
-                // Eğer engelliyse direkt at
-                if (userProfile.blocked) {
-                    alert("❌ Hesabınız engellenmiştir.");
-                    auth.signOut();
-                    return;
-                }
-            } else {
-                // Kaydı yoksa (yeni kayıt) oluştur
-                userProfile = {
-                    name: user.displayName || user.email.split("@")[0],
-                    email: user.email,
-                    role: user.email === ADMIN_EMAIL ? "admin" : "user",
-                    online: true,
-                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                await db.collection("users").doc(user.uid).set(userProfile);
-            }
-
-            // Arayüzü Hazırla
-            showApp();
-        } catch (err) {
-            console.error("Profil yükleme hatası:", err);
-            // Hata olsa bile anonim gibi devam etsin ki kilitlenmesin
-            showApp();
-        }
-    } else {
-        showLogin();
-    }
-});
-
-function showApp() {
-    document.getElementById("loginPage").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    document.getElementById("navBar").classList.remove("hidden");
-    
-    // Yetki panellerini aç
-    if (ayricaliklimi()) {
-        document.getElementById("postPanel")?.classList.remove("hidden");
-        document.getElementById("adminPanel")?.classList.remove("hidden");
-    }
-    
-    tabDegistir("feed");
-    akisDinle();
+function ayricaliklimi() {
+    if (!userProfile) return false;
+    if (currentUser && currentUser.email === ADMIN_EMAIL) return true;
+    return ["admin", "muhtar", "yardimci"].includes(userProfile.role);
 }
 
-function showLogin() {
-    document.getElementById("app").classList.add("hidden");
-    document.getElementById("navBar").classList.add("hidden");
+function adminMi() {
+    if (currentUser && currentUser.email === ADMIN_EMAIL) return true;
+    return userProfile && userProfile.role === "admin";
+}
+
+function zamanFarki(ts) {
+    if (!ts) return "";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const diff = Date.now() - d.getTime();
+    const sn = Math.floor(diff / 1000);
+    if (sn < 60) return "Az önce";
+    const dk = Math.floor(sn / 60);
+    if (dk < 60) return `${dk} dk önce`;
+    const sa = Math.floor(dk / 60);
+    if (sa < 24) return `${sa} sa önce`;
+    return d.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+}
+
+function kufurKontrol(metin) {
+    const temiz = metin.toLowerCase();
+    return YASAKLi_KELIMELER.some(k => temiz.includes(k));
+}
+
+function previewFile(input, previewId) {
+    const preview = document.getElementById(previewId);
+    if (!input.files[0]) { preview.innerHTML = ""; return; }
+    const file = input.files[0];
+    const url = URL.createObjectURL(file);
+    if (file.type.startsWith("video")) {
+        preview.innerHTML = `<video src="${url}" controls style="max-width:100%;border-radius:10px;max-height:180px;"></video>`;
+    } else {
+        preview.innerHTML = `<img src="${url}" style="max-width:100%;border-radius:10px;max-height:180px;object-fit:cover;">`;
+    }
+}
+
+async function cloudinaryYukle(file) {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("upload_preset", UPLOAD_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
+        method: "POST",
+        body: fd
+    });
+    if (!res.ok) throw new Error("Yükleme başarısız! Cloudinary preset ayarını kontrol edin.");
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return {
+        url: data.secure_url,
+        type: file.type.startsWith("video") ? "video" : "image"
+    };
+}
+
+function resimTamEkran(src) {
+    document.getElementById("imgFullscreenSrc").src = src;
+    document.getElementById("imgFullscreen").classList.remove("hidden");
+}
+
+// ═══════════════════════════════════════════
+//  KULLANIM ŞARTLARI
+// ═══════════════════════════════════════════
+
+if (localStorage.getItem("termsAccepted")) {
+    document.getElementById("termsOverlay").classList.add("hidden");
     document.getElementById("loginPage").classList.remove("hidden");
 }
 
-// ─── GİRİŞ / KAYIT FONKSİYONLARI ───
+function onayVer() {
+    if (!document.getElementById("termsCheck").checked) {
+        alert("Devam etmek için şartları kabul etmelisiniz!");
+        return;
+    }
+    localStorage.setItem("termsAccepted", "true");
+    document.getElementById("termsOverlay").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
+}
+
+// ═══════════════════════════════════════════
+//  GİRİŞ / KAYIT
+// ═══════════════════════════════════════════
+
+function switchAuthTab(tab) {
+    document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
+    document.getElementById("registerForm").classList.toggle("hidden", tab !== "register");
+    document.getElementById("loginTabBtn").classList.toggle("active", tab === "login");
+    document.getElementById("registerTabBtn").classList.toggle("active", tab === "register");
+    document.getElementById("authError").textContent = "";
+}
+
 async function girisYap() {
     const email = document.getElementById("logEmail").value.trim();
     const pass = document.getElementById("logPass").value;
-    if (!email || !pass) return alert("Bilgileri gir kanki!");
-
+    if (!email || !pass) return;
     try {
         await auth.signInWithEmailAndPassword(email, pass);
-    } catch (e) {
-        alert("Giriş Hatası: " + e.message);
+    } catch(e) {
+        const mesajlar = {
+            "auth/user-not-found": "Bu e-posta ile kayıt bulunamadı!",
+            "auth/wrong-password": "Şifre hatalı!",
+            "auth/invalid-email": "Geçersiz e-posta!",
+            "auth/too-many-requests": "Çok fazla hatalı deneme. Lütfen bekleyin."
+        };
+        document.getElementById("authError").textContent = mesajlar[e.code] || "Giriş başarısız!";
     }
 }
 
@@ -110,9 +150,8 @@ async function kayitOl() {
     const name = document.getElementById("regName").value.trim();
     const email = document.getElementById("regEmail").value.trim();
     const pass = document.getElementById("regPass").value;
-
-    if (!name || !email || !pass) return alert("Boş bırakma!");
-
+    if (!name || !email || !pass) return alert("Tüm alanları doldurun!");
+    if (pass.length < 6) return alert("Şifre en az 6 karakter olmalı!");
     try {
         const res = await auth.createUserWithEmailAndPassword(email, pass);
         await db.collection("users").doc(res.user.uid).set({
@@ -120,56 +159,662 @@ async function kayitOl() {
             email,
             role: email === ADMIN_EMAIL ? "admin" : "user",
             online: true,
+            blocked: false,
             lastSeen: firebase.firestore.FieldValue.serverTimestamp()
         });
-    } catch (e) {
-        alert("Kayıt Hatası: " + e.message);
+    } catch(e) {
+        const mesajlar = {
+            "auth/email-already-in-use": "Bu e-posta zaten kayıtlı!",
+            "auth/invalid-email": "Geçersiz e-posta!"
+        };
+        document.getElementById("authError").textContent = mesajlar[e.code] || "Kayıt başarısız: " + e.message;
     }
 }
 
-// ─── DİĞER FONKSİYONLAR ───
-function ayricaliklimi() {
-    if (!userProfile) return false;
-    return (currentUser && currentUser.email === ADMIN_EMAIL) || ["admin", "muhtar", "yardimci"].includes(userProfile.role);
+async function cikisYap() {
+    if (currentUser) {
+        try { await db.collection("users").doc(currentUser.uid).update({ online: false }); } catch(e) {}
+    }
+    await auth.signOut();
+    location.reload();
 }
+
+// ═══════════════════════════════════════════
+//  AUTH STATE
+// ═══════════════════════════════════════════
+
+auth.onAuthStateChanged(async user => {
+    if (user) {
+        currentUser = user;
+        const docRef = db.collection("users").doc(user.uid);
+        let docSnap = await docRef.get();
+
+        if (!docSnap.exists) {
+            await docRef.set({
+                name: user.displayName || user.email.split("@")[0],
+                email: user.email,
+                role: user.email === ADMIN_EMAIL ? "admin" : "user",
+                online: true,
+                blocked: false,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            docSnap = await docRef.get();
+        } else {
+            await docRef.update({
+                online: true,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
+        userProfile = docSnap.data();
+
+        // Engel kontrolü
+        if (userProfile.blocked) {
+            await auth.signOut();
+            alert("❌ Hesabınız engellenmiştir. Yönetici ile iletişime geçin.");
+            location.reload();
+            return;
+        }
+
+        // Uygulamayı göster
+        document.getElementById("loginPage").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        document.getElementById("navBar").classList.remove("hidden");
+
+        // Yetkili kullanıcılar için gönderi panelini göster
+        if (ayricaliklimi()) {
+            document.getElementById("postPanel").classList.remove("hidden");
+        }
+
+        // Admin panelini göster
+        if (adminMi()) {
+            document.getElementById("adminPanel").classList.remove("hidden");
+        }
+
+        // Sayfa kapatıldığında offline yap
+        window.addEventListener("beforeunload", () => {
+            navigator.sendBeacon(
+                "https://firestore.googleapis.com/v1/projects/emirler-c5638/databases/(default)/documents/users/" + user.uid,
+                JSON.stringify({ fields: { online: { booleanValue: false } } })
+            );
+        });
+
+        // İlk tab
+        tabDegistir("feed");
+        akisDinle();
+        mesajlariDinle();
+        isletmeleriYukle();
+        onlineListesiYukle();
+
+    } else {
+        currentUser = null;
+        userProfile = null;
+    }
+});
+
+// ═══════════════════════════════════════════
+//  NAVİGASYON
+// ═══════════════════════════════════════════
 
 function tabDegistir(t) {
     document.querySelectorAll(".view").forEach(v => v.classList.add("hidden"));
     document.getElementById("view-" + t).classList.remove("hidden");
     document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-    document.getElementById("nav-" + t)?.classList.add("active");
+    const navEl = document.getElementById("nav-" + t);
+    if (navEl) navEl.classList.add("active");
+    window.scrollTo(0, 0);
 }
 
-// Akış Dinleyici (Onaylılar + Ses)
+// ═══════════════════════════════════════════
+//  AKIŞ (FEED)
+// ═══════════════════════════════════════════
+
 function akisDinle() {
-    db.collection("announcements")
-      .where("status", "==", "approved")
-      .orderBy("time", "desc")
-      .onSnapshot(snap => {
+    db.collection("announcements").orderBy("time", "desc").onSnapshot(snap => {
         const list = document.getElementById("postList");
-        if(!list) return;
-        list.innerHTML = snap.empty ? "<p class='empty-state'>Henüz duyuru yok.</p>" : "";
-        
+        if (snap.empty) {
+            list.innerHTML = `<div class="empty-state"><div class="empty-icon">📢</div><p>Henüz duyuru yok</p></div>`;
+            return;
+        }
+        list.innerHTML = "";
         snap.forEach(doc => {
             const p = doc.data();
             const pid = doc.id;
-            const div = document.createElement("div");
-            div.className = "post-card";
-            div.innerHTML = `
+            const reactions = p.reactions || {};
+            const myReaction = currentUser ? reactions[currentUser.uid] : null;
+
+            // Emoji sayıları
+            const emojiSayilari = {};
+            Object.values(reactions).forEach(e => { emojiSayilari[e] = (emojiSayilari[e] || 0) + 1; });
+
+            const reactionHTML = EMOJIS.map(e => {
+                const count = emojiSayilari[e] || 0;
+                return `<span class="reaction-btn ${myReaction === e ? "active" : ""}" onclick="reaksiyon('${pid}','${e}')">
+                    ${e}<span class="reaction-count">${count > 0 ? count : ""}</span>
+                </span>`;
+            }).join("");
+
+            // Medya
+            const mediaHTML = p.mediaUrl ? (
+                p.mediaType === "video"
+                    ? `<video src="${p.mediaUrl}" controls class="post-media" preload="metadata"></video>`
+                    : `<img src="${p.mediaUrl}" class="post-media" onclick="resimTamEkran('${p.mediaUrl}')" loading="lazy">`
+            ) : "";
+
+            // Rol rozeti
+            const rolHTML = p.senderRole && p.senderRole !== "user"
+                ? `<span class="post-role">${p.senderRole === "muhtar" ? "Muhtar" : p.senderRole === "yardimci" ? "Yardımcı" : "Admin"}</span>`
+                : "";
+
+            // Silme butonu
+            const silBtn = ayricaliklimi()
+                ? `<button class="icon-btn delete-post-btn" onclick="postSil('${pid}')">🗑️</button>`
+                : "";
+
+            const card = document.createElement("div");
+            card.className = "post-card";
+            card.id = "post-" + pid;
+            card.innerHTML = `
                 <div class="post-header">
-                    <div class="post-avatar">${p.sender[0]}</div>
+                    <div class="post-avatar">${(p.sender || "?")[0].toUpperCase()}</div>
                     <div class="post-meta">
-                        <span class="post-sender">${p.sender}</span>
-                        <span class="post-time">Yeni</span>
+                        <span class="post-sender">${p.sender || "Anonim"}${rolHTML}</span>
+                        <span class="post-time">${zamanFarki(p.time)}</span>
+                    </div>
+                    ${silBtn}
+                </div>
+                ${p.title ? `<div class="post-title">${escapeHtml(p.title)}</div>` : ""}
+                ${p.text ? `<div class="post-text">${escapeHtml(p.text)}</div>` : ""}
+                ${mediaHTML}
+                <div class="post-actions">
+                    <div class="reactions-bar">${reactionHTML}</div>
+                    <div class="post-btns-row">
+                        <button class="comment-count-btn" onclick="yorumModalAc('${pid}')">
+                            💬 ${p.commentCount || 0} Yorum
+                        </button>
                     </div>
                 </div>
-                <div class="post-text">${p.text || ""}</div>
-                ${p.mediaUrl ? `<img src="${p.mediaUrl}" class="post-media">` : ""}
             `;
-            list.appendChild(div);
+            list.appendChild(card);
         });
-
-        // Yeni onaylı post gelince bildirim sesi
-        if (!snap.metadata.hasPendingWrites) playSnd('sndNotif');
+    }, err => {
+        console.error("Akış hatası:", err);
+        document.getElementById("postList").innerHTML = `<div class="empty-state"><p>⚠️ Yükleme hatası</p></div>`;
     });
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+async function akisPaylas() {
+    if (!ayricaliklimi()) return alert("Yetkiniz yok!");
+    const title = document.getElementById("postTitle").value.trim();
+    const text = document.getElementById("postText").value.trim();
+    const file = document.getElementById("postFile").files[0];
+    if (!title && !text && !file) return alert("En az bir şey ekleyin!");
+    if (kufurKontrol(title + " " + text)) return alert("⚠️ Uygunsuz içerik tespit edildi!");
+
+    const btn = document.getElementById("postBtn");
+    btn.disabled = true;
+    btn.textContent = "⏳ Yükleniyor...";
+
+    try {
+        let mediaUrl = "";
+        let mediaType = "";
+        if (file) {
+            const result = await cloudinaryYukle(file);
+            mediaUrl = result.url;
+            mediaType = result.type;
+        }
+        await db.collection("announcements").add({
+            sender: userProfile.name,
+            senderUid: currentUser.uid,
+            senderRole: userProfile.role || "user",
+            title,
+            text,
+            mediaUrl,
+            mediaType,
+            reactions: {},
+            commentCount: 0,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("postTitle").value = "";
+        document.getElementById("postText").value = "";
+        document.getElementById("postFile").value = "";
+        document.getElementById("postPreview").innerHTML = "";
+    } catch(e) {
+        alert("⚠️ Paylaşım başarısız: " + e.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = "📢 Paylaş";
+}
+
+async function reaksiyon(postId, emoji) {
+    if (!currentUser) return alert("Lütfen giriş yapın!");
+    const ref = db.collection("announcements").doc(postId);
+    const snap = await ref.get();
+    const reactions = { ...(snap.data().reactions || {}) };
+    if (reactions[currentUser.uid] === emoji) {
+        delete reactions[currentUser.uid];
+    } else {
+        reactions[currentUser.uid] = emoji;
+    }
+    await ref.update({ reactions });
+}
+
+async function postSil(postId) {
+    if (!ayricaliklimi()) return;
+    if (!confirm("Bu gönderiyi silmek istiyor musunuz?")) return;
+    try {
+        await db.collection("announcements").doc(postId).delete();
+    } catch(e) { alert("Silme hatası: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  YORUMLAR
+// ═══════════════════════════════════════════
+
+function yorumModalAc(postId) {
+    currentPostId = postId;
+    document.getElementById("commentsModal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+
+    if (commentsUnsubscribe) commentsUnsubscribe();
+
+    commentsUnsubscribe = db.collection("announcements").doc(postId)
+        .collection("comments").orderBy("time", "asc")
+        .onSnapshot(snap => {
+            const list = document.getElementById("commentsList");
+            if (snap.empty) {
+                list.innerHTML = `<p class="no-comments">💬 Henüz yorum yok. İlk yorumu siz yapın!</p>`;
+                return;
+            }
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const c = doc.data();
+                const isMe = currentUser && c.uid === currentUser.uid;
+                const canDelete = ayricaliklimi() || isMe;
+                const item = document.createElement("div");
+                item.className = "comment-item";
+                item.innerHTML = `
+                    <div class="comment-avatar">${(c.sender || "?")[0].toUpperCase()}</div>
+                    <div class="comment-body">
+                        <span class="comment-sender">${escapeHtml(c.sender || "Anonim")}</span>
+                        <div class="comment-text">${escapeHtml(c.text)}</div>
+                        <span class="comment-time">${zamanFarki(c.time)}</span>
+                    </div>
+                    ${canDelete ? `<button class="icon-btn-sm" style="color:#dc3545;" onclick="yorumSil('${postId}','${doc.id}')">🗑️</button>` : ""}
+                `;
+                list.appendChild(item);
+            });
+            list.scrollTop = list.scrollHeight;
+        });
+}
+
+function modalKapat() {
+    document.getElementById("commentsModal").classList.add("hidden");
+    document.body.style.overflow = "";
+    if (commentsUnsubscribe) { commentsUnsubscribe(); commentsUnsubscribe = null; }
+    currentPostId = null;
+}
+
+async function yorumGonder() {
+    if (!currentPostId || !currentUser) return;
+    const text = document.getElementById("commentInput").value.trim();
+    if (!text) return;
+    if (kufurKontrol(text)) return alert("⚠️ Uygunsuz içerik!");
+
+    try {
+        await db.collection("announcements").doc(currentPostId).collection("comments").add({
+            text,
+            sender: userProfile.name,
+            uid: currentUser.uid,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await db.collection("announcements").doc(currentPostId).update({
+            commentCount: firebase.firestore.FieldValue.increment(1)
+        });
+        document.getElementById("commentInput").value = "";
+    } catch(e) { alert("Yorum gönderilemedi!"); }
+}
+
+async function yorumSil(postId, commentId) {
+    if (!confirm("Yorumu silmek istiyor musunuz?")) return;
+    try {
+        await db.collection("announcements").doc(postId).collection("comments").doc(commentId).delete();
+        await db.collection("announcements").doc(postId).update({
+            commentCount: firebase.firestore.FieldValue.increment(-1)
+        });
+    } catch(e) { alert("Silinemedi: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  SOHBET (CHAT)
+// ═══════════════════════════════════════════
+
+function chatMediaSec(input) {
+    chatMediaFile = input.files[0] || null;
+    const bar = document.getElementById("chatMediaBar");
+    const preview = document.getElementById("chatMediaPreview");
+    if (!chatMediaFile) { bar.classList.add("hidden"); preview.innerHTML = ""; return; }
+    bar.classList.remove("hidden");
+    const url = URL.createObjectURL(chatMediaFile);
+    if (chatMediaFile.type.startsWith("video")) {
+        preview.innerHTML = `<video src="${url}" style="max-height:70px;border-radius:8px;" controls></video>`;
+    } else {
+        preview.innerHTML = `<img src="${url}" style="max-height:70px;border-radius:8px;">`;
+    }
+}
+
+function chatMediaTemizle() {
+    chatMediaFile = null;
+    document.getElementById("chatFile").value = "";
+    document.getElementById("chatMediaBar").classList.add("hidden");
+    document.getElementById("chatMediaPreview").innerHTML = "";
+}
+
+function mesajlariDinle() {
+    db.collection("chat").orderBy("time", "asc").limitToLast(60).onSnapshot(snap => {
+        const box = document.getElementById("chatBox");
+        const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+        box.innerHTML = "";
+        if (snap.empty) {
+            box.innerHTML = `<div style="text-align:center;color:#888;padding:20px;font-size:14px;">💬 İlk mesajı siz gönderin!</div>`;
+            return;
+        }
+        snap.forEach(doc => {
+            const m = doc.data();
+            const isMe = currentUser && m.uid === currentUser.uid;
+            const canDelete = ayricaliklimi() || isMe;
+
+            const mediaHTML = m.mediaUrl ? (
+                m.mediaType === "video"
+                    ? `<video src="${m.mediaUrl}" controls class="chat-media" preload="metadata"></video>`
+                    : `<img src="${m.mediaUrl}" class="chat-media" onclick="resimTamEkran('${m.mediaUrl}')" loading="lazy">`
+            ) : "";
+
+            const wrapper = document.createElement("div");
+            wrapper.className = `msg-wrapper ${isMe ? "me" : "them"}`;
+            wrapper.innerHTML = `
+                <div class="msg-bubble">
+                    ${!isMe ? `<span class="msg-sender">${escapeHtml(m.user || "Anonim")}</span>` : ""}
+                    ${m.text ? `<span class="msg-text">${escapeHtml(m.text)}</span>` : ""}
+                    ${mediaHTML}
+                    <div class="msg-footer">
+                        <span class="msg-time">${zamanFarki(m.time)}</span>
+                        ${canDelete ? `<button class="msg-delete-btn" onclick="mesajSil('${doc.id}')" title="Sil">🗑️</button>` : ""}
+                    </div>
+                </div>
+            `;
+            box.appendChild(wrapper);
+        });
+        if (atBottom) box.scrollTop = box.scrollHeight;
+    });
+}
+
+function enterMesaj(e) {
+    if (e.key === "Enter" && !e.shiftKey) mesajGonder();
+}
+
+async function mesajGonder() {
+    const text = document.getElementById("msgInput").value.trim();
+    if (!text && !chatMediaFile) return;
+    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if (kufurKontrol(text)) return alert("⚠️ Uygunsuz içerik!");
+
+    const btn = document.getElementById("chatSendBtn");
+    btn.disabled = true;
+
+    try {
+        let mediaUrl = "";
+        let mediaType = "";
+        if (chatMediaFile) {
+            const result = await cloudinaryYukle(chatMediaFile);
+            mediaUrl = result.url;
+            mediaType = result.type;
+            chatMediaTemizle();
+        }
+        await db.collection("chat").add({
+            text: text || "",
+            mediaUrl,
+            mediaType,
+            user: userProfile.name,
+            uid: currentUser.uid,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("msgInput").value = "";
+        const box = document.getElementById("chatBox");
+        setTimeout(() => box.scrollTop = box.scrollHeight, 300);
+    } catch(e) {
+        alert("⚠️ Mesaj gönderilemedi: " + e.message);
+    }
+
+    btn.disabled = false;
+}
+
+async function mesajSil(msgId) {
+    if (!confirm("Bu mesajı silmek istiyor musunuz?")) return;
+    try { await db.collection("chat").doc(msgId).delete(); }
+    catch(e) { alert("Silinemedi!"); }
+}
+
+// ═══════════════════════════════════════════
+//  İŞLETMELER (FİRMALAR)
+// ═══════════════════════════════════════════
+
+function karistir(dizi) {
+    const arr = [...dizi];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function isletmeleriYukle() {
+    db.collection("businesses").onSnapshot(snap => {
+        const container = document.getElementById("bizList");
+        const empty = document.getElementById("bizEmpty");
+        container.innerHTML = "";
+
+        if (snap.empty) {
+            empty.classList.remove("hidden");
+            return;
+        }
+        empty.classList.add("hidden");
+
+        let items = [];
+        snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
+        items = karistir(items); // Her açılışta rastgele sırala
+
+        items.forEach(b => {
+            const card = document.createElement("div");
+            card.className = "biz-card";
+            card.innerHTML = `
+                ${b.imageUrl
+                    ? `<img src="${b.imageUrl}" class="biz-img" loading="lazy" alt="${escapeHtml(b.name)}">`
+                    : `<div class="biz-img-placeholder">🏢</div>`
+                }
+                <div class="biz-body">
+                    <div class="biz-cat">${escapeHtml(b.category || "İşletme")}</div>
+                    <h3 class="biz-name">${escapeHtml(b.name)}</h3>
+                    ${b.description ? `<p class="biz-desc">${escapeHtml(b.description)}</p>` : ""}
+                    ${b.phone ? `<a href="tel:${b.phone}" class="biz-phone">📞 ${escapeHtml(b.phone)}</a>` : ""}
+                    ${b.address ? `<p class="biz-addr">📍 ${escapeHtml(b.address)}</p>` : ""}
+                    ${adminMi() ? `
+                        <div class="biz-admin-btns">
+                            <button class="btn btn-danger btn-sm" onclick="firmaSil('${b.id}')">🗑️ Sil</button>
+                        </div>
+                    ` : ""}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    });
+}
+
+async function firmaEkle() {
+    if (!adminMi()) return alert("Yetkiniz yok!");
+    const name = document.getElementById("bizName").value.trim();
+    if (!name) return alert("Firma adı zorunludur!");
+
+    const btn = document.getElementById("bizAddBtn");
+    btn.disabled = true;
+    btn.textContent = "⏳ Ekleniyor...";
+
+    try {
+        let imageUrl = "";
+        const file = document.getElementById("bizFile").files[0];
+        if (file) {
+            const result = await cloudinaryYukle(file);
+            imageUrl = result.url;
+        }
+        await db.collection("businesses").add({
+            name,
+            category: document.getElementById("bizCat").value.trim(),
+            phone: document.getElementById("bizPhone").value.trim(),
+            address: document.getElementById("bizAddr").value.trim(),
+            description: document.getElementById("bizDesc").value.trim(),
+            imageUrl,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        ["bizName", "bizCat", "bizPhone", "bizAddr", "bizDesc"].forEach(id => {
+            document.getElementById(id).value = "";
+        });
+        document.getElementById("bizFile").value = "";
+        document.getElementById("bizPreview").innerHTML = "";
+        alert("✅ Firma başarıyla eklendi!");
+    } catch(e) {
+        alert("⚠️ Hata: " + e.message);
+    }
+
+    btn.disabled = false;
+    btn.textContent = "🏢 Firma Ekle";
+}
+
+async function firmaSil(id) {
+    if (!adminMi()) return;
+    if (!confirm("Bu firmayı silmek istiyor musunuz?")) return;
+    try { await db.collection("businesses").doc(id).delete(); }
+    catch(e) { alert("Silinemedi!"); }
+}
+
+// ═══════════════════════════════════════════
+//  AYARLAR - KULLANICI YÖNETİMİ
+// ═══════════════════════════════════════════
+
+function onlineListesiYukle() {
+    db.collection("users").orderBy("lastSeen", "desc").onSnapshot(snap => {
+        const list = document.getElementById("userList");
+        if (snap.empty) { list.innerHTML = "<p style='color:#999;font-size:14px;'>Kullanıcı yok</p>"; return; }
+
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const u = doc.data();
+            const uid = doc.id;
+            const basCelim = (u.name || "?")[0].toUpperCase();
+            const isOnline = u.online === true;
+
+            // Rol rozeti
+            let rolBadge = "";
+            if (u.role === "admin") rolBadge = `<span class="role-badge">Admin</span>`;
+            else if (u.role === "muhtar") rolBadge = `<span class="role-badge muhtar">Muhtar</span>`;
+            else if (u.role === "yardimci") rolBadge = `<span class="role-badge yardimci">Yardımcı</span>`;
+
+            // Admin butonları (kendi hesabına gösterme)
+            let adminBtns = "";
+            if (adminMi() && uid !== currentUser?.uid) {
+                adminBtns = `
+                    <div class="user-admin-btns">
+                        <button onclick="kullaniciBlokkla('${uid}', ${!u.blocked})"
+                            class="icon-btn-sm" title="${u.blocked ? "Engeli Kaldır" : "Engelle"}">
+                            ${u.blocked ? "🔓" : "🚫"}
+                        </button>
+                        <button onclick="kullaniciSil('${uid}')" class="icon-btn-sm" title="Sil" style="color:#dc3545;">🗑️</button>
+                    </div>
+                `;
+            }
+
+            const item = document.createElement("div");
+            item.className = `user-item ${u.blocked ? "user-blocked" : ""}`;
+            item.innerHTML = `
+                <div class="user-avatar">${basCelim}</div>
+                <div class="user-info">
+                    <span class="user-name">${escapeHtml(u.name || "İsimsiz")}${rolBadge}</span>
+                    <span class="user-status ${isOnline ? "status-online" : "status-offline"}">
+                        ${isOnline ? "🟢 Çevrimiçi" : "⚫ Çevrimdışı"}
+                        ${u.blocked ? " · 🚫 Engellenmiş" : ""}
+                    </span>
+                </div>
+                ${adminBtns}
+            `;
+            list.appendChild(item);
+        });
+    });
+}
+
+async function kullaniciBlokkla(uid, shouldBlock) {
+    if (!adminMi()) return;
+    try {
+        await db.collection("users").doc(uid).update({ blocked: shouldBlock });
+        alert(shouldBlock ? "🚫 Kullanıcı engellendi!" : "✅ Engel kaldırıldı!");
+    } catch(e) { alert("İşlem başarısız: " + e.message); }
+}
+
+async function kullaniciSil(uid) {
+    if (!adminMi()) return;
+    if (!confirm("Bu kullanıcıyı silmek istiyor musunuz? Bu işlem geri alınamaz!")) return;
+    try {
+        await db.collection("users").doc(uid).delete();
+        alert("✅ Kullanıcı silindi.");
+    } catch(e) { alert("Silinemedi: " + e.message); }
+}
+
+async function yetkiVer() {
+    if (!adminMi()) return alert("Yetkiniz yok!");
+    const email = document.getElementById("targetEmail").value.trim();
+    const role = document.getElementById("targetRole").value;
+    if (!email) return alert("E-posta girin!");
+    try {
+        const snap = await db.collection("users").where("email", "==", email).get();
+        if (snap.empty) return alert("Kullanıcı bulunamadı!");
+        const promises = [];
+        snap.forEach(doc => promises.push(db.collection("users").doc(doc.id).update({ role })));
+        await Promise.all(promises);
+        document.getElementById("targetEmail").value = "";
+        alert(`✅ ${email} kullanıcısına "${role}" yetkisi verildi!`);
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  GÖRÜŞ & ÖNERİ
+// ═══════════════════════════════════════════
+
+async function gorusBildir() {
+    const text = document.getElementById("feedbackText").value.trim();
+    if (!text) return alert("Lütfen bir şeyler yazın!");
+    try {
+        await db.collection("questions").add({
+            text,
+            sender: userProfile ? userProfile.name : "Anonim",
+            uid: currentUser ? currentUser.uid : null,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById("feedbackText").value = "";
+        alert("✅ Görüşünüz iletildi! Teşekkürler 🙏");
+    } catch(e) { alert("Gönderilemedi: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  PWA - SERVICE WORKER
+// ═══════════════════════════════════════════
+
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW:", err));
 }

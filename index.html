@@ -18,17 +18,7 @@
 </head>
 <body>
 
-<audio id="sndMsg" src="mesaj.mp3" preload="auto"></audio>
-<audio id="sndNotif" src="bildirim.mp3" preload="auto"></audio>
-<audio id="sndLike" src="like.mp3" preload="auto"></audio>
-
-<div id="pwaBanner" class="pwa-banner hidden">
-  <div class="pwa-content">
-    <span>Uygulamayı telefonunuza yükleyin!</span>
-    <button id="pwaBtn" class="btn-pwa">Yükle</button>
-  </div>
-</div>
-
+<!-- Kullanım Şartları -->
 <div id="termsOverlay" class="overlay-screen">
   <div class="terms-card">
     <div class="terms-logo">🏡</div>
@@ -47,6 +37,7 @@
   </div>
 </div>
 
+<!-- Giriş / Kayıt -->
 <div id="loginPage" class="overlay-screen hidden">
   <div class="login-card">
     <div class="login-logo">🏡</div>
@@ -70,16 +61,18 @@
   </div>
 </div>
 
+<!-- Ana Uygulama -->
 <div id="app" class="hidden">
 
+  <!-- AKIŞ BÖLÜMÜ -->
   <section id="view-feed" class="view">
     <div class="top-header">
       <span class="header-title">🏠 Köy Meydanı</span>
     </div>
-    <div id="postPanel" class="post-panel">
+    <div id="postPanel" class="post-panel hidden">
       <div class="post-panel-inner">
         <input id="postTitle" placeholder="Başlık..." class="input-field">
-        <textarea id="postText" placeholder="Ne paylaşmak istersiniz? (Yönetici onayından sonra yayınlanır)" class="textarea-field" rows="3"></textarea>
+        <textarea id="postText" placeholder="Ne paylaşmak istersiniz?" class="textarea-field" rows="3"></textarea>
         <label class="file-label">
           📎 Fotoğraf / Video Ekle
           <input type="file" id="postFile" accept="image/*,video/*" onchange="previewFile(this,'postPreview')">
@@ -93,17 +86,7 @@
     </div>
   </section>
 
-  <section id="view-nostalgia" class="view hidden">
-    <div class="top-header">
-      <span class="header-title">⏳ Nostalji</span>
-    </div>
-    <div class="nostalgia-header">
-       <p>Köyümüzün geçmişine yolculuk edin...</p>
-    </div>
-    <div id="nostalgiaList" class="post-list">
-      </div>
-  </section>
-
+  <!-- SOHBET BÖLÜMÜ -->
   <section id="view-chat" class="view hidden">
     <div class="top-header">
       <span class="header-title">💬 Köy Sohbeti</span>
@@ -125,6 +108,7 @@
     </div>
   </section>
 
+  <!-- FİRMALAR BÖLÜMÜ -->
   <section id="view-biz" class="view hidden">
     <div class="top-header">
       <span class="header-title">🏢 Köy Firmaları</span>
@@ -137,23 +121,27 @@
     </div>
   </section>
 
+  <!-- AYARLAR BÖLÜMÜ -->
   <section id="view-settings" class="view hidden">
     <div class="top-header">
       <span class="header-title">⚙️ Ayarlar</span>
     </div>
     <div class="settings-content">
 
+      <!-- Online Kullanıcılar -->
       <div class="settings-card">
         <h4>👥 Kullanıcılar</h4>
         <div id="userList"><div class="loading-spinner">⏳</div></div>
       </div>
 
+      <!-- QR Kod -->
       <div class="settings-card text-center">
         <h4>📱 Uygulama QR Kodu</h4>
         <img src="karekod.png" class="qr-img" alt="QR Kod">
         <p class="qr-url">koyemirler-hash.github.io/haber</p>
       </div>
 
+      <!-- İletişim -->
       <div class="settings-card">
         <h4>📞 İletişim</h4>
         <div class="contact-buttons">
@@ -172,19 +160,22 @@
         </div>
       </div>
 
+      <!-- Hakkımızda -->
       <div class="settings-card">
         <h4>🏡 Hakkımızda</h4>
         <p class="about-text">Emirler Köyü Portalı, köy sakinlerini bir araya getirmek, duyuruları paylaşmak ve iletişimi kolaylaştırmak için yapılmıştır.</p>
         <p class="about-text">📍 Emirler Köyü, Türkiye</p>
-        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 2.1 · PWA</p>
+        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 2.0 · PWA</p>
       </div>
 
+      <!-- Görüş & Öneri -->
       <div class="settings-card">
         <h4>💡 Görüş & Öneri</h4>
         <textarea id="feedbackText" placeholder="Görüş veya önerinizi buraya yazın..." class="textarea-field" rows="3"></textarea>
         <button class="btn btn-primary" onclick="gorusBildir()">Gönder 📨</button>
       </div>
 
+      <!-- Admin Paneli -->
       <div id="adminPanel" class="hidden">
         <div class="settings-card admin-card">
           <h4>🛡️ Admin Paneli</h4>
@@ -198,11 +189,6 @@
               <option value="user">Normal Üye</option>
             </select>
             <button class="btn btn-secondary" onclick="yetkiVer()">✅ Yetki Ver</button>
-          </div>
-
-          <div class="admin-section" style="margin-top:14px;">
-             <p class="section-label">📩 Onay Bekleyen Paylaşımlar</p>
-             <div id="pendingPosts">Onay bekleyen içerik yok.</div>
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
@@ -222,10 +208,12 @@
         </div>
       </div>
 
+      <!-- Çıkış -->
       <button class="btn btn-danger" onclick="cikisYap()">🚪 Çıkış Yap</button>
     </div>
   </section>
 
+  <!-- Yorum Modalı -->
   <div id="commentsModal" class="modal hidden">
     <div class="modal-overlay" onclick="modalKapat()"></div>
     <div class="modal-content">
@@ -241,20 +229,18 @@
     </div>
   </div>
 
+  <!-- Resim Tam Ekran -->
   <div id="imgFullscreen" class="img-fullscreen hidden" onclick="this.classList.add('hidden')">
     <img id="imgFullscreenSrc" src="">
   </div>
 
 </div>
 
+<!-- Alt Navigasyon -->
 <nav class="nav-footer hidden" id="navBar">
   <div class="nav-item active" id="nav-feed" onclick="tabDegistir('feed')">
     <span class="nav-icon">🏠</span>
     <span class="nav-label">Akış</span>
-  </div>
-  <div class="nav-item" id="nav-nostalgia" onclick="tabDegistir('nostalgia')">
-    <span class="nav-icon">⏳</span>
-    <span class="nav-label">Nostalji</span>
   </div>
   <div class="nav-item" id="nav-chat" onclick="tabDegistir('chat')">
     <span class="nav-icon">💬</span>

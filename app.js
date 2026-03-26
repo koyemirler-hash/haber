@@ -1,3 +1,4 @@
+// Firebase Config (Senin Bilgilerin)
 const firebaseConfig = {
     apiKey: "AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
     authDomain: "emirler-c5638.firebaseapp.com",
@@ -6,147 +7,53 @@ const firebaseConfig = {
     appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 const auth = firebase.auth();
-const storage = firebase.storage();
+const db = firebase.firestore();
 
-let currentUserData = null;
-
-// 1. Cihaz ID ve Onay Yönetimi
-if(localStorage.getItem('ok_accepted')) {
-    document.getElementById('termsOverlay').style.display = 'none';
-    document.getElementById('app').classList.remove('hidden');
-}
-
-function onayVer() {
-    localStorage.setItem('ok_accepted', 'true');
-    location.reload();
-}
-
-// 2. Oturum Kontrolü
-auth.onAuthStateChanged(async (user) => {
+// 1. OTURUM KONTROLÜ
+auth.onAuthStateChanged(user => {
     if (user) {
-        const doc = await db.collection("users").doc(user.uid).get();
-        if(!doc.exists) { auth.signOut(); return; }
-        const data = doc.data();
-
-        if(data.isBlocked) { alert("Engellendiniz!"); auth.signOut(); return; }
-
-        // Cihaz Kilidi (Tek cihaz kuralı)
-        let deviceId = localStorage.getItem('e_device') || 'dv-' + Math.random().toString(36).substr(2,9);
-        localStorage.setItem('e_device', deviceId);
-        
-        if(data.rol !== 'admin') {
-            if(!data.deviceId) await db.collection("users").doc(user.uid).update({deviceId});
-            else if(data.deviceId !== deviceId) { alert("Güvenlik: Başka cihazdan giriş yapılamaz."); auth.signOut(); return; }
-        }
-
-        currentUserData = data;
-        loadApp();
+        // Giriş yapılmışsa uygulamayı göster
+        document.getElementById('authPage').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        tabDegistir('feed');
     } else {
+        // Giriş yoksa auth sayfasını göster
         document.getElementById('authPage').classList.remove('hidden');
-        document.getElementById('mainContent').classList.add('hidden');
-        document.getElementById('navBar').classList.add('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
     }
 });
 
-function loadApp() {
-    document.getElementById('authPage').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');
-    document.getElementById('navBar').classList.remove('hidden');
-    document.getElementById('userMailInfo').innerText = auth.currentUser.email;
-    
-    if(['admin','muhtar','yardimci'].includes(currentUserData.rol)) document.getElementById('adminPostPanel').classList.remove('hidden');
-    if(currentUserData.rol === 'admin') document.getElementById('adminMasterPanel').classList.remove('hidden');
-    tabDegistir('feed');
+// 2. YAN MENÜ KONTROLÜ
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('active');
 }
 
-// 3. Meydan Paylaşımları
-async function paylas() {
-    const text = document.getElementById('postTitle').value;
-    const file = document.getElementById('postFile').files[0];
-    if(!text && !file) return;
-
-    let url = "";
-    if(file) {
-        const ref = storage.ref(`feed/${Date.now()}`);
-        await ref.put(file);
-        url = await ref.getDownloadURL();
-    }
-    await db.collection("announcements").add({
-        author: currentUserData.name,
-        content: text,
-        img: url,
-        time: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('postTitle').value = "";
-    document.getElementById('postFile').value = "";
-    alert("Paylaşıldı!");
-}
-
-db.collection("announcements").orderBy("time","desc").onSnapshot(snap => {
-    let html = "";
-    snap.forEach(d => {
-        const p = d.data();
-        html += `<div class="post-card">
-            <div class="post-user">${p.author}</div>
-            <div class="post-txt">${p.content}</div>
-            ${p.img ? `<img src="${p.img}" class="post-img">` : ""}
-        </div>`;
-    });
-    document.getElementById('feedList').innerHTML = html;
-});
-
-// 4. Sohbet İşlemleri
-function mesajGonder() {
-    const m = document.getElementById('chatInput').value;
-    if(!m) return;
-    db.collection("chat").add({
-        uid: auth.currentUser.uid,
-        name: currentUserData.name,
-        msg: m,
-        time: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('chatInput').value = "";
-}
-
-db.collection("chat").orderBy("time","asc").onSnapshot(snap => {
-    const box = document.getElementById('chatBox');
-    box.innerHTML = "";
-    snap.forEach(d => {
-        const c = d.data();
-        box.innerHTML += `<div class="msg ${c.uid === auth.currentUser.uid ? 'me':'other'}">
-            <small style="font-size:10px; color:gray">${c.name}</small><br>${c.msg}
-        </div>`;
-    });
-    box.scrollTop = box.scrollHeight;
-});
-
-// 5. Fonksiyonlar
-function tabDegistir(t) {
+// 3. SAYFA DEĞİŞTİRME (TAB SİSTEMİ)
+function tabDegistir(tabName) {
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-    document.getElementById('view-' + t).classList.remove('hidden');
+    document.getElementById('view-' + tabName).classList.remove('hidden');
+    
+    // Sayfa başlığını güncelle
+    const titles = { feed: 'Köy Meydanı', chat: 'Canlı Sohbet', biz: 'Firmalar', settings: 'Ayarlar' };
+    document.getElementById('pageTitle').innerText = titles[tabName];
+    
+    // Menüyü kapat
+    document.getElementById('sidebar').classList.remove('active');
 }
 
+// 4. GİRİŞ YAPMA FONKSİYONU
 async function girisYap() {
-    const e = document.getElementById('logEmail').value;
-    const p = document.getElementById('logPass').value;
-    await auth.signInWithEmailAndPassword(e, p).catch(err => alert("Hata: " + err.message));
+    const email = document.getElementById('logEmail').value;
+    const pass = document.getElementById('logPass').value;
+    try {
+        await auth.signInWithEmailAndPassword(email, pass);
+    } catch (error) {
+        alert("Giriş Hatası: " + error.message);
+    }
 }
 
-async function kayitOl() {
-    const e = document.getElementById('regEmail').value;
-    const p = document.getElementById('regPass').value;
-    const n = document.getElementById('regName').value;
-    const res = await auth.createUserWithEmailAndPassword(e, p);
-    await db.collection("users").doc(res.user.uid).set({
-        name: n, email: e, rol: 'user', isBlocked: false, deviceId: null
-    });
+// 5. ÇIKIŞ YAPMA
+function cikisYap() {
+    auth.signOut().then(() => location.reload());
 }
-
-function toggleAuth(r) {
-    document.getElementById('loginForm').classList.toggle('hidden', r);
-    document.getElementById('registerForm').classList.toggle('hidden', !r);
-}
-
-function cikisYap() { auth.signOut(); location.reload(); }

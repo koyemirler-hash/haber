@@ -8,89 +8,60 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 
-<div id="termsOverlay" class="overlay">
-    <div class="modal shadow-lg">
-        <h2 class="text-green">🏡 Emirler Köyü</h2>
-        <div class="terms-scroll">
-            <p><b>Yasal Bilgilendirme:</b> Uygulamada yapılan tüm paylaşımlar kullanıcı sorumluluğundadır. Küfür ve hakaret kesinlikle yasaktır.</p>
-        </div>
-        <button class="btn btn-main" onclick="onayVer()">Kabul Ediyorum</button>
-    </div>
-</div>
-
-<div id="app" class="hidden">
-    <section id="authPage" class="view">
-        <div class="auth-container">
+    <div id="authPage" class="full-page">
+        <div class="auth-card">
             <img src="ikon_192.png" class="auth-logo">
-            <div id="loginForm" class="auth-box">
-                <input type="email" id="logEmail" placeholder="E-posta Adresiniz">
-                <input type="password" id="logPass" placeholder="Şifreniz">
-                <button class="btn btn-main" onclick="girisYap()">Giriş Yap</button>
-                <span class="toggle-link" onclick="toggleAuth(true)">Hesap Oluştur</span>
-            </div>
-            <div id="registerForm" class="auth-box hidden">
-                <input type="text" id="regName" placeholder="Ad Soyad">
-                <input type="email" id="regEmail" placeholder="E-posta">
-                <input type="password" id="regPass" placeholder="Şifre (En az 6 haneli)">
-                <button class="btn btn-main" onclick="kayitOl()">Kayıt Ol</button>
-                <span class="toggle-link" onclick="toggleAuth(false)">Giriş Yap</span>
+            <h2>Emirler Portalı</h2>
+            <div id="loginForm">
+                <input type="email" id="logEmail" placeholder="E-posta">
+                <input type="password" id="logPass" placeholder="Şifre">
+                <button class="btn-main" onclick="girisYap()">Giriş Yap</button>
             </div>
         </div>
-    </section>
+    </div>
 
-    <main id="mainContent" class="hidden">
-        <section id="view-feed" class="view">
-            <div class="app-header">Köy Meydanı</div>
-            <div id="adminPostPanel" class="post-input-card hidden">
-                <textarea id="postTitle" placeholder="Bugün ne paylaşmak istersin?"></textarea>
-                <div class="post-actions">
-                    <input type="file" id="postFile" hidden>
-                    <label for="postFile" class="file-label">📷 Görsel Ekle</label>
-                    <button class="btn-send" onclick="paylas()">Paylaş</button>
-                </div>
+    <div id="mainApp" class="hidden">
+        
+        <header class="app-header">
+            <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+            <span id="pageTitle">Köy Meydanı</span>
+            <div class="header-spacer"></div>
+        </header>
+
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h3>Menü</h3>
+                <button onclick="toggleSidebar()">✕</button>
             </div>
-            <div id="feedList" class="feed-scroll"></div>
-        </section>
+            <nav class="sidebar-nav">
+                <div class="nav-item" onclick="tabDegistir('feed')">🏠 Köy Meydanı</div>
+                <div class="nav-item" onclick="tabDegistir('chat')">💬 Canlı Sohbet</div>
+                <div class="nav-item" onclick="tabDegistir('biz')">🏢 Yerel Firmalar</div>
+                <div class="nav-item" onclick="tabDegistir('settings')">⚙️ Ayarlar</div>
+                <hr>
+                <div class="nav-item logout" onclick="cikisYap()">🚪 Çıkış Yap</div>
+            </nav>
+        </aside>
 
-        <section id="view-chat" class="view hidden">
-            <div class="chat-container">
-                <div id="chatBox" class="chat-area"></div>
-                <div class="chat-bar">
-                    <input type="text" id="chatInput" placeholder="Bir mesaj yaz...">
+        <main id="contentArea">
+            <section id="view-feed" class="view">
+                <div id="feedList" class="feed-container"></div>
+            </section>
+
+            <section id="view-chat" class="view hidden">
+                <div id="chatBox" class="chat-container"></div>
+                <div class="chat-input-bar">
+                    <input type="text" id="chatInput" placeholder="Mesaj yazın...">
                     <button onclick="mesajGonder()">➤</button>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <section id="view-biz" class="view hidden">
-            <div id="bizList" class="biz-page"></div>
-        </section>
+            </main>
+    </div>
 
-        <section id="view-settings" class="view hidden">
-            <div class="profile-card">
-                <div class="user-avatar">👤</div>
-                <h3 id="userMailInfo"></h3>
-                <button class="btn btn-danger" onclick="cikisYap()">Çıkış Yap</button>
-            </div>
-            <div id="adminMasterPanel" class="admin-panel hidden">
-                <h4>🛡️ Yönetim Paneli</h4>
-                <div id="adminUserList" class="admin-list"></div>
-            </div>
-        </section>
-    </main>
-
-    <nav id="navBar" class="bottom-nav hidden">
-        <div class="nav-btn" onclick="tabDegistir('feed')"><span>🏠</span>Meydan</div>
-        <div class="nav-btn" onclick="tabDegistir('chat')"><span>💬</span>Sohbet</div>
-        <div class="nav-btn" onclick="tabDegistir('biz')"><span>🏢</span>Firmalar</div>
-        <div class="nav-btn" onclick="tabDegistir('settings')"><span>⚙️</span>Ayarlar</div>
-    </nav>
-</div>
-
-<script src="app.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>

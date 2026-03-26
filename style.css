@@ -1,28 +1,18 @@
-:root { --wa-teal:#075e54; --wa-light:#25d366; --wa-bg:#e5ddd5; --white:#fff; }
-body { font-family: 'Segoe UI', sans-serif; background:#f0f2f5; margin:0; padding-bottom:70px; }
-.wa-header { background:var(--wa-teal); color:white; padding:15px; font-weight:bold; font-size:20px; }
-
-/* Status Bar */
-.wa-status-bar { display:flex; gap:15px; overflow-x:auto; padding:15px; background:white; border-bottom:1px solid #ddd; }
-.status-item { width:55px; height:55px; border-radius:50%; border:2px solid var(--wa-light); padding:2px; }
-
-/* Chat */
-.wa-chat-bg { height:calc(100vh-180px); overflow-y:auto; background:var(--wa-bg); padding:10px; display:flex; flex-direction:column; gap:8px; }
-.msg { max-width:80%; padding:8px 12px; border-radius:10px; font-size:14px; position:relative; }
-.msg.me { align-self:flex-end; background:#dcf8c6; }
-.msg.other { align-self:flex-start; background:white; }
-
-/* Cards */
-.card { background:white; padding:10px; margin:10px; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-
-/* Accordion */
-.acc-btn { width:100%; padding:15px; background:white; border:none; border-bottom:1px solid #eee; text-align:left; font-weight:bold; cursor:pointer; }
-.acc-content { padding:15px; background:#fafafa; border-bottom:1px solid #ddd; }
-
-/* Bottom Nav */
-.bottom-nav { position:fixed; bottom:0; width:100%; background:white; display:flex; justify-content:space-around; padding:15px 0; border-top:1px solid #ddd; }
-.hidden { display:none !important; }
-
-/* Firmalar Slider */
-.biz-slider { display:flex; overflow-x:auto; gap:10px; padding:10px; }
-.biz-item { min-width:150px; padding:10px; background:white; border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.1); text-align:center; }
+:root { --accent: #588157; --bg: #f8f9fa; --orange: #ff6000; --white: #fff; }
+body { margin:0; padding-bottom:70px; font-family:'Segoe UI', sans-serif; background:var(--bg);}
+.card { background:var(--white); padding:15px; border-radius:15px; margin:10px; box-shadow:0 4px 15px rgba(0,0,0,0.05);}
+.hidden { display:none !important;}
+.btn { width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:12px; cursor:pointer;}
+.view { padding-bottom:80px; }
+.feed-header { background:var(--accent); color:white; margin:0; text-align:center; border-radius:0 0 20px 20px;}
+.chat-box { height:300px; overflow-y:auto; background:#e5ddd5; padding:10px; border-radius:10px; display:flex; flex-direction:column; gap:8px;}
+.msg { max-width:75%; padding:8px 12px; border-radius:12px; font-size:14px;}
+.sent { align-self:flex-end; background:#dcf8c6; }
+.received { align-self:flex-start; background:white; }
+.chat-input { display:flex; gap:5px; margin-top:10px;}
+.biz-container { display:flex; overflow-x:auto; gap:15px; padding:10px;}
+.biz-card { min-width:80%; scroll-snap-align:center; border-radius:20px; padding:20px; background:white; box-shadow:0 8px 20px rgba(0,0,0,0.1); border-top:5px solid var(--accent);}
+.admin-section { background:#f9fafb; border:2px solid #e2e8f0; border-radius:15px; padding:15px; margin-top:15px;}
+.nav-footer { position:fixed; bottom:0;width:100%; display:flex; justify-content:space-around; padding:15px 0; background:white; border-top:1px solid #eee; z-index:1000;}
+.ad-banner { padding:10px; text-align:center; font-weight:bold; cursor:pointer; }
+.error-msg { color:red; font-size:12px;}

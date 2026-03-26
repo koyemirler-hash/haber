@@ -1,4 +1,3 @@
-// Firebase Config
 const firebaseConfig = {
     apiKey: "AIzaSyDUagdaIoJmkgGjWFv2avYsC7n_-4AJ7s0",
     authDomain: "emirler-c5638.firebaseapp.com",
@@ -11,155 +10,167 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 const storage = firebase.storage();
 
-let currentUserRole = 'user';
-let currentUser = null;
-
-// Küfür listesi
-const bannedWords = ["amk","aq","orospu","piç","sik","yarrak"];
-function temizle(text){ return bannedWords.some(w => text.toLowerCase().includes(w)); }
-
-// Device ID
-function getDeviceId(){
-    let id = localStorage.getItem("deviceId");
-    if(!id){ id="dev-"+Math.random().toString(36).substr(2,9); localStorage.setItem("deviceId",id);}
-    return id;
+// Açılış onayı
+if(localStorage.getItem('termsAccepted')) {
+    document.getElementById('termsOverlay').classList.add('hidden');
+    document.getElementById('loginPage').classList.remove('hidden');
+}
+function onayVer(){
+    if(!document.getElementById('termsCheck').checked) return alert("Şartları kabul etmelisin!");
+    localStorage.setItem('termsAccepted','true');
+    document.getElementById('termsOverlay').classList.add('hidden');
+    document.getElementById('loginPage').classList.remove('hidden');
 }
 
-// AUTH
-auth.onAuthStateChanged(async user=>{
-    if(!user) return;
-    currentUser = user;
-    const ref = db.collection("users").doc(user.uid);
-    const doc = await ref.get();
+// Giriş/Çıkış
+async function girisYap(){
+    const email=document.getElementById('logEmail').value;
+    const pass=document.getElementById('logPass').value;
+    try{
+        const res=await auth.signInWithEmailAndPassword(email,pass);
+        await db.collection("users").doc(res.user.uid).set({
+            name: email.split('@')[0],
+            email,
+            online:true,
+            lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+        },{merge:true});
+        location.reload();
+    }catch(e){document.getElementById('errorMsg').innerText="Hatalı giriş!";}
+}
+async function cikisYap(){
+    await db.collection("users").doc(auth.currentUser.uid).update({online:false});
+    await auth.signOut();
+    location.reload();
+}
 
-    if(!doc.exists){
-        await ref.set({name:user.email,role:"user",deviceId:getDeviceId(),online:true});
-    } else {
-        const data=doc.data();
-        if(data.deviceId!==getDeviceId()){
-            alert("Bu cihazda başka hesap kullanamazsın!"); auth.signOut(); return;
-        }
-        currentUserRole = data.role;
-        ref.update({online:true});
-    }
-
-    if(["admin","muhtar","yardimci"].includes(currentUserRole))
-        document.getElementById('admin-post-panel').classList.remove('hidden');
-
-    akisDinle(); sohbetDinle(); durumDinle(); onlineListesi();
-});
-
-// TAB
-function tabGit(t){
+// Tab değiştirme
+function tabDegistir(t){
     document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
     document.getElementById('view-'+t).classList.remove('hidden');
 }
 
-// AKIŞ
-function akisDinle(){
-    db.collection("announcements").orderBy("time","desc").onSnapshot(snap=>{
-        let h="";
-        snap.forEach(doc=>{
-            const p=doc.data();
-            h+=`<div class="card">
-                <b>${p.sender}</b>
-                <p>${p.title}</p>
-                ${p.image?`<img src="${p.image}" width="100%">`:''}
-                <div>
-                    <span onclick="begen('${doc.id}')">❤️ ${p.likes||0}</span> | 
-                    <span onclick="yorumAc('${doc.id}')">💬 Yorumlar</span>
-                </div>
-            </div>`;
-        });
-        document.getElementById('feed-container').innerHTML=h;
-    });
-}
+// Auth state
+auth.onAuthStateChanged(async user=>{
+    if(user){
+        document.getElementById('loginPage').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        document.getElementById('navBar').classList.remove('hidden');
 
-// BEĞEN
-async function begen(id){
-    await db.collection("announcements").doc(id).update({
-        likes:firebase.firestore.FieldValue.increment(1)
-    });
-}
+        const doc=await db.collection("users").doc(user.uid).get();
+        if(user.email==="koyemirler@gmail.com") document.getElementById('adminPanel').classList.remove('hidden');
 
-// PAYLAŞ
-async function akisPaylas(){
-    if(!["admin","muhtar","yardimci"].includes(currentUserRole)) return alert("Paylaşamazsınız!");
-    let title = document.getElementById("post-title").value;
-    if(!title) return alert("Başlık gerekli!");
-    if(temizle(title)) return alert("Küfür yasak!");
-
-    let file = document.getElementById("post-file").files[0];
-    let imgUrl="";
-    if(file){
-        const snap = await storage.ref('posts/'+Date.now()+"-"+file.name).put(file);
-        imgUrl = await snap.ref.getDownloadURL();
+        onlineListesiYukle();
+        mesajlariDinle();
+        akisDinle();
+        reklamYukle();
     }
+});
 
-    await db.collection("announcements").add({
-        sender:currentUser.email, title, image:imgUrl, likes:0, time:Date.now()
-    });
-    document.getElementById("post-title").value=""; document.getElementById("post-file").value="";
-}
-
-// SOHBET
-function sohbetDinle(){
-    db.collection("chat").orderBy("time").onSnapshot(snap=>{
-        let h="";
-        snap.forEach(doc=>{
-            const m=doc.data();
-            const cls=m.uid===currentUser.uid?"me":"other";
-            h+=`<div class="msg ${cls}">${m.text||''}${m.image?`<img src="${m.image}" width="150">`:''}</div>`;
-        });
-        document.getElementById('chat-messages').innerHTML=h;
-    });
-}
-
-// MESAJ
-async function mesajGonder(){
-    let text=document.getElementById("chat-msg").value;
-    if(!text) return;
-    if(temizle(text)) return alert("Küfür yasak!");
-    await db.collection("chat").add({text, uid:currentUser.uid, time:Date.now()});
-    document.getElementById("chat-msg").value="";
-}
-
-// ONLINE
-function onlineListesi(){
-    db.collection("users").where("online","==",true).onSnapshot(snap=>{
-        let h="";
+// Online liste
+function onlineListesiYukle(){
+    db.collection("users").onSnapshot(snap=>{
+        let html="";
         snap.forEach(doc=>{
             const u=doc.data();
-            h+=`🟢 ${u.name} ${currentUserRole==="admin"?`<button onclick="ban('${doc.id}')">❌</button>`:''}<br>`;
+            html+=`<div><span class="${u.online?'status-dot online':'status-dot offline'}"></span>${u.name}</div>`;
         });
-        document.getElementById('online-users-list').innerHTML=h;
+        document.getElementById('userList').innerHTML=html;
     });
 }
 
-// BAN
-async function ban(uid){ await db.collection("users").doc(uid).update({banned:true}); }
-
-// DURUM / STORY
-function durumDinle(){
-    db.collection("status").orderBy("time","desc").onSnapshot(snap=>{
-        let h="";
+// Sohbet
+function mesajlariDinle(){
+    db.collection("chat").orderBy("time","asc").limitToLast(30).onSnapshot(snap=>{
+        let html="";
         snap.forEach(doc=>{
-            const s=doc.data();
-            h+=`<div class="status-item">${s.name}</div>`;
+            const m=doc.data();
+            const isMe=m.uid===auth.currentUser.uid;
+            html+=`<div class="msg ${isMe?'sent':'received'}"><b>${m.user}:</b><br>${m.text}</div>`;
         });
-        document.getElementById('statusList').innerHTML=h;
+        const box=document.getElementById('chatBox');
+        box.innerHTML=html;
+        box.scrollTop=box.scrollHeight;
+    });
+}
+async function mesajGonder(){
+    const text=document.getElementById('msgInput').value;
+    if(!text) return;
+    if(/küfür|badword/i.test(text)) return alert("Küfür yasak!");
+    await db.collection("chat").add({
+        text,
+        user:auth.currentUser.email.split('@')[0],
+        uid:auth.currentUser.uid,
+        time:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('msgInput').value="";
+}
+
+// Akış
+function akisDinle(){
+    db.collection("announcements").orderBy("time","desc").onSnapshot(snap=>{
+        let html="";
+        snap.forEach(doc=>{
+            const p=doc.data();
+            html+=`<div class="card"><b>${p.sender}</b><p>${p.title}</p>${p.image?`<img src="${p.image}" width="100%">`:''}
+            <div style="margin-top:5px;color:gray;">
+            <span onclick="begen('${doc.id}')">❤️ ${p.likes||0}</span> | 
+            <span onclick="yorumAc('${doc.id}')">💬 Yorumlar</span>
+            </div></div>`;
+        });
+        document.getElementById('postList').innerHTML=html;
+    });
+}
+async function akisPaylas(){
+    const title=document.getElementById('postTitle').value;
+    const file=document.getElementById('postFile').files[0];
+    if(!title) return alert("Başlık girin!");
+    let url='';
+    if(file){
+        const ref=storage.ref('posts/'+Date.now()+'_'+file.name);
+        await ref.put(file);
+        url=await ref.getDownloadURL();
+    }
+    await db.collection("announcements").add({
+        sender:auth.currentUser.email.split('@')[0],
+        title,
+        image:url,
+        likes:0,
+        time:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('postTitle').value='';
+    document.getElementById('postFile').value='';
+}
+
+// Reklam
+async function reklamYukle(){
+    const doc=await db.collection("settings").doc("ads").get();
+    if(doc.exists && doc.data().active){
+        const ad=document.getElementById('adBanner');
+        ad.style.display="block";
+        ad.innerText=doc.data().text;
+        window.adLink=doc.data().link;
+    }
+}
+async function reklamKaydet(){
+    await db.collection("settings").doc("ads").set({
+        text:document.getElementById('adTxt').value,
+        link:document.getElementById('adLnk').value,
+        active:document.getElementById('adActive').checked
+    });
+    alert("Reklam güncellendi!");
+}
+
+// Yetki verme
+async function yetkiVer(){
+    const email=document.getElementById('targetEmail').value;
+    const role=document.getElementById('targetRole').value;
+    const snap=await db.collection("users").where("email","==",email).get();
+    if(snap.empty) return alert("Kullanıcı bulunamadı!");
+    snap.forEach(async doc=>{
+        await db.collection("users").doc(doc.id).update({role});
+        alert("Yetki güncellendi!");
     });
 }
 
-// ACCORDION
-function toggleAcc(id){ document.getElementById(id).classList.toggle('hidden'); }
-
-// FİRMA
-async function firmaEkle(){
-    if(currentUserRole!=="admin") return alert("Yetkisiz!");
-    let name=document.getElementById("f-name").value;
-    let tel=document.getElementById("f-tel").value;
-    if(!name) return alert("Firma adı gerekli");
-    await db.collection("businesses").add({name,tel,time:Date.now()});
-    document.getElementById("f-name").value=""; document.getElementById("f-tel").value="";
-}
+// PWA service worker
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}

@@ -16,7 +16,7 @@ const auth = firebase.auth();
 
 // ─── CLOUDINARY CONFIG ───
 const CLOUD_NAME = "ddt11vhyb";
-const UPLOAD_PRESET = "emirler_preset";
+const UPLOAD_PRESET = "koyapp";
 
 // ─── SABİTLER ───
 const ADMIN_EMAIL = "koyemirler@gmail.com";

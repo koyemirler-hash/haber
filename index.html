@@ -18,6 +18,23 @@
 </head>
 <body>
 
+<!-- PWA Yükleme Banner -->
+<div id="pwaInstallBanner" class="pwa-banner hidden">
+  <div class="pwa-banner-inner">
+    <div class="pwa-banner-left">
+      <img src="ikon_192.png" class="pwa-icon" alt="ikon">
+      <div>
+        <div class="pwa-banner-title">Emirler Köyü</div>
+        <div class="pwa-banner-sub">Ana ekrana ekle, her zaman erişim!</div>
+      </div>
+    </div>
+    <div class="pwa-banner-btns">
+      <button class="pwa-install-btn" onclick="pwaYukle()">📲 Yükle</button>
+      <button class="pwa-close-btn" onclick="pwaBannerKapat()">✕</button>
+    </div>
+  </div>
+</div>
+
 <!-- Kullanım Şartları -->
 <div id="termsOverlay" class="overlay-screen">
   <div class="terms-card">
@@ -68,6 +85,7 @@
   <section id="view-feed" class="view">
     <div class="top-header">
       <span class="header-title">🏠 Köy Meydanı</span>
+      <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()" title="Ses Aç/Kapat">🔔</button>
     </div>
     <div id="postPanel" class="post-panel hidden">
       <div class="post-panel-inner">
@@ -82,6 +100,44 @@
       </div>
     </div>
     <div id="postList" class="post-list">
+      <div class="loading-spinner">⏳ Yükleniyor...</div>
+    </div>
+  </section>
+
+  <!-- NOSTALJİ BÖLÜMÜ -->
+  <section id="view-nostalji" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">📸 Nostalji</span>
+    </div>
+
+    <!-- Onay Bekleyenler - sadece yetkililer görür -->
+    <div id="nostaljiPendingSection" class="pending-section hidden">
+      <div class="pending-header">
+        <span>⏳ Onay Bekleyen Gönderiler</span>
+        <span class="pending-count-badge" id="pendingCountText">0</span>
+      </div>
+      <div id="nostaljiPendingList" class="post-list" style="padding-top:6px;"></div>
+    </div>
+
+    <!-- Anı gönder formu -->
+    <div class="post-panel">
+      <div class="post-panel-inner nostalji-form">
+        <div class="nostalji-form-title">📸 Anı Paylaş</div>
+        <input id="nostaljiTitle" placeholder="Başlık... (örn: Köy Meydanı 1985)" class="input-field">
+        <input id="nostaljiYear" placeholder="📅 Yıl / Dönem  (örn: 1990'lar)" class="input-field">
+        <textarea id="nostaljiText" placeholder="Bu anıyı anlatın..." class="textarea-field" rows="3"></textarea>
+        <label class="file-label">
+          📷 Fotoğraf Ekle
+          <input type="file" id="nostaljiFile" accept="image/*,video/*" onchange="previewFile(this,'nostaljiPreview')">
+        </label>
+        <div id="nostaljiPreview" class="media-preview"></div>
+        <button class="btn btn-primary" id="nostaljiBtn" onclick="nostaljiPaylas()">📸 Anıyı Gönder</button>
+        <p class="approval-note" id="nostaljiApprovalNote">⏳ Gönderiniz yetkililer tarafından onaylandıktan sonra yayınlanacak.</p>
+      </div>
+    </div>
+
+    <!-- Yayınlanan anılar -->
+    <div id="nostaljiList" class="post-list">
       <div class="loading-spinner">⏳ Yükleniyor...</div>
     </div>
   </section>
@@ -134,11 +190,12 @@
         <div id="userList"><div class="loading-spinner">⏳</div></div>
       </div>
 
-      <!-- QR Kod -->
+      <!-- QR Kod & PWA Yükleme -->
       <div class="settings-card text-center">
         <h4>📱 Uygulama QR Kodu</h4>
         <img src="karekod.png" class="qr-img" alt="QR Kod">
         <p class="qr-url">koyemirler-hash.github.io/haber</p>
+        <button class="btn btn-secondary" style="margin-top:12px;" id="settingsInstallBtn" onclick="pwaYukleSettings()">📲 Uygulamayı Yükle</button>
       </div>
 
       <!-- İletişim -->
@@ -165,7 +222,7 @@
         <h4>🏡 Hakkımızda</h4>
         <p class="about-text">Emirler Köyü Portalı, köy sakinlerini bir araya getirmek, duyuruları paylaşmak ve iletişimi kolaylaştırmak için yapılmıştır.</p>
         <p class="about-text">📍 Emirler Köyü, Türkiye</p>
-        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 2.0 · PWA</p>
+        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 3.0 · PWA</p>
       </div>
 
       <!-- Görüş & Öneri -->
@@ -241,6 +298,11 @@
   <div class="nav-item active" id="nav-feed" onclick="tabDegistir('feed')">
     <span class="nav-icon">🏠</span>
     <span class="nav-label">Akış</span>
+  </div>
+  <div class="nav-item" id="nav-nostalji" onclick="tabDegistir('nostalji')">
+    <span class="nav-icon">📸</span>
+    <span class="nav-label">Nostalji</span>
+    <span class="nav-badge hidden" id="nostalji-badge">0</span>
   </div>
   <div class="nav-item" id="nav-chat" onclick="tabDegistir('chat')">
     <span class="nav-icon">💬</span>

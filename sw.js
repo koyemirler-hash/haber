@@ -1,5 +1,5 @@
-// Emirler Köyü PWA - Service Worker v2
-const CACHE_NAME = "emirler-v2";
+// Emirler Köyü PWA - Service Worker v3
+const CACHE_NAME = "emirler-v3";
 const STATIC_ASSETS = [
     "./index.html",
     "./style.css",
@@ -7,17 +7,14 @@ const STATIC_ASSETS = [
     "./manifest.json",
     "./ikon_192.png",
     "./ikon_512.png",
-    "./karekod.png",
-    "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js",
-    "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js",
-    "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"
+    "./karekod.png"
 ];
 
 // Kurulum
 self.addEventListener("install", event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(STATIC_ASSETS.slice(0, 7)); // Sadece yerel dosyalar
+            return cache.addAll(STATIC_ASSETS);
         }).catch(err => console.warn("Cache error:", err))
     );
     self.skipWaiting();
@@ -40,8 +37,10 @@ self.addEventListener("fetch", event => {
     // Firebase ve Cloudinary isteklerini direkt geç
     if (url.hostname.includes("firestore.googleapis.com") ||
         url.hostname.includes("firebase.com") ||
+        url.hostname.includes("firebaseapp.com") ||
         url.hostname.includes("cloudinary.com") ||
-        url.hostname.includes("googleapis.com")) {
+        url.hostname.includes("googleapis.com") ||
+        url.hostname.includes("gstatic.com")) {
         return;
     }
     
@@ -50,14 +49,12 @@ self.addEventListener("fetch", event => {
         caches.match(event.request).then(cached => {
             if (cached) return cached;
             return fetch(event.request).then(response => {
-                // Başarılı cevabı cache'e ekle
                 if (response.ok && event.request.method === "GET") {
                     const clone = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
                 }
                 return response;
             }).catch(() => {
-                // Offline - index.html döndür
                 if (event.request.destination === "document") {
                     return caches.match("./index.html");
                 }

@@ -8,6 +8,7 @@
   --light-gray: #f4f6f4;
   --danger: #dc3545;
   --orange: #e07b39;
+  --amber: #d4a017;
   --shadow: 0 2px 12px rgba(0,0,0,0.07);
   --radius: 16px;
 }
@@ -23,6 +24,44 @@ body {
 input, textarea, select { outline: none; font-family: inherit; }
 a { text-decoration: none; color: inherit; }
 button { font-family: inherit; }
+
+/* ─── PWA BANNER ─── */
+.pwa-banner {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: #1a1a2e;
+  z-index: 99999; padding: 10px 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  animation: slideDown 0.4s ease;
+}
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+.pwa-banner-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; max-width: 480px; margin: 0 auto;
+}
+.pwa-banner-left {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+}
+.pwa-icon { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
+.pwa-banner-title { font-size: 14px; font-weight: 700; color: white; }
+.pwa-banner-sub { font-size: 11px; color: #aaa; margin-top: 1px; }
+.pwa-banner-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.pwa-install-btn {
+  background: var(--green); color: white;
+  border: none; border-radius: 20px;
+  padding: 8px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap;
+}
+.pwa-install-btn:active { opacity: 0.85; }
+.pwa-close-btn {
+  background: rgba(255,255,255,0.12); color: #ccc;
+  border: none; border-radius: 50%;
+  width: 28px; height: 28px; font-size: 14px; cursor: pointer;
+}
+
+/* Body kaydırma – banner açıkken padding */
+body:has(.pwa-banner:not(.hidden)) {
+  padding-top: 62px;
+}
 
 /* ─── FORM ELEMENTS ─── */
 .input-field {
@@ -60,6 +99,16 @@ button { font-family: inherit; }
 }
 .icon-btn:hover { background: rgba(0,0,0,0.06); }
 .icon-btn-sm { background: none; border: none; font-size: 16px; cursor: pointer; padding: 3px; }
+
+/* ─── SES BUTONU ─── */
+.sound-toggle-btn {
+  background: rgba(255,255,255,0.2); border: none;
+  border-radius: 50%; width: 36px; height: 36px;
+  font-size: 18px; cursor: pointer; margin-left: auto;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s;
+}
+.sound-toggle-btn:active { background: rgba(255,255,255,0.35); }
 
 /* ─── OVERLAY SCREENS ─── */
 .overlay-screen {
@@ -177,6 +226,7 @@ video.post-media { background: #000; max-height: 280px; }
   cursor: pointer; transition: all 0.15s; color: #555;
 }
 .reaction-btn.active { background: #e8f5e9; border-color: var(--green); color: var(--green-dark); font-weight: 600; }
+.reaction-btn:active { transform: scale(1.15); }
 .reaction-count { font-size: 12px; }
 .post-btns-row { display: flex; align-items: center; gap: 6px; }
 .comment-count-btn {
@@ -187,6 +237,94 @@ video.post-media { background: #000; max-height: 280px; }
 }
 .comment-count-btn:hover { background: var(--light-gray); }
 .delete-post-btn { color: var(--danger); font-size: 16px; }
+
+/* ─── NOSTALJİ ─── */
+.nostalji-form {
+  border-left-color: var(--amber) !important;
+  background: linear-gradient(135deg, #fffdf7, #fff) !important;
+}
+.nostalji-form-title {
+  font-size: 15px; font-weight: 700; color: #7b5a1a;
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+
+.nostalji-card {
+  border-left: 4px solid var(--amber) !important;
+  background: linear-gradient(135deg, #fffdf7 0%, #fff 100%) !important;
+}
+.nostalji-avatar {
+  background: linear-gradient(135deg, #d4a017, #b8860b) !important;
+}
+.nostalji-title {
+  color: #7b5a1a !important;
+  font-style: italic;
+}
+.nostalji-year-badge {
+  display: inline-block; font-size: 11px;
+  background: #fff3cd; color: #856404;
+  border: 1px solid #ffc107; border-radius: 10px;
+  padding: 1px 8px; margin-left: 6px; font-weight: 700;
+}
+.nostalji-img {
+  filter: sepia(18%) saturate(90%);
+  border: 3px solid #f0e0b0 !important;
+}
+
+.approval-note {
+  font-size: 12px; color: #888; text-align: center;
+  margin-top: 8px; padding: 6px;
+  background: #fff8e1; border-radius: 8px;
+  border: 1px solid #ffe082;
+}
+
+/* ─── PENDING SECTION ─── */
+.pending-section {
+  background: #fff8e1; border-bottom: 2px solid #ffe082;
+  padding: 0;
+}
+.pending-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  font-size: 14px; font-weight: 700; color: #7b5a1a;
+  background: #fff3cd;
+}
+.pending-count-badge {
+  background: var(--orange); color: white;
+  font-size: 12px; font-weight: 700;
+  min-width: 22px; height: 22px;
+  border-radius: 11px; display: inline-flex;
+  align-items: center; justify-content: center;
+  padding: 0 6px;
+}
+.nostalji-pending-card {
+  border-left: 4px solid var(--orange) !important;
+  background: #fffbf2 !important;
+  opacity: 0.95;
+}
+.pending-label {
+  background: #fff3cd; color: #856404;
+  font-size: 11px; font-weight: 700;
+  padding: 5px 14px; letter-spacing: 0.3px;
+  border-bottom: 1px solid #ffe082;
+}
+.approval-btns {
+  display: flex; gap: 10px; padding: 10px 14px 14px;
+  border-top: 1px solid #f0e0b0;
+}
+.btn-approve {
+  flex: 1; padding: 10px; border: none; border-radius: 10px;
+  background: #d4edda; color: #155724;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-approve:active { background: #c3e6cb; transform: scale(0.97); }
+.btn-reject {
+  flex: 1; padding: 10px; border: none; border-radius: 10px;
+  background: #f8d7da; color: #721c24;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-reject:active { background: #f5c6cb; transform: scale(0.97); }
 
 /* ─── CHAT ─── */
 .chat-box {
@@ -415,11 +553,28 @@ video.chat-media { background: #000; }
   flex: 1; display: flex; flex-direction: column;
   align-items: center; gap: 1px; cursor: pointer;
   padding: 4px 0; transition: all 0.15s;
+  position: relative;
 }
-.nav-icon { font-size: 22px; transition: transform 0.2s; }
-.nav-label { font-size: 11px; color: #aaa; font-weight: 500; }
+.nav-icon { font-size: 20px; transition: transform 0.2s; }
+.nav-label { font-size: 10px; color: #aaa; font-weight: 500; }
 .nav-item.active .nav-icon { transform: scale(1.15); }
 .nav-item.active .nav-label { color: var(--green); font-weight: 700; }
+
+/* Nav badge (onay sayısı) */
+.nav-badge {
+  position: absolute; top: 1px; right: calc(50% - 20px);
+  background: var(--danger); color: white;
+  font-size: 10px; font-weight: 800;
+  min-width: 18px; height: 18px;
+  border-radius: 9px; display: flex;
+  align-items: center; justify-content: center;
+  padding: 0 4px; border: 2px solid white;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
 
 /* ─── SCROLLBAR ─── */
 ::-webkit-scrollbar { width: 4px; }

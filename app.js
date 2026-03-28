@@ -105,12 +105,56 @@ document.addEventListener("click", ilkDokunusIzinleri, { once: true });
 // ─── BİLDİRİM İZNİ ───
 async function bildirimiIzniAl() {
     if (!("Notification" in window)) return;
-    if (Notification.permission === "granted") return;
-    if (Notification.permission === "denied") return;
+    if (Notification.permission === "granted") {
+        bildirimBtnGuncelle("granted");
+        return;
+    }
+    if (Notification.permission === "denied") {
+        bildirimBtnGuncelle("denied");
+        return;
+    }
     try {
         const izin = await Notification.requestPermission();
-        console.log("Bildirim izni:", izin);
+        bildirimBtnGuncelle(izin);
     } catch(e) {}
+}
+
+async function bildirimIzniIste() {
+    if (!("Notification" in window)) {
+        alert("Bu tarayıcı bildirimleri desteklemiyor.");
+        return;
+    }
+    if (Notification.permission === "denied") {
+        alert("Bildirim izni reddedilmiş.\n\nTarayıcı ayarlarından manuel olarak açmanız gerekiyor:\nAyarlar → Site Ayarları → Bildirimler → Emirler → İzin Ver");
+        return;
+    }
+    const izin = await Notification.requestPermission();
+    bildirimBtnGuncelle(izin);
+    if (izin === "granted") {
+        // Test bildirimi gönder
+        setTimeout(() => {
+            telefonBildirimi("✅ Emirler Köyü", "Bildirimler başarıyla etkinleştirildi!", "test");
+        }, 500);
+    }
+}
+
+function bildirimBtnGuncelle(durum) {
+    const btn = document.getElementById("bildirimBtn");
+    const text = document.getElementById("bildirimDurumText");
+    if (!btn) return;
+    if (durum === "granted") {
+        btn.textContent = "✅ Açık";
+        btn.className = "izin-btn izin-btn-aktif";
+        if (text) text.textContent = "Bildirimler aktif ✓";
+    } else if (durum === "denied") {
+        btn.textContent = "🚫 Kapalı";
+        btn.className = "izin-btn izin-btn-kapali";
+        if (text) text.textContent = "Tarayıcı ayarlarından açın";
+    } else {
+        btn.textContent = "İzin Ver";
+        btn.className = "izin-btn";
+        if (text) text.textContent = "Yeni mesaj ve duyurularda haber al";
+    }
 }
 
 // Telefon bildirimi göster (service worker üzerinden - arka planda da çalışır)
@@ -220,8 +264,15 @@ function sesToggle() {
 }
 
 function updateSoundBtn() {
+    // Header butonu
     const btn = document.getElementById("soundToggleBtn");
     if (btn) btn.textContent = soundEnabled ? "🔔" : "🔕";
+    // Ayarlar sayfası butonu
+    const sesBtn = document.getElementById("sesBtn");
+    if (sesBtn) {
+        sesBtn.textContent = soundEnabled ? "Açık" : "Kapalı";
+        sesBtn.className = soundEnabled ? "izin-btn izin-btn-aktif" : "izin-btn";
+    }
 }
 
 // ═══════════════════════════════════════════
@@ -439,6 +490,10 @@ auth.onAuthStateChanged(async user => {
                 JSON.stringify({ fields: { online: { booleanValue: false } } })
             );
         });
+
+        // İzin durumlarını ayarlar sayfasında göster
+        bildirimBtnGuncelle(("Notification" in window) ? Notification.permission : "denied");
+        updateSoundBtn();
 
         tabDegistir("feed");
         akisDinle();

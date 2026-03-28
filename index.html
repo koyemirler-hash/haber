@@ -291,6 +291,36 @@
         </div>
       </div>
 
+      <!-- İzinler Kartı -->
+      <div class="settings-card" id="izinlerKart">
+        <h4>🔐 Uygulama İzinleri</h4>
+        <div class="izin-listesi">
+
+          <div class="izin-satir">
+            <div class="izin-sol">
+              <span class="izin-ikon">🔔</span>
+              <div>
+                <div class="izin-ad">Bildirimler</div>
+                <div class="izin-aciklama" id="bildirimDurumText">Yeni mesaj ve duyurularda haber al</div>
+              </div>
+            </div>
+            <button class="izin-btn" id="bildirimBtn" onclick="bildirimIzniIste()">İzin Ver</button>
+          </div>
+
+          <div class="izin-satir">
+            <div class="izin-sol">
+              <span class="izin-ikon">🔊</span>
+              <div>
+                <div class="izin-ad">Sesler</div>
+                <div class="izin-aciklama">Beğeni ve mesaj sesleri</div>
+              </div>
+            </div>
+            <button class="izin-btn izin-btn-aktif" id="sesBtn" onclick="sesToggle()">Açık</button>
+          </div>
+
+        </div>
+      </div>
+
       <!-- Çıkış -->
       <button class="btn btn-danger" onclick="cikisYap()">🚪 Çıkış Yap</button>
     </div>

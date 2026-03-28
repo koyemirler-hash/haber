@@ -87,18 +87,45 @@ function pwaBannerKapat() {
 window.addEventListener("DOMContentLoaded", () => {
     const sb = document.getElementById("settingsInstallBtn");
     if (sb) sb.style.display = "none";
-    // Ses ikonu güncelle
     updateSoundBtn();
 });
 
-// ─── MOBİL SES UNLOCK ───
-// Mobil tarayıcılar ilk dokunuş olmadan ses çalmaz, bu onu çözer
-function sesiUyandir() {
+// ─── MOBİL SES + BİLDİRİM İZİNLERİ ───
+// İlk dokunuşta hem sesi uyandır hem de bildirim izni iste
+function ilkDokunusIzinleri() {
+    // Ses uyandır
     const ctx = getAudioCtx();
     if (ctx && ctx.state === "suspended") ctx.resume();
+    // Bildirim izni iste
+    bildirimiIzniAl();
 }
-document.addEventListener("touchstart", sesiUyandir, { once: true });
-document.addEventListener("click", sesiUyandir, { once: true });
+document.addEventListener("touchstart", ilkDokunusIzinleri, { once: true });
+document.addEventListener("click", ilkDokunusIzinleri, { once: true });
+
+// ─── BİLDİRİM İZNİ ───
+async function bildirimiIzniAl() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") return;
+    if (Notification.permission === "denied") return;
+    try {
+        const izin = await Notification.requestPermission();
+        console.log("Bildirim izni:", izin);
+    } catch(e) {}
+}
+
+// Telefon bildirimi göster (service worker üzerinden - arka planda da çalışır)
+function telefonBildirimi(baslik, mesaj, tag) {
+    if (!("serviceWorker" in navigator)) return;
+    if (Notification.permission !== "granted") return;
+    navigator.serviceWorker.ready.then(reg => {
+        reg.active && reg.active.postMessage({
+            type: "SHOW_NOTIFICATION",
+            title: baslik,
+            body: mesaj,
+            tag: tag || "emirler"
+        });
+    });
+}
 
 // ═══════════════════════════════════════════
 //  SES SİSTEMİ
@@ -449,8 +476,25 @@ function tabDegistir(t) {
 //  AKIŞ (FEED)
 // ═══════════════════════════════════════════
 
+let akisDocCount = -1;
+
 function akisDinle() {
     db.collection("announcements").orderBy("time", "desc").onSnapshot(snap => {
+        // 📲 Yeni duyuru bildirimi
+        const newCount = snap.size;
+        if (akisDocCount >= 0 && newCount > akisDocCount) {
+            const docs = snap.docs;
+            const newest = docs[0]?.data(); // desc sıralı, ilk = en yeni
+            if (newest && newest.senderUid !== currentUser?.uid && document.hidden) {
+                telefonBildirimi(
+                    "📢 " + (newest.sender || "Yeni Duyuru"),
+                    newest.title || newest.text || "Yeni bir paylaşım var",
+                    "duyuru"
+                );
+            }
+        }
+        akisDocCount = newCount;
+
         const list = document.getElementById("postList");
         if (snap.empty) {
             list.innerHTML = `<div class="empty-state"><div class="empty-icon">📢</div><p>Henüz duyuru yok</p></div>`;
@@ -898,13 +942,21 @@ function mesajlariDinle() {
         const box = document.getElementById("chatBox");
         const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
 
-        // 🔊 Yeni gelen mesaj sesi
+        // 🔊 Yeni gelen mesaj sesi + 📲 Telefon bildirimi
         const newCount = snap.size;
         if (chatDocCount >= 0 && newCount > chatDocCount) {
             const docs = snap.docs;
             const newest = docs[docs.length - 1]?.data();
             if (newest && newest.uid !== currentUser?.uid) {
                 playMessageSound();
+                // Uygulama arka plandaysa telefon bildirimi gönder
+                if (document.hidden) {
+                    telefonBildirimi(
+                        "💬 " + (newest.user || "Biri") + " mesaj gönderdi",
+                        newest.text || "📷 Fotoğraf/Video",
+                        "chat"
+                    );
+                }
             }
         }
         chatDocCount = newCount;
@@ -1277,7 +1329,15 @@ async function reklamKaydet() {
         const veri = { aktif, metin, link };
         if (gorselUrl) veri.gorselUrl = gorselUrl;
 
-        await db.collection("settings").doc("reklam").set(veri, { merge: true });
+        try {
+            await db.collection("settings").doc("reklam").set(veri, { merge: true });
+        } catch(permErr) {
+            // Firebase Rules'da settings koleksiyonu izni yoksa uyar
+            alert("⚠️ Firebase kurallarını güncellemelisiniz!\n\nFirestore → Rules sayfasına gidin ve 'settings' koleksiyonuna yazma izni ekleyin.\n\nDetay: " + permErr.message);
+            btn.disabled = false;
+            btn.textContent = "💾 Reklamı Kaydet";
+            return;
+        }
 
         // Görseli güncelle
         const alan = document.getElementById("reklamAlani");

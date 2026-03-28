@@ -1,5 +1,5 @@
-// Emirler Köyü PWA - Service Worker v3
-const CACHE_NAME = "emirler-v4";
+// Emirler Köyü PWA - Service Worker v5
+const CACHE_NAME = "emirler-v5";
 const STATIC_ASSETS = [
     "./index.html",
     "./style.css",
@@ -10,31 +10,24 @@ const STATIC_ASSETS = [
     "./karekod.png"
 ];
 
-// Kurulum
 self.addEventListener("install", event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => {
-            return cache.addAll(STATIC_ASSETS);
-        }).catch(err => console.warn("Cache error:", err))
+        caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS)).catch(() => {})
     );
     self.skipWaiting();
 });
 
-// Aktivasyon - eski cache temizle
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(keys => Promise.all(
-            keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+            keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
         ))
     );
     self.clients.claim();
 });
 
-// Fetch - Cache first for static, network first for API
 self.addEventListener("fetch", event => {
     const url = new URL(event.request.url);
-    
-    // Firebase ve Cloudinary isteklerini direkt geç
     if (url.hostname.includes("firestore.googleapis.com") ||
         url.hostname.includes("firebase.com") ||
         url.hostname.includes("firebaseapp.com") ||
@@ -43,8 +36,6 @@ self.addEventListener("fetch", event => {
         url.hostname.includes("gstatic.com")) {
         return;
     }
-    
-    // Statik dosyalar için cache-first
     event.respondWith(
         caches.match(event.request).then(cached => {
             if (cached) return cached;
@@ -61,4 +52,51 @@ self.addEventListener("fetch", event => {
             });
         })
     );
+});
+
+// ─── BİLDİRİM GÖSTER ───
+self.addEventListener("push", event => {
+    let data = { title: "Emirler Köyü", body: "Yeni bir şey var!", icon: "./ikon_192.png" };
+    try { data = { ...data, ...event.data.json() }; } catch(e) {}
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: data.icon || "./ikon_192.png",
+            badge: "./ikon_192.png",
+            vibrate: [200, 100, 200],
+            tag: data.tag || "emirler",
+            data: { url: data.url || "./" }
+        })
+    );
+});
+
+// Bildirimi tıklayınca uygulamayı aç
+self.addEventListener("notificationclick", event => {
+    event.notification.close();
+    const url = event.notification.data?.url || "./";
+    event.waitUntil(
+        clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
+            for (const client of list) {
+                if (client.url.includes("emirler") && "focus" in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) return clients.openWindow(url);
+        })
+    );
+});
+
+// App'ten gelen mesajla bildirim göster (foreground → background köprüsü)
+self.addEventListener("message", event => {
+    if (event.data && event.data.type === "SHOW_NOTIFICATION") {
+        const d = event.data;
+        self.registration.showNotification(d.title || "Emirler Köyü", {
+            body: d.body || "",
+            icon: "./ikon_192.png",
+            badge: "./ikon_192.png",
+            vibrate: [150, 80, 150],
+            tag: d.tag || "msg",
+            data: { url: "./" }
+        });
+    }
 });

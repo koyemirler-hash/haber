@@ -580,3 +580,63 @@ video.chat-media { background: #000; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+/* ─── REKLAM ALANI ─── */
+.reklam-alani {
+  margin: 16px 12px 8px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border: 2px solid #ffe082;
+  background: linear-gradient(135deg, #fffde7, #fff8e1);
+  position: relative;
+}
+.reklam-etiket {
+  background: #ffb300;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  display: inline-block;
+}
+.reklam-icerik {
+  padding: 0;
+}
+.reklam-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.reklam-gorsel {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  display: block;
+}
+.reklam-metin {
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5d4037;
+  line-height: 1.5;
+}
+
+/* Reklam toggle label */
+.reklam-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.reklam-toggle-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--green);
+  cursor: pointer;
+}

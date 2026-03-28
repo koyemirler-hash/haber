@@ -175,6 +175,16 @@
       <div class="empty-icon">🏢</div>
       <p>Henüz firma eklenmemiş</p>
     </div>
+    <!-- SABİT REKLAM ALANI -->
+    <div id="reklamAlani" class="reklam-alani hidden">
+      <div class="reklam-etiket">📢 Reklam</div>
+      <div class="reklam-icerik">
+        <a id="reklamLink" href="#" target="_blank" class="reklam-link">
+          <img id="reklamGorsel" src="" alt="Reklam" class="reklam-gorsel hidden">
+          <div id="reklamMetin" class="reklam-metin"></div>
+        </a>
+      </div>
+    </div>
   </section>
 
   <!-- AYARLAR BÖLÜMÜ -->
@@ -246,6 +256,22 @@
               <option value="user">Normal Üye</option>
             </select>
             <button class="btn btn-secondary" onclick="yetkiVer()">✅ Yetki Ver</button>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">📢 Reklam Alanı Yönetimi</p>
+            <label class="reklam-toggle-label">
+              <input type="checkbox" id="reklamAktif" onchange="reklamToggle()">
+              <span>Reklam alanını göster</span>
+            </label>
+            <input id="reklamMetinInput" placeholder="Reklam metni / açıklama" class="input-field" style="margin-top:8px;">
+            <input id="reklamLinkInput" placeholder="Tıklanınca açılacak link (https://...)" class="input-field">
+            <label class="file-label">
+              🖼️ Reklam Görseli (isteğe bağlı)
+              <input type="file" id="reklamFile" accept="image/*" onchange="previewFile(this,'reklamPreview')">
+            </label>
+            <div id="reklamPreview" class="media-preview"></div>
+            <button class="btn btn-secondary" id="reklamKaydetBtn" onclick="reklamKaydet()">💾 Reklamı Kaydet</button>
           </div>
 
           <div class="admin-section" style="margin-top:14px;">

@@ -259,7 +259,7 @@
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
-            <p class="section-label">📢 Reklam Alanı Yönetimi</p>
+            <p class="section-label">📢 Sabit Reklam (Firmalar Sayfası)</p>
             <label class="reklam-toggle-label">
               <input type="checkbox" id="reklamAktif" onchange="reklamToggle()">
               <span>Reklam alanını göster</span>
@@ -275,11 +275,30 @@
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">🎯 Köşe Reklam (Tüm Sayfalar)</p>
+            <label class="reklam-toggle-label">
+              <input type="checkbox" id="floatReklamAktif" onchange="floatReklamToggle()">
+              <span>Köşe reklamını göster</span>
+            </label>
+            <input id="floatReklamMetinInput" placeholder="Reklam metni" class="input-field" style="margin-top:8px;">
+            <input id="floatReklamLinkInput" placeholder="Tıklanınca açılacak link (https://...)" class="input-field">
+            <label class="file-label">
+              🖼️ Reklam Görseli (isteğe bağlı)
+              <input type="file" id="floatReklamFile" accept="image/*" onchange="previewFile(this,'floatReklamPreview')">
+            </label>
+            <div id="floatReklamPreview" class="media-preview"></div>
+            <button class="btn btn-secondary" id="floatReklamKaydetBtn" onclick="floatReklamKaydet()">💾 Kaydet</button>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
             <p class="section-label">🏢 Firma Ekle / Düzenle</p>
             <input id="bizName" placeholder="Firma Adı *" class="input-field">
             <input id="bizCat" placeholder="Kategori (Örn: Market, Kafe...)" class="input-field">
-            <input id="bizPhone" placeholder="Telefon" class="input-field" type="tel">
-            <input id="bizAddr" placeholder="Adres" class="input-field">
+            <input id="bizPhone" placeholder="📞 Telefon (boş bırakabilirsiniz)" class="input-field" type="tel">
+            <input id="bizWhatsapp" placeholder="💬 WhatsApp numarası (örn: 905551234567)" class="input-field" type="tel">
+            <input id="bizEmail" placeholder="✉️ E-posta adresi" class="input-field" type="email">
+            <input id="bizUrl" placeholder="🌐 Web sitesi / URL (https://...)" class="input-field">
+            <input id="bizAddr" placeholder="📍 Adres" class="input-field">
             <textarea id="bizDesc" placeholder="Açıklama" class="textarea-field" rows="2"></textarea>
             <label class="file-label">
               📸 Firma Görseli
@@ -347,6 +366,15 @@
     <img id="imgFullscreenSrc" src="">
   </div>
 
+</div>
+
+<!-- Floating Banner Reklam (Tüm Sayfalarda) -->
+<div id="floatingReklam" class="floating-reklam hidden">
+  <button class="floating-reklam-kapat" onclick="floatingReklamKapat()">✕</button>
+  <a id="floatingReklamLink" href="#" target="_blank" class="floating-reklam-icerik">
+    <img id="floatingReklamGorsel" src="" alt="" class="floating-reklam-gorsel hidden">
+    <div id="floatingReklamMetin" class="floating-reklam-metin"></div>
+  </a>
 </div>
 
 <!-- Alt Navigasyon -->

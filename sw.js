@@ -1,5 +1,5 @@
 // Emirler Köyü PWA - Service Worker v5
-const CACHE_NAME = "emirler-v5";
+const CACHE_NAME = "emirler-v6";
 const STATIC_ASSETS = [
     "./index.html",
     "./style.css",

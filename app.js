@@ -502,6 +502,7 @@ auth.onAuthStateChanged(async user => {
         onlineListesiYukle();
         nostaljiDinle();
         reklamYukle();
+        floatReklamYukle();
 
         // Yetkililere onay bekleyenleri dinlet
         if (ayricaliklimi()) {
@@ -525,6 +526,9 @@ function tabDegistir(t) {
     const navEl = document.getElementById("nav-" + t);
     if (navEl) navEl.classList.add("active");
     window.scrollTo(0, 0);
+    // Firmalar sayfasında floating reklamı gizle (orada zaten sabit reklam var)
+    const fr = document.getElementById("floatingReklam");
+    if (fr) fr.style.visibility = (t === "biz") ? "hidden" : "";
 }
 
 // ═══════════════════════════════════════════
@@ -1127,6 +1131,13 @@ function isletmeleriYukle() {
         items.forEach(b => {
             const card = document.createElement("div");
             card.className = "biz-card";
+            // İletişim butonları - sadece dolu olanlar gösterilir
+            const iletisimBtnleri = [];
+            if (b.phone) iletisimBtnleri.push(`<a href="tel:${b.phone}" class="biz-iletisim-btn biz-btn-tel" title="Ara"><span>📞</span></a>`);
+            if (b.whatsapp) iletisimBtnleri.push(`<a href="https://wa.me/${b.whatsapp.replace(/[^0-9]/g,'')}" target="_blank" class="biz-iletisim-btn biz-btn-wp" title="WhatsApp"><span>💬</span></a>`);
+            if (b.email) iletisimBtnleri.push(`<a href="mailto:${b.email}" class="biz-iletisim-btn biz-btn-mail" title="E-posta"><span>✉️</span></a>`);
+            if (b.url) iletisimBtnleri.push(`<a href="${b.url}" target="_blank" class="biz-iletisim-btn biz-btn-url" title="Web Sitesi"><span>🌐</span></a>`);
+
             card.innerHTML = `
                 ${b.imageUrl
                     ? `<img src="${b.imageUrl}" class="biz-img" loading="lazy" alt="${escapeHtml(b.name)}">`
@@ -1136,8 +1147,8 @@ function isletmeleriYukle() {
                     <div class="biz-cat">${escapeHtml(b.category || "İşletme")}</div>
                     <h3 class="biz-name">${escapeHtml(b.name)}</h3>
                     ${b.description ? `<p class="biz-desc">${escapeHtml(b.description)}</p>` : ""}
-                    ${b.phone ? `<a href="tel:${b.phone}" class="biz-phone">📞 ${escapeHtml(b.phone)}</a>` : ""}
                     ${b.address ? `<p class="biz-addr">📍 ${escapeHtml(b.address)}</p>` : ""}
+                    ${iletisimBtnleri.length > 0 ? `<div class="biz-iletisim-bar">${iletisimBtnleri.join("")}</div>` : ""}
                     ${adminMi() ? `
                         <div class="biz-admin-btns">
                             <button class="btn btn-danger btn-sm" onclick="firmaSil('${b.id}')">🗑️ Sil</button>
@@ -1170,12 +1181,15 @@ async function firmaEkle() {
             name,
             category: document.getElementById("bizCat").value.trim(),
             phone: document.getElementById("bizPhone").value.trim(),
+            whatsapp: document.getElementById("bizWhatsapp").value.trim(),
+            email: document.getElementById("bizEmail").value.trim(),
+            url: document.getElementById("bizUrl").value.trim(),
             address: document.getElementById("bizAddr").value.trim(),
             description: document.getElementById("bizDesc").value.trim(),
             imageUrl,
             time: firebase.firestore.FieldValue.serverTimestamp()
         });
-        ["bizName", "bizCat", "bizPhone", "bizAddr", "bizDesc"].forEach(id => {
+        ["bizName","bizCat","bizPhone","bizWhatsapp","bizEmail","bizUrl","bizAddr","bizDesc"].forEach(id => {
             document.getElementById(id).value = "";
         });
         document.getElementById("bizFile").value = "";
@@ -1419,4 +1433,93 @@ async function reklamKaydet() {
 
     btn.disabled = false;
     btn.textContent = "💾 Reklamı Kaydet";
+}
+
+// ═══════════════════════════════════════════
+//  FLOATING KÖŞE REKLAM
+// ═══════════════════════════════════════════
+
+let floatReklamKapatildi = false;
+
+async function floatReklamYukle() {
+    try {
+        const snap = await db.collection("settings").doc("floatReklam").get();
+        if (!snap.exists) return;
+        const r = snap.data();
+        if (!r.aktif) return;
+
+        const alan = document.getElementById("floatingReklam");
+        if (!alan) return;
+
+        const metin = document.getElementById("floatingReklamMetin");
+        const gorsel = document.getElementById("floatingReklamGorsel");
+        const link = document.getElementById("floatingReklamLink");
+
+        if (r.metin) metin.textContent = r.metin;
+        if (r.gorselUrl) { gorsel.src = r.gorselUrl; gorsel.classList.remove("hidden"); }
+        if (r.link) { link.href = r.link; link.style.pointerEvents = ""; }
+        else link.style.pointerEvents = "none";
+
+        if (!floatReklamKapatildi) alan.classList.remove("hidden");
+
+        // Admin panelini güncelle
+        const cb = document.getElementById("floatReklamAktif");
+        if (cb) cb.checked = r.aktif;
+        const mi = document.getElementById("floatReklamMetinInput");
+        if (mi && r.metin) mi.value = r.metin;
+        const li = document.getElementById("floatReklamLinkInput");
+        if (li && r.link) li.value = r.link;
+    } catch(e) { console.warn("Float reklam yüklenemedi:", e); }
+}
+
+function floatingReklamKapat() {
+    floatReklamKapatildi = true;
+    const alan = document.getElementById("floatingReklam");
+    if (alan) alan.classList.add("hidden");
+}
+
+async function floatReklamToggle() {
+    if (!ayricaliklimi()) return;
+    const aktif = document.getElementById("floatReklamAktif").checked;
+    try {
+        await db.collection("settings").doc("floatReklam").set({ aktif }, { merge: true });
+        const alan = document.getElementById("floatingReklam");
+        if (alan) alan.classList.toggle("hidden", !aktif);
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function floatReklamKaydet() {
+    if (!ayricaliklimi()) return alert("Yetkiniz yok!");
+    const metin = document.getElementById("floatReklamMetinInput").value.trim();
+    const link = document.getElementById("floatReklamLinkInput").value.trim();
+    const aktif = document.getElementById("floatReklamAktif").checked;
+    const file = document.getElementById("floatReklamFile").files[0];
+
+    const btn = document.getElementById("floatReklamKaydetBtn");
+    btn.disabled = true; btn.textContent = "⏳ Kaydediliyor...";
+
+    try {
+        let gorselUrl = "";
+        if (file) { const r = await cloudinaryYukle(file); gorselUrl = r.url; }
+        const veri = { aktif, metin, link };
+        if (gorselUrl) veri.gorselUrl = gorselUrl;
+
+        await db.collection("settings").doc("floatReklam").set(veri, { merge: true });
+
+        // UI güncelle
+        document.getElementById("floatingReklamMetin").textContent = metin;
+        const g = document.getElementById("floatingReklamGorsel");
+        if (gorselUrl) { g.src = gorselUrl; g.classList.remove("hidden"); }
+        const l = document.getElementById("floatingReklamLink");
+        if (link) { l.href = link; l.style.pointerEvents = ""; }
+        const alan = document.getElementById("floatingReklam");
+        if (aktif) { floatReklamKapatildi = false; alan.classList.remove("hidden"); }
+        else alan.classList.add("hidden");
+
+        document.getElementById("floatReklamFile").value = "";
+        document.getElementById("floatReklamPreview").innerHTML = "";
+        alert("✅ Köşe reklam kaydedildi!");
+    } catch(e) { alert("⚠️ Firebase kurallarını güncelleyin!\n\nDetay: " + e.message); }
+
+    btn.disabled = false; btn.textContent = "💾 Kaydet";
 }

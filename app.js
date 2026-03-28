@@ -42,15 +42,15 @@ let audioCtx = null;
 window.addEventListener("beforeinstallprompt", (e) => {
     e.preventDefault();
     deferredInstallPrompt = e;
-    // Banner'ı göster
     document.getElementById("pwaInstallBanner").classList.remove("hidden");
-    // Settings butonunu göster
+    document.body.classList.add("pwa-banner-acik");
     const sb = document.getElementById("settingsInstallBtn");
     if (sb) sb.style.display = "";
 });
 
 window.addEventListener("appinstalled", () => {
     document.getElementById("pwaInstallBanner").classList.add("hidden");
+    document.body.classList.remove("pwa-banner-acik");
     deferredInstallPrompt = null;
     const sb = document.getElementById("settingsInstallBtn");
     if (sb) sb.textContent = "✅ Uygulama Yüklendi!";
@@ -80,6 +80,7 @@ function pwaYukleSettings() {
 
 function pwaBannerKapat() {
     document.getElementById("pwaInstallBanner").classList.add("hidden");
+    document.body.classList.remove("pwa-banner-acik");
 }
 
 // Settings install butonu başlangıçta gizli

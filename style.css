@@ -58,8 +58,8 @@ button { font-family: inherit; }
   width: 28px; height: 28px; font-size: 14px; cursor: pointer;
 }
 
-/* Body kaydırma – banner açıkken padding */
-body:has(.pwa-banner:not(.hidden)) {
+/* Body kaydırma – banner açıkken padding (JS ile yönetilir) */
+body.pwa-banner-acik {
   padding-top: 62px;
 }
 

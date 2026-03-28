@@ -500,10 +500,17 @@ auth.onAuthStateChanged(async user => {
         // Yetkili kullanıcılar için gönderi paneli
         if (ayricaliklimi()) {
             document.getElementById("postPanel").classList.remove("hidden");
-            // Nostalji onay bölümünü göster
             document.getElementById("nostaljiPendingSection").classList.remove("hidden");
-            // Onay notu gizle (yetkililerin direkt paylaşacağı için)
             document.getElementById("nostaljiApprovalNote").classList.add("hidden");
+            // Köy hizmetleri admin panelleri
+            const ilanPend = document.getElementById("ilanPendingSection");
+            if (ilanPend) ilanPend.classList.remove("hidden");
+            const rehberPend = document.getElementById("rehberPendingSection");
+            if (rehberPend) rehberPend.classList.remove("hidden");
+            const anketPanel = document.getElementById("anketOlusturPanel");
+            if (anketPanel) anketPanel.classList.remove("hidden");
+            const tarimPanel = document.getElementById("tarimEklePanel");
+            if (tarimPanel) tarimPanel.classList.remove("hidden");
         }
 
         if (adminMi()) {
@@ -529,6 +536,8 @@ auth.onAuthStateChanged(async user => {
         nostaljiDinle();
         reklamYukle();
         floatReklamYukle();
+        koyKoordYukle();
+        kesfetYukle();
 
         // Yetkililere onay bekleyenleri dinlet
         if (ayricaliklimi()) {
@@ -552,9 +561,29 @@ function tabDegistir(t) {
     const navEl = document.getElementById("nav-" + t);
     if (navEl) navEl.classList.add("active");
     window.scrollTo(0, 0);
-    // Firmalar sayfasında floating reklamı gizle (orada zaten sabit reklam var)
     const fr = document.getElementById("floatingReklam");
     if (fr) fr.style.visibility = (t === "biz") ? "hidden" : "";
+    // Köy sayfası açılınca ilk sekmeyi yükle
+    if (t === "koy") koyTabDegistir(aktifKoyTab || "hava");
+}
+
+let aktifKoyTab = "hava";
+function koyTabDegistir(tab) {
+    aktifKoyTab = tab;
+    document.querySelectorAll(".koy-panel").forEach(p => p.classList.add("hidden"));
+    const panel = document.getElementById("kpanel-" + tab);
+    if (panel) panel.classList.remove("hidden");
+    document.querySelectorAll(".koy-tab").forEach(t => t.classList.remove("active"));
+    const tabEl = document.getElementById("ktab-" + tab);
+    if (tabEl) tabEl.classList.add("active");
+    // Veriyi yükle
+    if (tab === "hava") havaDurumuYukle();
+    if (tab === "namaz") namazYukle();
+    if (tab === "ilan") ilanDinle();
+    if (tab === "rehber") rehberDinle();
+    if (tab === "anket") anketDinle();
+    if (tab === "tarim") tarimDinle();
+    if (tab === "lider") liderYukle();
 }
 
 // ═══════════════════════════════════════════
@@ -1548,4 +1577,972 @@ async function floatReklamKaydet() {
     } catch(e) { alert("⚠️ Firebase kurallarını güncelleyin!\n\nDetay: " + e.message); }
 
     btn.disabled = false; btn.textContent = "💾 Kaydet";
+}
+
+// ═══════════════════════════════════════════
+//  KEŞFET - ANA YÜKLEYICI
+// ═══════════════════════════════════════════
+
+async function kesfetYukle() {
+    // Admin ayarlarından hangi özellikler aktif?
+    try {
+        const snap = await db.collection("settings").doc("ozellikler").get();
+        const ayarlar = snap.exists ? snap.data() : {};
+        const varsayilan = { hava:true, namaz:true, ilan:true, anket:true, lider:true, tarim:true, rehber:true };
+        const aktif = { ...varsayilan, ...ayarlar };
+
+        // Kartları göster/gizle
+        Object.keys(aktif).forEach(key => {
+            const el = document.getElementById("card-" + key);
+            if (el) el.classList.toggle("hidden", !aktif[key]);
+            // Admin toggle checkbox
+            const cb = document.getElementById("tog-" + key);
+            if (cb) cb.checked = aktif[key];
+        });
+
+        if (aktif.hava) havaDurumuYukle();
+        if (aktif.namaz) namazVakitleriYukle();
+        if (aktif.ilan) ilanlarDinle();
+        if (aktif.anket) anketYukle();
+        if (aktif.lider) liderTablosuYukle();
+        if (aktif.tarim) tarimTakvimiYukle();
+        if (aktif.rehber) rehberListesiYukle();
+    } catch(e) {
+        // Hata olursa hepsini yükle
+        havaDurumuYukle(); namazVakitleriYukle(); ilanlarDinle();
+        anketYukle(); liderTablosuYukle(); tarimTakvimiYukle(); rehberListesiYukle();
+    }
+}
+
+async function ozellikToggle(ozellik, aktif) {
+    if (!ayricaliklimi()) return;
+    try {
+        await db.collection("settings").doc("ozellikler").set({ [ozellik]: aktif }, { merge: true });
+        const el = document.getElementById("card-" + ozellik);
+        if (el) el.classList.toggle("hidden", !aktif);
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  🌤️ HAVA DURUMU (Open-Meteo - Ücretsiz, API key yok)
+// ═══════════════════════════════════════════
+
+async function havaDurumuYukle() {
+    const el = document.getElementById("havaDurumuWidget");
+    if (!el) return;
+    // Emirler Köyü koordinatları - Ankara/Gölbaşı bölgesi
+    const LAT = 39.7167, LON = 33.5167;
+    try {
+        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weathercode,windspeed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Europe%2FIstanbul&forecast_days=5`);
+        const d = await res.json();
+        const c = d.current;
+        const daily = d.daily;
+        const icons = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",71:"🌨️",80:"🌦️",95:"⛈️"};
+        const wIcon = s => icons[s] || icons[Math.floor(s/10)*10] || "🌡️";
+        const desc = {0:"Açık",1:"Az Bulutlu",2:"Parçalı Bulutlu",3:"Bulutlu",45:"Sisli",51:"Çisenti",61:"Yağmurlu",71:"Karlı",80:"Sağanak",95:"Fırtınalı"};
+        const wDesc = s => desc[s] || desc[Math.floor(s/10)*10] || "";
+
+        const gunler = ["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
+        let gunHTML = daily.time.slice(0,5).map((t,i) => {
+            const gun = new Date(t);
+            return `<div class="hava-gun"><div class="hava-gun-ad">${i===0?"Bug":gunler[gun.getDay()]}</div><div class="hava-gun-icon">${wIcon(daily.weathercode[i])}</div><div class="hava-gun-temp">${Math.round(daily.temperature_2m_max[i])}°</div><div class="hava-gun-min">${Math.round(daily.temperature_2m_min[i])}°</div></div>`;
+        }).join("");
+
+        el.innerHTML = `
+            <div class="hava-bugun">
+                <div class="hava-icon-big">${wIcon(c.weathercode)}</div>
+                <div class="hava-temp-big">${Math.round(c.temperature_2m)}°C</div>
+                <div class="hava-desc">${wDesc(c.weathercode)}</div>
+                <div class="hava-detay">💨 ${Math.round(c.windspeed_10m)} km/h · 💧 %${c.relative_humidity_2m}</div>
+            </div>
+            <div class="hava-gunler">${gunHTML}</div>
+        `;
+    } catch(e) {
+        el.innerHTML = `<p style="color:#888;padding:12px;text-align:center;">⚠️ Hava durumu alınamadı</p>`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//  🕌 NAMAZ VAKİTLERİ (Aladhan - Ücretsiz)
+// ═══════════════════════════════════════════
+
+async function namazVakitleriYukle() {
+    const el = document.getElementById("namazWidget");
+    if (!el) return;
+    try {
+        const bugun = new Date();
+        const ay = bugun.getMonth()+1, yil = bugun.getFullYear();
+        const res = await fetch(`https://api.aladhan.com/v1/calendarByCity/${yil}/${ay}?city=Golbasi&country=TR&method=13`);
+        const d = await res.json();
+        const gun = d.data[bugun.getDate()-1];
+        const v = gun.timings;
+        const vakit = (s, icon, ad) => `<div class="namaz-satir"><span class="namaz-ikon">${icon}</span><span class="namaz-ad">${ad}</span><span class="namaz-saat">${s.split(" ")[0]}</span></div>`;
+        el.innerHTML = `
+            <div class="namaz-tarih">📅 ${gun.date.readable}</div>
+            ${vakit(v.Fajr,"🌅","İmsak")}
+            ${vakit(v.Sunrise,"☀️","Güneş")}
+            ${vakit(v.Dhuhr,"🌞","Öğle")}
+            ${vakit(v.Asr,"🌇","İkindi")}
+            ${vakit(v.Maghrib,"🌆","Akşam")}
+            ${vakit(v.Isha,"🌙","Yatsı")}
+        `;
+    } catch(e) {
+        el.innerHTML = `<p style="color:#888;padding:12px;text-align:center;">⚠️ Vakit bilgisi alınamadı</p>`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//  📋 İLAN TAHTASI
+// ═══════════════════════════════════════════
+
+const ILAN_KATEGORILER = { satilik:"🏷️ Satılık", kiralik:"🔑 Kiralık", araniyor:"🔍 Aranıyor", kayip:"⚠️ Kayıp", diger:"📌 Diğer" };
+
+function ilanFormGoster() {
+    document.getElementById("ilanFormDiv").classList.remove("hidden");
+    document.getElementById("ilanEkleBtn").classList.add("hidden");
+}
+function ilanFormGizle() {
+    document.getElementById("ilanFormDiv").classList.add("hidden");
+    document.getElementById("ilanEkleBtn").classList.remove("hidden");
+}
+
+function ilanlarDinle() {
+    db.collection("ilanlar").orderBy("time","desc").onSnapshot(snap => {
+        const list = document.getElementById("ilanList");
+        if (!list) return;
+        if (snap.empty) { list.innerHTML = `<div class="empty-state" style="padding:16px;"><p style="color:#888;font-size:13px;">Henüz ilan yok. İlk ilanı siz verin!</p></div>`; return; }
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const il = doc.data();
+            const katLabel = ILAN_KATEGORILER[il.kategori] || "📌";
+            const silBtn = (ayricaliklimi() || (currentUser && il.uid === currentUser.uid))
+                ? `<button class="ilan-sil-btn" onclick="ilanSil('${doc.id}')">🗑️</button>` : "";
+            const div = document.createElement("div");
+            div.className = "ilan-card";
+            div.innerHTML = `
+                <div class="ilan-header">
+                    <span class="ilan-kat-badge">${katLabel}</span>
+                    <span class="ilan-zaman">${zamanFarki(il.time)}</span>
+                    ${silBtn}
+                </div>
+                <div class="ilan-baslik">${escapeHtml(il.baslik)}</div>
+                ${il.aciklama ? `<div class="ilan-aciklama">${escapeHtml(il.aciklama)}</div>` : ""}
+                <div class="ilan-footer">
+                    <span class="ilan-sahip">👤 ${escapeHtml(il.sender)}</span>
+                    ${il.telefon ? `<a href="tel:${il.telefon}" class="ilan-tel-btn">📞 Ara</a>` : ""}
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    });
+}
+
+async function ilanPaylas() {
+    if (!currentUser) return alert("Giriş yapmalısınız!");
+    const baslik = document.getElementById("ilanBaslik").value.trim();
+    const aciklama = document.getElementById("ilanAciklama").value.trim();
+    const telefon = document.getElementById("ilanTelefon").value.trim();
+    const kategori = document.getElementById("ilanKategori").value;
+    if (!baslik) return alert("Başlık zorunludur!");
+    if (kufurKontrol(baslik + " " + aciklama)) return alert("⚠️ Uygunsuz içerik!");
+    try {
+        await db.collection("ilanlar").add({ baslik, aciklama, telefon, kategori, sender: userProfile.name, uid: currentUser.uid, time: firebase.firestore.FieldValue.serverTimestamp() });
+        ["ilanBaslik","ilanAciklama","ilanTelefon"].forEach(id => document.getElementById(id).value = "");
+        ilanFormGizle();
+        alert("✅ İlanınız yayınlandı!");
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function ilanSil(id) {
+    if (!confirm("İlanı silmek istiyor musunuz?")) return;
+    try { await db.collection("ilanlar").doc(id).delete(); } catch(e) { alert("Silinemedi!"); }
+}
+
+// ═══════════════════════════════════════════
+//  🗳️ ANKET
+// ═══════════════════════════════════════════
+
+async function anketYukle() {
+    const el = document.getElementById("anketWidget");
+    if (!el) return;
+    try {
+        const snap = await db.collection("settings").doc("anket").get();
+        if (!snap.exists || !snap.data().aktif) {
+            el.innerHTML = `<div style="text-align:center;color:#888;padding:16px;font-size:13px;">Şu an aktif anket yok</div>`;
+            return;
+        }
+        const a = snap.data();
+        const oylar = a.oylar || {};
+        const benimOyum = currentUser ? oylar[currentUser.uid] : null;
+        const secenekler = [a.secA, a.secB, a.secC, a.secD].filter(Boolean);
+        const toplamOy = Object.values(oylar).length;
+
+        const secHTML = secenekler.map((sec, i) => {
+            const harf = ["A","B","C","D"][i];
+            const bu = Object.values(oylar).filter(v => v === harf).length;
+            const yuzde = toplamOy > 0 ? Math.round((bu/toplamOy)*100) : 0;
+            const secildi = benimOyum === harf;
+            return `
+                <div class="anket-secenek ${secildi ? "anket-secildi" : ""}" onclick="anketOy('${harf}')">
+                    <div class="anket-sec-ust">
+                        <span class="anket-harf">${harf}</span>
+                        <span class="anket-sec-text">${escapeHtml(sec)}</span>
+                        <span class="anket-yuzde">${yuzde}%</span>
+                    </div>
+                    <div class="anket-bar"><div class="anket-bar-dolu" style="width:${yuzde}%"></div></div>
+                </div>
+            `;
+        }).join("");
+
+        el.innerHTML = `
+            <div class="anket-soru">${escapeHtml(a.soru)}</div>
+            ${secHTML}
+            <div class="anket-toplam">Toplam ${toplamOy} oy</div>
+        `;
+    } catch(e) { console.warn("Anket yüklenemedi:", e); }
+}
+
+async function anketOy(harf) {
+    if (!currentUser) return alert("Oy vermek için giriş yapın!");
+    try {
+        await db.collection("settings").doc("anket").update({
+            [`oylar.${currentUser.uid}`]: harf
+        });
+        anketYukle();
+    } catch(e) { alert("Oy verilemedi: " + e.message); }
+}
+
+async function anketOlustur() {
+    if (!ayricaliklimi()) return alert("Yetkiniz yok!");
+    const soru = document.getElementById("anketSoru").value.trim();
+    const secA = document.getElementById("anketSecA").value.trim();
+    const secB = document.getElementById("anketSecB").value.trim();
+    if (!soru || !secA || !secB) return alert("Soru ve en az 2 seçenek zorunludur!");
+    const veri = { soru, secA, secB, aktif: true, oylar: {}, time: firebase.firestore.FieldValue.serverTimestamp() };
+    const secC = document.getElementById("anketSecC").value.trim();
+    const secD = document.getElementById("anketSecD").value.trim();
+    if (secC) veri.secC = secC;
+    if (secD) veri.secD = secD;
+    try {
+        await db.collection("settings").doc("anket").set(veri);
+        ["anketSoru","anketSecA","anketSecB","anketSecC","anketSecD"].forEach(id => document.getElementById(id).value = "");
+        anketYukle();
+        alert("✅ Anket yayınlandı!");
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function anketSil() {
+    if (!ayricaliklimi()) return;
+    if (!confirm("Anketi kaldırmak istiyor musunuz?")) return;
+    try { await db.collection("settings").doc("anket").update({ aktif: false }); anketYukle(); }
+    catch(e) { alert("Hata: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  🏆 LİDER TABLOSU
+// ═══════════════════════════════════════════
+
+async function liderTablosuYukle() {
+    const el = document.getElementById("liderWidget");
+    if (!el) return;
+    try {
+        // Kullanıcıları çek
+        const usersSnap = await db.collection("users").get();
+        // Yorumları say
+        const yorumSnap = await db.collection("announcements").get();
+        const yorumSayilari = {};
+        const bekleyen = [];
+        yorumSnap.forEach(doc => {
+            bekleyen.push(db.collection("announcements").doc(doc.id).collection("comments").get());
+        });
+        const yorumSonuclari = await Promise.all(bekleyen);
+        yorumSonuclari.forEach(snap => {
+            snap.forEach(c => {
+                const uid = c.data().uid;
+                if (uid) yorumSayilari[uid] = (yorumSayilari[uid] || 0) + 1;
+            });
+        });
+
+        const kullanicilar = [];
+        usersSnap.forEach(doc => {
+            const u = doc.data();
+            kullanicilar.push({ uid: doc.id, name: u.name || "İsimsiz", yorum: yorumSayilari[doc.id] || 0 });
+        });
+        kullanicilar.sort((a,b) => b.yorum - a.yorum);
+
+        if (kullanicilar.every(u => u.yorum === 0)) {
+            el.innerHTML = `<div style="text-align:center;color:#888;padding:16px;font-size:13px;">Henüz yeterli aktivite yok</div>`;
+            return;
+        }
+
+        const madalyalar = ["🥇","🥈","🥉"];
+        el.innerHTML = kullanicilar.slice(0,10).map((u, i) => `
+            <div class="lider-satir ${currentUser && u.uid === currentUser.uid ? "lider-ben" : ""}">
+                <span class="lider-siralama">${madalyalar[i] || `${i+1}.`}</span>
+                <div class="lider-avatar">${(u.name[0]||"?").toUpperCase()}</div>
+                <span class="lider-isim">${escapeHtml(u.name)}</span>
+                <span class="lider-puan">${u.yorum} yorum</span>
+            </div>
+        `).join("");
+    } catch(e) {
+        el.innerHTML = `<p style="color:#888;padding:12px;text-align:center;">⚠️ Yüklenemedi</p>`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//  🌾 TARIM TAKVİMİ
+// ═══════════════════════════════════════════
+
+const TARIM_VARSAYILAN = [
+    { ay:"Ocak", is:"❄️ Budama dönemi, meyve ağaçlarını budayın" },
+    { ay:"Şubat", is:"🌱 Tohum hazırlığı, gübre takviyesi" },
+    { ay:"Mart", is:"🌾 Buğday ekimi, sebze fidesi dikimi" },
+    { ay:"Nisan", is:"🌸 Bahar bakımı, sulama başlangıcı" },
+    { ay:"Mayıs", is:"🌿 Çapalama, ilaçlama dönemi" },
+    { ay:"Haziran", is:"☀️ Biçerdöver hazırlığı, hasat başlangıcı" },
+    { ay:"Temmuz", is:"🌾 Buğday hasadı, saman toplama" },
+    { ay:"Ağustos", is:"🍎 Meyve hasadı, kış sebzesi ekimi" },
+    { ay:"Eylül", is:"🍂 Üzüm hasadı, soğan ekimi" },
+    { ay:"Ekim", is:"🌱 Sonbahar ekimleri, kışlık bakım" },
+    { ay:"Kasım", is:"🍂 Ağaç bakımı, depolama hazırlığı" },
+    { ay:"Aralık", is:"❄️ Kış dinlendirme, planlama dönemi" }
+];
+
+async function tarimTakvimiYukle() {
+    const el = document.getElementById("tarimWidget");
+    if (!el) return;
+    try {
+        const snap = await db.collection("settings").doc("tarim").get();
+        const kayitli = snap.exists ? (snap.data().liste || []) : [];
+        const liste = kayitli.length > 0 ? kayitli : TARIM_VARSAYILAN;
+        const buAy = new Date().getMonth();
+        const aylar = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+
+        el.innerHTML = liste.map((t, i) => `
+            <div class="tarim-satir ${t.ay === aylar[buAy] ? "tarim-bu-ay" : ""}">
+                <span class="tarim-ay">${t.ay}</span>
+                <span class="tarim-is">${t.is}</span>
+                ${ayricaliklimi() ? `<button class="ilan-sil-btn" onclick="tarimSil(${i})">🗑️</button>` : ""}
+            </div>
+        `).join("");
+    } catch(e) { console.warn("Tarım takvimi yüklenemedi"); }
+}
+
+async function tarimEkle() {
+    if (!ayricaliklimi()) return alert("Yetkiniz yok!");
+    const ay = document.getElementById("tarimAy").value.trim();
+    const is = document.getElementById("tarimIs").value.trim();
+    if (!ay || !is) return alert("Ay ve iş açıklaması zorunludur!");
+    try {
+        const snap = await db.collection("settings").doc("tarim").get();
+        const liste = snap.exists ? (snap.data().liste || TARIM_VARSAYILAN) : TARIM_VARSAYILAN;
+        liste.push({ ay, is });
+        await db.collection("settings").doc("tarim").set({ liste }, { merge: true });
+        document.getElementById("tarimAy").value = "";
+        document.getElementById("tarimIs").value = "";
+        tarimTakvimiYukle();
+        alert("✅ Takvime eklendi!");
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function tarimSil(index) {
+    if (!ayricaliklimi()) return;
+    try {
+        const snap = await db.collection("settings").doc("tarim").get();
+        const liste = snap.exists ? (snap.data().liste || []) : [];
+        liste.splice(index, 1);
+        await db.collection("settings").doc("tarim").set({ liste }, { merge: true });
+        tarimTakvimiYukle();
+    } catch(e) { alert("Silinemedi!"); }
+}
+
+// ═══════════════════════════════════════════
+//  📞 KÖYLÜ REHBERİ
+// ═══════════════════════════════════════════
+
+function rehberFormGoster() {
+    document.getElementById("rehberFormDiv").classList.remove("hidden");
+    document.getElementById("rehberEkleBtn").classList.add("hidden");
+}
+function rehberFormGizle() {
+    document.getElementById("rehberFormDiv").classList.add("hidden");
+    document.getElementById("rehberEkleBtn").classList.remove("hidden");
+}
+
+function rehberListesiYukle() {
+    db.collection("rehber").orderBy("ad","asc").onSnapshot(snap => {
+        const el = document.getElementById("rehberList");
+        if (!el) return;
+        if (snap.empty) { el.innerHTML = `<div style="text-align:center;color:#888;padding:16px;font-size:13px;">Henüz kimse eklenmedi</div>`; return; }
+        el.innerHTML = "";
+        snap.forEach(doc => {
+            const r = doc.data();
+            const silBtn = ayricaliklimi() ? `<button class="ilan-sil-btn" onclick="rehberSil('${doc.id}')">🗑️</button>` : "";
+            const div = document.createElement("div");
+            div.className = "rehber-satir";
+            div.innerHTML = `
+                <div class="rehber-avatar">${(r.ad||"?")[0].toUpperCase()}</div>
+                <div class="rehber-bilgi">
+                    <div class="rehber-ad">${escapeHtml(r.ad)}</div>
+                    ${r.not ? `<div class="rehber-not">${escapeHtml(r.not)}</div>` : ""}
+                </div>
+                <a href="tel:${r.tel}" class="rehber-ara-btn">📞</a>
+                ${silBtn}
+            `;
+            el.appendChild(div);
+        });
+    });
+}
+
+async function rehberEkle() {
+    if (!ayricaliklimi()) return alert("Rehbere ekleme yetkisi sadece yetkililerde!");
+    const ad = document.getElementById("rehberAd").value.trim();
+    const tel = document.getElementById("rehberTel").value.trim();
+    const not = document.getElementById("rehberNot").value.trim();
+    if (!ad || !tel) return alert("Ad ve telefon zorunludur!");
+    try {
+        await db.collection("rehber").add({ ad, tel, not, ekleyenUid: currentUser.uid, time: firebase.firestore.FieldValue.serverTimestamp() });
+        ["rehberAd","rehberTel","rehberNot"].forEach(id => document.getElementById(id).value = "");
+        rehberFormGizle();
+        alert("✅ Rehbere eklendi!");
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+async function rehberSil(id) {
+    if (!ayricaliklimi()) return;
+    if (!confirm("Bu kişiyi rehberden kaldırmak istiyor musunuz?")) return;
+    try { await db.collection("rehber").doc(id).delete(); } catch(e) { alert("Silinemedi!"); }
+}
+
+// ═══════════════════════════════════════════
+//  KÖY KOORDİNATLARI
+// ═══════════════════════════════════════════
+
+let koyLat = 39.7853; // Varsayılan: Ankara/Gölbaşı (Emirler Köyü civarı)
+let koyLng = 32.8597;
+
+async function koyKoordYukle() {
+    try {
+        const snap = await db.collection("settings").doc("koordinat").get();
+        if (snap.exists) {
+            const d = snap.data();
+            if (d.lat) koyLat = parseFloat(d.lat);
+            if (d.lng) koyLng = parseFloat(d.lng);
+            const latEl = document.getElementById("koyLat");
+            const lngEl = document.getElementById("koyLng");
+            if (latEl) latEl.value = koyLat;
+            if (lngEl) lngEl.value = koyLng;
+        }
+    } catch(e) {}
+}
+
+async function koyKoordKaydet() {
+    if (!ayricaliklimi()) return;
+    const lat = parseFloat(document.getElementById("koyLat").value);
+    const lng = parseFloat(document.getElementById("koyLng").value);
+    if (isNaN(lat) || isNaN(lng)) return alert("Geçerli koordinat girin!");
+    try {
+        await db.collection("settings").doc("koordinat").set({ lat, lng });
+        koyLat = lat; koyLng = lng;
+        alert("✅ Koordinatlar kaydedildi!");
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
+// ═══════════════════════════════════════════
+//  HAVA DURUMU (Open-Meteo API - Ücretsiz)
+// ═══════════════════════════════════════════
+
+const HAVA_KODLAR = {
+    0:"☀️ Açık",1:"🌤️ Az Bulutlu",2:"⛅ Parçalı Bulutlu",3:"☁️ Kapalı",
+    45:"🌫️ Sisli",48:"🌫️ Yoğun Sis",51:"🌦️ Hafif Çisenti",53:"🌦️ Çisenti",
+    55:"🌧️ Yoğun Çisenti",61:"🌧️ Hafif Yağmur",63:"🌧️ Yağmurlu",
+    65:"🌧️ Şiddetli Yağmur",71:"🌨️ Hafif Kar",73:"❄️ Karlı",
+    75:"❄️ Yoğun Kar",80:"🌦️ Sağanak",81:"⛈️ Gök Gürültülü",
+    82:"⛈️ Şiddetli Fırtına",95:"⛈️ Fırtına",99:"⛈️ Dolu"
+};
+const GUNLER = ["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
+
+async function havaDurumuYukle() {
+    const w = document.getElementById("havaWidget");
+    if (!w || w.dataset.loaded) return;
+    try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${koyLat}&longitude=${koyLng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weathercode&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=Europe%2FIstanbul&forecast_days=7`;
+        const res = await fetch(url);
+        const d = await res.json();
+        const cur = d.current;
+        const daily = d.daily;
+        const durum = HAVA_KODLAR[cur.weathercode] || "🌡️";
+        
+        let gunlerHTML = "";
+        for (let i = 0; i < 7; i++) {
+            const tarih = new Date(daily.time[i]);
+            const gun = GUNLER[tarih.getDay()];
+            const kod = daily.weathercode[i];
+            const ikon = (HAVA_KODLAR[kod] || "🌡️").split(" ")[0];
+            gunlerHTML += `
+                <div class="hava-gun-kart">
+                    <div class="hava-gun-ad">${gun}</div>
+                    <div class="hava-gun-ikon">${ikon}</div>
+                    <div class="hava-gun-sicak">${Math.round(daily.temperature_2m_max[i])}°</div>
+                    <div style="font-size:11px;color:#aaa;">${Math.round(daily.temperature_2m_min[i])}°</div>
+                </div>`;
+        }
+        
+        w.innerHTML = `
+            <div class="hava-kart">
+                <div class="hava-sehir">📍 Emirler Köyü</div>
+                <div class="hava-sicaklik">${Math.round(cur.temperature_2m)}°C</div>
+                <div class="hava-durum">${durum}</div>
+                <div class="hava-detay">
+                    <div class="hava-detay-item">💧 Nem: %${cur.relative_humidity_2m}</div>
+                    <div class="hava-detay-item">💨 Rüzgar: ${Math.round(cur.wind_speed_10m)} km/h</div>
+                </div>
+            </div>
+            <div class="hava-gunler">${gunlerHTML}</div>`;
+        w.dataset.loaded = "1";
+    } catch(e) {
+        w.innerHTML = `<div class="empty-state"><p>⚠️ Hava bilgisi alınamadı</p></div>`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//  NAMAZ VAKİTLERİ (Aladhan API - Ücretsiz)
+// ═══════════════════════════════════════════
+
+async function namazYukle() {
+    const w = document.getElementById("namazWidget");
+    if (!w || w.dataset.loaded) return;
+    try {
+        const bugun = new Date();
+        const gun = bugun.getDate();
+        const ay = bugun.getMonth() + 1;
+        const yil = bugun.getFullYear();
+        const url = `https://api.aladhan.com/v1/timings/${gun}-${ay}-${yil}?latitude=${koyLat}&longitude=${koyLng}&method=13`;
+        const res = await fetch(url);
+        const d = await res.json();
+        const t = d.data.timings;
+        const vakitler = [
+            { ad: "İmsak",   saat: t.Imsak },
+            { ad: "Güneş",   saat: t.Sunrise },
+            { ad: "Öğle",    saat: t.Dhuhr },
+            { ad: "İkindi",  saat: t.Asr },
+            { ad: "Akşam",   saat: t.Maghrib },
+            { ad: "Yatsı",   saat: t.Isha }
+        ];
+        
+        const simdi = bugun.getHours() * 60 + bugun.getMinutes();
+        let siradaki = null;
+        let aktifIdx = -1;
+        
+        vakitler.forEach((v, i) => {
+            const [h, m] = v.saat.split(":").map(Number);
+            const toplamDk = h * 60 + m;
+            if (simdi < toplamDk && !siradaki) {
+                siradaki = v;
+                aktifIdx = i;
+            }
+        });
+        
+        const satirlar = vakitler.map((v, i) => `
+            <div class="namaz-satir ${i === aktifIdx ? "aktif-vakit" : ""}">
+                <span class="namaz-ad">${v.ad}</span>
+                <span class="namaz-saat">${v.saat.substring(0,5)}</span>
+            </div>`).join("");
+
+        const tarihStr = bugun.toLocaleDateString("tr-TR", { weekday:"long", day:"numeric", month:"long" });
+        
+        w.innerHTML = `
+            <div class="namaz-kart">
+                <div class="namaz-tarih">📅 ${tarihStr}</div>
+                <div class="namaz-listesi">${satirlar}</div>
+            </div>
+            ${siradaki ? `<div class="siradaki-vakit">⏰ Sıradaki vakit: <b>${siradaki.ad} - ${siradaki.saat.substring(0,5)}</b></div>` : ""}`;
+        w.dataset.loaded = "1";
+    } catch(e) {
+        w.innerHTML = `<div class="empty-state"><p>⚠️ Namaz vakitleri alınamadı</p></div>`;
+    }
+}
+
+// ═══════════════════════════════════════════
+//  İLAN TAHTASI
+// ═══════════════════════════════════════════
+
+let ilanLoaded = false;
+function ilanDinle() {
+    if (ilanLoaded) return;
+    ilanLoaded = true;
+    
+    // Onay bekleyenler (admin)
+    if (ayricaliklimi()) {
+        db.collection("ilanlar").where("status","==","pending").orderBy("time","asc")
+        .onSnapshot(snap => {
+            const list = document.getElementById("ilanPendingList");
+            const badge = document.getElementById("ilanPendingCount");
+            if (badge) badge.textContent = snap.size;
+            if (!list) return;
+            if (snap.empty) { list.innerHTML = `<div style="text-align:center;color:#888;padding:14px;font-size:13px;">✅ Bekleyen ilan yok</div>`; return; }
+            list.innerHTML = "";
+            snap.forEach(doc => list.appendChild(ilanKartOlustur(doc.id, doc.data(), true)));
+        });
+    }
+    
+    // Yayınlanmış ilanlar
+    db.collection("ilanlar").where("status","==","published").orderBy("time","desc")
+    .onSnapshot(snap => {
+        const list = document.getElementById("ilanList");
+        if (snap.empty) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Henüz ilan yok</p></div>`; return; }
+        list.innerHTML = "";
+        snap.forEach(doc => list.appendChild(ilanKartOlustur(doc.id, doc.data(), false)));
+    }, () => {
+        // Index yoksa filtresiz yükle
+        db.collection("ilanlar").orderBy("time","desc").onSnapshot(snap => {
+            const list = document.getElementById("ilanList");
+            list.innerHTML = "";
+            snap.forEach(doc => { if (doc.data().status === "published") list.appendChild(ilanKartOlustur(doc.id, doc.data(), false)); });
+        });
+    });
+}
+
+function ilanKartOlustur(id, d, isPending) {
+    const div = document.createElement("div");
+    div.className = "post-card ilan-kart";
+    const mediaHTML = d.mediaUrl ? `<img src="${d.mediaUrl}" class="post-media" onclick="resimTamEkran('${d.mediaUrl}')" loading="lazy">` : "";
+    const onayBtn = isPending && ayricaliklimi() ? `
+        <div class="approval-btns">
+            <button class="btn-approve" onclick="ilanOnayla('${id}')">✅ Onayla</button>
+            <button class="btn-reject" onclick="ilanReddet('${id}')">❌ Reddet</button>
+        </div>` : "";
+    const silBtn = ayricaliklimi() && !isPending ? `<button class="icon-btn delete-post-btn" onclick="ilanSil('${id}')">🗑️</button>` : "";
+    div.innerHTML = `
+        ${isPending ? `<div class="pending-label">⏳ Onay Bekliyor · ${escapeHtml(d.sender||"")}</div>` : ""}
+        <div class="ilan-kategori">${escapeHtml(d.kategori||"İlan")}</div>
+        <div class="post-header" style="padding-top:6px;">
+            <div class="post-meta">
+                <span class="post-sender">${escapeHtml(d.baslik||"")}</span>
+                <span class="post-time">${zamanFarki(d.time)}</span>
+            </div>${silBtn}
+        </div>
+        ${d.metin ? `<div class="post-text">${escapeHtml(d.metin)}</div>` : ""}
+        ${mediaHTML}
+        ${d.telefon ? `<a href="tel:${d.telefon}" class="ilan-tel">📞 ${escapeHtml(d.telefon)}</a>` : ""}
+        ${onayBtn}`;
+    return div;
+}
+
+async function ilanPaylas() {
+    if (!currentUser) return alert("Giriş yapın!");
+    const kategori = document.getElementById("ilanKategori").value;
+    const baslik = document.getElementById("ilanBaslik").value.trim();
+    const metin = document.getElementById("ilanMetin").value.trim();
+    const telefon = document.getElementById("ilanTelefon").value.trim();
+    const file = document.getElementById("ilanFile").files[0];
+    if (!kategori) return alert("Kategori seçin!");
+    if (!baslik) return alert("Başlık zorunlu!");
+    if (kufurKontrol(baslik + " " + metin)) return alert("⚠️ Uygunsuz içerik!");
+    const btn = document.getElementById("ilanBtn");
+    btn.disabled = true; btn.textContent = "⏳ Gönderiliyor...";
+    try {
+        let mediaUrl = "";
+        if (file) { const r = await cloudinaryYukle(file); mediaUrl = r.url; }
+        const isPriv = ayricaliklimi();
+        await db.collection("ilanlar").add({
+            kategori, baslik, metin, telefon, mediaUrl,
+            sender: userProfile.name, senderUid: currentUser.uid,
+            status: isPriv ? "published" : "pending",
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        ["ilanBaslik","ilanMetin","ilanTelefon"].forEach(id => document.getElementById(id).value = "");
+        document.getElementById("ilanKategori").value = "";
+        document.getElementById("ilanFile").value = "";
+        document.getElementById("ilanPreview").innerHTML = "";
+        alert(isPriv ? "✅ İlan yayınlandı!" : "✅ İlanınız admin onayına gönderildi!");
+    } catch(e) { alert("Hata: " + e.message); }
+    btn.disabled = false; btn.textContent = "📋 İlan Ver";
+}
+
+async function ilanOnayla(id) {
+    if (!ayricaliklimi()) return;
+    await db.collection("ilanlar").doc(id).update({ status: "published" });
+    playApproveSound();
+}
+async function ilanReddet(id) {
+    if (!confirm("Reddet ve sil?")) return;
+    await db.collection("ilanlar").doc(id).delete();
+}
+async function ilanSil(id) {
+    if (!confirm("İlanı sil?")) return;
+    await db.collection("ilanlar").doc(id).delete();
+}
+
+// ═══════════════════════════════════════════
+//  KÖYLÜ REHBERİ
+// ═══════════════════════════════════════════
+
+let rehberLoaded = false;
+function rehberDinle() {
+    if (rehberLoaded) return;
+    rehberLoaded = true;
+    if (ayricaliklimi()) {
+        db.collection("rehber").where("status","==","pending").onSnapshot(snap => {
+            const list = document.getElementById("rehberPendingList");
+            if (!list) return;
+            if (snap.empty) { list.innerHTML = `<div style="text-align:center;color:#888;padding:14px;font-size:13px;">✅ Bekleyen kayıt yok</div>`; return; }
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                const d = doc.data();
+                const div = document.createElement("div");
+                div.className = "post-card";
+                div.innerHTML = `
+                    <div class="pending-label">⏳ Onay Bekliyor</div>
+                    <div class="post-header">
+                        <div class="post-meta">
+                            <span class="post-sender">${escapeHtml(d.ad)}</span>
+                            <span class="post-time">${escapeHtml(d.telefon)}</span>
+                        </div>
+                    </div>
+                    <div class="approval-btns">
+                        <button class="btn-approve" onclick="rehberOnayla('${doc.id}')">✅ Onayla</button>
+                        <button class="btn-reject" onclick="rehberReddet('${doc.id}')">❌ Reddet</button>
+                    </div>`;
+                list.appendChild(div);
+            });
+        });
+    }
+    db.collection("rehber").where("status","==","published").orderBy("ad","asc")
+    .onSnapshot(snap => {
+        const list = document.getElementById("rehberList");
+        if (snap.empty) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">👥</div><p>Henüz rehberde kimse yok</p></div>`; return; }
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const div = document.createElement("div");
+            div.className = "rehber-kart";
+            div.innerHTML = `
+                <div class="rehber-avatar">${(d.ad||"?")[0].toUpperCase()}</div>
+                <div style="flex:1;min-width:0;">
+                    <div class="rehber-ad">${escapeHtml(d.ad)}</div>
+                    <div class="rehber-bilgi">${d.mahalle ? "📍 " + escapeHtml(d.mahalle) : ""}${d.meslek ? " · " + escapeHtml(d.meslek) : ""}</div>
+                </div>
+                <a href="tel:${d.telefon}" class="rehber-tel">📞</a>
+                ${ayricaliklimi() ? `<button class="icon-btn-sm" style="color:#dc3545;" onclick="rehberSil('${doc.id}')">🗑️</button>` : ""}`;
+            list.appendChild(div);
+        });
+    }, () => {
+        db.collection("rehber").onSnapshot(snap => {
+            const list = document.getElementById("rehberList");
+            list.innerHTML = "";
+            snap.forEach(doc => {
+                if (doc.data().status !== "published") return;
+                const d = doc.data();
+                const div = document.createElement("div");
+                div.className = "rehber-kart";
+                div.innerHTML = `<div class="rehber-avatar">${(d.ad||"?")[0].toUpperCase()}</div><div style="flex:1;"><div class="rehber-ad">${escapeHtml(d.ad)}</div><div class="rehber-bilgi">${d.mahalle||""}</div></div><a href="tel:${d.telefon}" class="rehber-tel">📞</a>`;
+                list.appendChild(div);
+            });
+        });
+    });
+}
+
+async function rehbereKayit() {
+    if (!currentUser) return alert("Giriş yapın!");
+    const ad = document.getElementById("rehberAd").value.trim();
+    const telefon = document.getElementById("rehberTelefon").value.trim();
+    const mahalle = document.getElementById("rehberMahalle").value.trim();
+    const meslek = document.getElementById("rehberMeslek").value.trim();
+    if (!ad || !telefon) return alert("Ad ve telefon zorunlu!");
+    const btn = document.getElementById("rehberBtn");
+    btn.disabled = true; btn.textContent = "⏳...";
+    try {
+        const isPriv = ayricaliklimi();
+        await db.collection("rehber").add({ ad, telefon, mahalle, meslek, senderUid: currentUser.uid, status: isPriv ? "published" : "pending", time: firebase.firestore.FieldValue.serverTimestamp() });
+        ["rehberAd","rehberTelefon","rehberMahalle","rehberMeslek"].forEach(id => document.getElementById(id).value = "");
+        alert(isPriv ? "✅ Rehbere eklendi!" : "✅ Admin onayına gönderildi!");
+    } catch(e) { alert("Hata: " + e.message); }
+    btn.disabled = false; btn.textContent = "👥 Kayıt İste";
+}
+async function rehberOnayla(id) { await db.collection("rehber").doc(id).update({ status: "published" }); playApproveSound(); }
+async function rehberReddet(id) { if (confirm("Reddet?")) await db.collection("rehber").doc(id).delete(); }
+async function rehberSil(id) { if (confirm("Sil?")) await db.collection("rehber").doc(id).delete(); }
+
+// ═══════════════════════════════════════════
+//  ANKET
+// ═══════════════════════════════════════════
+
+let anketLoaded = false;
+function anketDinle() {
+    if (anketLoaded) return;
+    anketLoaded = true;
+    db.collection("anketler").orderBy("time","desc").onSnapshot(snap => {
+        const list = document.getElementById("anketList");
+        if (snap.empty) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">🗳️</div><p>Henüz anket yok</p></div>`; return; }
+        list.innerHTML = "";
+        snap.forEach(doc => list.appendChild(anketKartOlustur(doc.id, doc.data())));
+    });
+}
+
+function anketKartOlustur(id, d) {
+    const div = document.createElement("div");
+    div.className = "post-card anket-kart";
+    const secenekler = d.secenekler || [];
+    const oylar = d.oylar || {};
+    const benimOyum = currentUser ? oylar[currentUser.uid] : null;
+    const toplamOy = Object.keys(oylar).length;
+    
+    const secenekHTML = secenekler.map((s, i) => {
+        const oy = Object.values(oylar).filter(v => v === i).length;
+        const yuzde = toplamOy > 0 ? Math.round((oy/toplamOy)*100) : 0;
+        return `<button class="anket-secenek ${benimOyum === i ? 'secildi' : ''}" onclick="anketOy('${id}',${i})">
+            <span>${escapeHtml(s)}</span>
+            <span style="font-weight:700;">${benimOyum !== null ? yuzde + '%' : ''}</span>
+        </button>
+        ${benimOyum !== null ? `<div class="anket-bar" style="width:${yuzde}%;max-width:100%;margin:0 14px 6px;"></div>` : ''}`;
+    }).join("");
+    
+    div.innerHTML = `
+        <div class="post-header">
+            <div class="post-meta">
+                <span class="post-sender">🗳️ Köy Anketi</span>
+                <span class="post-time">${zamanFarki(d.time)}</span>
+            </div>
+            ${ayricaliklimi() ? `<button class="icon-btn delete-post-btn" onclick="anketSil('${id}')">🗑️</button>` : ""}
+        </div>
+        <div class="anket-soru">${escapeHtml(d.soru)}</div>
+        <div style="padding:0 14px 6px;">${secenekHTML}</div>
+        <div class="anket-katilimci" style="padding:0 14px 12px;">👥 ${toplamOy} katılımcı</div>`;
+    return div;
+}
+
+async function anketOy(anketId, secenekIndex) {
+    if (!currentUser) return alert("Giriş yapın!");
+    const ref = db.collection("anketler").doc(anketId);
+    const snap = await ref.get();
+    const oylar = { ...(snap.data().oylar || {}) };
+    if (oylar[currentUser.uid] === secenekIndex) delete oylar[currentUser.uid];
+    else oylar[currentUser.uid] = secenekIndex;
+    await ref.update({ oylar });
+    playLikeSound();
+}
+
+async function anketOlustur() {
+    if (!ayricaliklimi()) return alert("Yetkiniz yok!");
+    const soru = document.getElementById("anketSoru").value.trim();
+    const s1 = document.getElementById("anketSecenek1").value.trim();
+    const s2 = document.getElementById("anketSecenek2").value.trim();
+    const s3 = document.getElementById("anketSecenek3").value.trim();
+    const s4 = document.getElementById("anketSecenek4").value.trim();
+    if (!soru || !s1 || !s2) return alert("Soru ve en az 2 seçenek zorunlu!");
+    const secenekler = [s1, s2, ...(s3 ? [s3] : []), ...(s4 ? [s4] : [])];
+    const btn = document.getElementById("anketBtn");
+    btn.disabled = true; btn.textContent = "⏳...";
+    try {
+        await db.collection("anketler").add({ soru, secenekler, oylar: {}, sender: userProfile.name, time: firebase.firestore.FieldValue.serverTimestamp() });
+        ["anketSoru","anketSecenek1","anketSecenek2","anketSecenek3","anketSecenek4"].forEach(id => document.getElementById(id).value = "");
+        playApproveSound();
+    } catch(e) { alert("Hata: " + e.message); }
+    btn.disabled = false; btn.textContent = "🗳️ Anketi Yayınla";
+}
+async function anketSil(id) { if (confirm("Anketi sil?")) await db.collection("anketler").doc(id).delete(); }
+
+// ═══════════════════════════════════════════
+//  TARIM TAKVİMİ
+// ═══════════════════════════════════════════
+
+let tarimLoaded = false;
+function tarimDinle() {
+    if (tarimLoaded) return;
+    tarimLoaded = true;
+    db.collection("tarim").orderBy("time","desc").onSnapshot(snap => {
+        const list = document.getElementById("tarimList");
+        if (snap.empty) { list.innerHTML = `<div class="empty-state"><div class="empty-icon">🌾</div><p>Tarım takvimi henüz boş</p></div>`; return; }
+        list.innerHTML = "";
+        snap.forEach(doc => {
+            const d = doc.data();
+            const div = document.createElement("div");
+            div.className = "post-card tarim-kart";
+            div.innerHTML = `
+                <div class="tarim-ay">${escapeHtml(d.ay || "")}</div>
+                <div class="post-header">
+                    <div class="post-meta">
+                        <span class="post-sender">${escapeHtml(d.baslik)}</span>
+                        <span class="post-time">${zamanFarki(d.time)}</span>
+                    </div>
+                    ${ayricaliklimi() ? `<button class="icon-btn delete-post-btn" onclick="tarimSil('${doc.id}')">🗑️</button>` : ""}
+                </div>
+                ${d.metin ? `<div class="post-text">${escapeHtml(d.metin)}</div>` : ""}`;
+            list.appendChild(div);
+        });
+    });
+}
+
+async function tarimNotuEkle() {
+    if (!ayricaliklimi()) return alert("Yetkiniz yok!");
+    const ay = document.getElementById("tarimAy").value;
+    const baslik = document.getElementById("tarimBaslik").value.trim();
+    const metin = document.getElementById("tarimMetin").value.trim();
+    if (!ay || !baslik) return alert("Ay ve başlık zorunlu!");
+    try {
+        await db.collection("tarim").add({ ay, baslik, metin, sender: userProfile.name, time: firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById("tarimAy").value = "";
+        document.getElementById("tarimBaslik").value = "";
+        document.getElementById("tarimMetin").value = "";
+        playApproveSound();
+    } catch(e) { alert("Hata: " + e.message); }
+}
+async function tarimSil(id) { if (confirm("Sil?")) await db.collection("tarim").doc(id).delete(); }
+
+// ═══════════════════════════════════════════
+//  LİDER TABLOSU
+// ═══════════════════════════════════════════
+
+async function liderYukle() {
+    const list = document.getElementById("liderList");
+    if (!list || list.dataset.loaded) return;
+    list.dataset.loaded = "1";
+    try {
+        // Kullanıcıları al ve puan hesapla
+        const [usersSnap, chatSnap, nostalSnap] = await Promise.all([
+            db.collection("users").get(),
+            db.collection("chat").get(),
+            db.collection("nostalgia").where("status","==","published").get()
+        ]);
+        
+        const puanlar = {};
+        // Chat mesajı başına 1 puan
+        chatSnap.forEach(doc => {
+            const uid = doc.data().uid;
+            if (uid) puanlar[uid] = (puanlar[uid] || 0) + 1;
+        });
+        // Nostalji paylaşımı başına 3 puan
+        nostalSnap.forEach(doc => {
+            const uid = doc.data().senderUid;
+            if (uid) puanlar[uid] = (puanlar[uid] || 0) + 3;
+        });
+        
+        const kullanicilar = [];
+        usersSnap.forEach(doc => {
+            const d = doc.data();
+            const puan = puanlar[doc.id] || 0;
+            if (puan > 0) kullanicilar.push({ ad: d.name || "İsimsiz", puan });
+        });
+        kullanicilar.sort((a,b) => b.puan - a.puan);
+        const top = kullanicilar.slice(0, 10);
+        
+        const MADALYALAR = ["🥇","🥈","🥉"];
+        list.innerHTML = "";
+        top.forEach((k, i) => {
+            const div = document.createElement("div");
+            div.className = "lider-kart";
+            div.innerHTML = `
+                <div class="lider-siralama">${MADALYALAR[i] || (i+1)}</div>
+                <div class="lider-avatar">${k.ad[0].toUpperCase()}</div>
+                <div>
+                    <div class="lider-ad">${escapeHtml(k.ad)}</div>
+                    <div class="lider-puan">⭐ ${k.puan} puan</div>
+                </div>`;
+            list.appendChild(div);
+        });
+        if (top.length === 0) list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏆</div><p>Henüz sıralama yok</p></div>`;
+    } catch(e) {
+        list.innerHTML = `<div class="empty-state"><p>⚠️ Yüklenemedi</p></div>`;
+    }
 }

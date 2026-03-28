@@ -187,6 +187,118 @@
     </div>
   </section>
 
+  <!-- KEŞFET BÖLÜMÜ -->
+  <section id="view-kesfet" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">🔍 Köy Özellikleri</span>
+    </div>
+    <div class="kesfet-content">
+
+      <!-- HAVA DURUMU -->
+      <div class="kesfet-card" id="card-hava">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">🌤️</span>
+          <h4>Hava Durumu</h4>
+        </div>
+        <div id="havaDurumuWidget" class="hava-widget">
+          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- NAMAZ VAKİTLERİ -->
+      <div class="kesfet-card" id="card-namaz">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">🕌</span>
+          <h4>Namaz Vakitleri</h4>
+        </div>
+        <div id="namazWidget" class="namaz-widget">
+          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- İLAN TAHTASI -->
+      <div class="kesfet-card" id="card-ilan">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">📋</span>
+          <h4>İlan Tahtası</h4>
+          <button class="kesfet-ekle-btn" id="ilanEkleBtn" onclick="ilanFormGoster()">+ İlan Ver</button>
+        </div>
+        <div id="ilanFormDiv" class="ilan-form hidden">
+          <select id="ilanKategori" class="input-field">
+            <option value="satilik">🏷️ Satılık</option>
+            <option value="kiralik">🔑 Kiralık</option>
+            <option value="araniyor">🔍 Aranıyor</option>
+            <option value="kayip">⚠️ Kayıp</option>
+            <option value="diger">📌 Diğer</option>
+          </select>
+          <input id="ilanBaslik" placeholder="Başlık (örn: Satılık Tarla)" class="input-field">
+          <textarea id="ilanAciklama" placeholder="Açıklama..." class="textarea-field" rows="2"></textarea>
+          <input id="ilanTelefon" placeholder="İletişim telefonu" class="input-field" type="tel">
+          <button class="btn btn-primary" onclick="ilanPaylas()">📋 İlanı Yayınla</button>
+          <button class="btn btn-secondary" style="margin-top:6px;" onclick="ilanFormGizle()">İptal</button>
+        </div>
+        <div id="ilanList" class="ilan-list">
+          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- ANKET -->
+      <div class="kesfet-card" id="card-anket">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">🗳️</span>
+          <h4>Köy Anketi</h4>
+        </div>
+        <div id="anketWidget">
+          <div class="empty-state" style="padding:20px;">
+            <p style="color:#888;font-size:13px;">Şu an aktif anket yok</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LİDER TABLOSU -->
+      <div class="kesfet-card" id="card-lider">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">🏆</span>
+          <h4>Köy Lider Tablosu</h4>
+        </div>
+        <div id="liderWidget" class="lider-list">
+          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- TARIM TAKVİMİ -->
+      <div class="kesfet-card" id="card-tarim">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">🌾</span>
+          <h4>Tarım Takvimi</h4>
+        </div>
+        <div id="tarimWidget" class="tarim-liste">
+          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- KÖYLÜ REHBERİ -->
+      <div class="kesfet-card" id="card-rehber">
+        <div class="kesfet-card-header">
+          <span class="kesfet-card-icon">📞</span>
+          <h4>Köylü Rehberi</h4>
+          <button class="kesfet-ekle-btn" id="rehberEkleBtn" onclick="rehberFormGoster()">+ Ekle</button>
+        </div>
+        <div id="rehberFormDiv" class="ilan-form hidden">
+          <input id="rehberAd" placeholder="Ad Soyad *" class="input-field">
+          <input id="rehberTel" placeholder="Telefon *" class="input-field" type="tel">
+          <input id="rehberNot" placeholder="Not (örn: Çiftçi, Muhtarlık...)" class="input-field">
+          <button class="btn btn-primary" onclick="rehberEkle()">📞 Kaydet</button>
+          <button class="btn btn-secondary" style="margin-top:6px;" onclick="rehberFormGizle()">İptal</button>
+        </div>
+        <div id="rehberList" class="rehber-list">
+          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
   <!-- AYARLAR BÖLÜMÜ -->
   <section id="view-settings" class="view hidden">
     <div class="top-header">
@@ -288,6 +400,50 @@
             </label>
             <div id="floatReklamPreview" class="media-preview"></div>
             <button class="btn btn-secondary" id="floatReklamKaydetBtn" onclick="floatReklamKaydet()">💾 Kaydet</button>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">🗳️ Anket Yönetimi</p>
+            <input id="anketSoru" placeholder="Anket sorusu" class="input-field">
+            <input id="anketSecA" placeholder="Seçenek A" class="input-field">
+            <input id="anketSecB" placeholder="Seçenek B" class="input-field">
+            <input id="anketSecC" placeholder="Seçenek C (isteğe bağlı)" class="input-field">
+            <input id="anketSecD" placeholder="Seçenek D (isteğe bağlı)" class="input-field">
+            <button class="btn btn-secondary" onclick="anketOlustur()">🗳️ Anketi Yayınla</button>
+            <button class="btn btn-danger" style="margin-top:6px;" onclick="anketSil()">🗑️ Anketi Kaldır</button>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">🌾 Tarım Takvimi</p>
+            <input id="tarimAy" placeholder="Ay (örn: Mart)" class="input-field">
+            <input id="tarimIs" placeholder="Yapılacak iş" class="input-field">
+            <button class="btn btn-secondary" onclick="tarimEkle()">🌾 Takvime Ekle</button>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">🔍 Keşfet Özellikleri Aç/Kapat</p>
+            <div class="ozellik-toggle-listesi" id="ozellikToggleListesi">
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-hava" checked onchange="ozellikToggle('hava',this.checked)"><span>🌤️ Hava Durumu</span></label>
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-namaz" checked onchange="ozellikToggle('namaz',this.checked)"><span>🕌 Namaz Vakitleri</span></label>
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-ilan" checked onchange="ozellikToggle('ilan',this.checked)"><span>📋 İlan Tahtası</span></label>
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-anket" checked onchange="ozellikToggle('anket',this.checked)"><span>🗳️ Anket</span></label>
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-lider" checked onchange="ozellikToggle('lider',this.checked)"><span>🏆 Lider Tablosu</span></label>
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-tarim" checked onchange="ozellikToggle('tarim',this.checked)"><span>🌾 Tarım Takvimi</span></label>
+              <label class="ozellik-toggle"><input type="checkbox" id="tog-rehber" checked onchange="ozellikToggle('rehber',this.checked)"><span>📞 Köylü Rehberi</span></label>
+            </div>
+          </div>
+
+          <div class="admin-section" style="margin-top:14px;">
+            <p class="section-label">🏘️ Köy Hizmetleri Yönetimi</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="font-size:13px;color:#555;">Köy sekmesindeki özellikler admin kontrolündedir. İlan/Rehber onayları Köy → ilgili sekme'den yapılır.</div>
+              <div style="background:#e8f5e9;border-radius:10px;padding:10px;font-size:13px;">
+                📍 <b>Köy Koordinatları</b> (Hava & Namaz için)<br>
+                <input id="koyLat" placeholder="Enlem (örn: 39.9334)" class="input-field" style="margin-top:6px;margin-bottom:0;">
+                <input id="koyLng" placeholder="Boylam (örn: 32.8597)" class="input-field" style="margin-bottom:0;">
+                <button class="btn btn-secondary" style="margin-top:8px;" onclick="koyKoordKaydet()">📍 Kaydet</button>
+              </div>
+            </div>
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
@@ -395,6 +551,15 @@
   <div class="nav-item" id="nav-biz" onclick="tabDegistir('biz')">
     <span class="nav-icon">🏢</span>
     <span class="nav-label">Firmalar</span>
+  </div>
+  <div class="nav-item" id="nav-kesfet" onclick="tabDegistir('kesfet')">
+    <span class="nav-icon">🔍</span>
+    <span class="nav-label">Keşfet</span>
+  </div>
+  <div class="nav-item" id="nav-koy" onclick="tabDegistir('koy')">
+    <span class="nav-icon">🏘️</span>
+    <span class="nav-label">Köy</span>
+    <span class="nav-badge hidden" id="koy-badge">0</span>
   </div>
   <div class="nav-item" id="nav-settings" onclick="tabDegistir('settings')">
     <span class="nav-icon">⚙️</span>

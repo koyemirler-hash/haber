@@ -88,15 +88,18 @@ window.addEventListener("DOMContentLoaded", () => {
     const sb = document.getElementById("settingsInstallBtn");
     if (sb) sb.style.display = "none";
     updateSoundBtn();
+    // Kısa süre sonra bildirim izni iste (sayfa yüklendikten sonra)
+    setTimeout(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+            bildirimiIzniAl();
+        }
+    }, 3000);
 });
 
 // ─── MOBİL SES + BİLDİRİM İZİNLERİ ───
-// İlk dokunuşta hem sesi uyandır hem de bildirim izni iste
 function ilkDokunusIzinleri() {
-    // Ses uyandır
     const ctx = getAudioCtx();
     if (ctx && ctx.state === "suspended") ctx.resume();
-    // Bildirim izni iste
     bildirimiIzniAl();
 }
 document.addEventListener("touchstart", ilkDokunusIzinleri, { once: true });
@@ -157,18 +160,38 @@ function bildirimBtnGuncelle(durum) {
     }
 }
 
-// Telefon bildirimi göster (service worker üzerinden - arka planda da çalışır)
+// Telefon bildirimi göster - hem arka planda hem açıkken çalışır
 function telefonBildirimi(baslik, mesaj, tag) {
-    if (!("serviceWorker" in navigator)) return;
+    if (!("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
-    navigator.serviceWorker.ready.then(reg => {
-        reg.active && reg.active.postMessage({
-            type: "SHOW_NOTIFICATION",
-            title: baslik,
+
+    // Service Worker üzerinden göster (arka planda da çalışır)
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+            if (reg.active) {
+                reg.active.postMessage({
+                    type: "SHOW_NOTIFICATION",
+                    title: baslik,
+                    body: mesaj,
+                    tag: tag || "emirler"
+                });
+            }
+        }).catch(() => {
+            // SW yoksa direkt göster
+            new Notification(baslik, {
+                body: mesaj,
+                icon: "./ikon_192.png",
+                badge: "./ikon_192.png",
+                tag: tag || "emirler"
+            });
+        });
+    } else {
+        new Notification(baslik, {
             body: mesaj,
+            icon: "./ikon_192.png",
             tag: tag || "emirler"
         });
-    });
+    }
 }
 
 // ═══════════════════════════════════════════
@@ -282,12 +305,15 @@ function updateSoundBtn() {
 function ayricaliklimi() {
     if (!userProfile) return false;
     if (currentUser && currentUser.email === ADMIN_EMAIL) return true;
-    return ["admin", "muhtar", "yardimci"].includes(userProfile.role);
+    // Firestore'da alan "rol" (Türkçe) olarak kayıtlı
+    const r = userProfile.rol || userProfile.role || "";
+    return ["admin", "muhtar", "yardimci"].includes(r);
 }
 
 function adminMi() {
     if (currentUser && currentUser.email === ADMIN_EMAIL) return true;
-    return userProfile && userProfile.role === "admin";
+    const r = userProfile ? (userProfile.rol || userProfile.role || "") : "";
+    return r === "admin";
 }
 
 function zamanFarki(ts) {
@@ -644,7 +670,7 @@ async function akisPaylas() {
         await db.collection("announcements").add({
             sender: userProfile.name,
             senderUid: currentUser.uid,
-            senderRole: userProfile.role || "user",
+            senderRole: userProfile.rol || userProfile.role || "user",
             title, text, mediaUrl, mediaType,
             reactions: {},
             commentCount: 0,
@@ -833,7 +859,7 @@ async function nostaljiPaylas() {
         await db.collection("nostalgia").add({
             sender: userProfile.name,
             senderUid: currentUser.uid,
-            senderRole: userProfile.role || "user",
+            senderRole: userProfile.rol || userProfile.role || "user",
             title, year, text,
             mediaUrl, mediaType,
             reactions: {},

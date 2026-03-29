@@ -366,3 +366,13 @@ video.chat-media { background: #000; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+/* ─── ÖZEL MESAJ EKLENTİLERİ ─── */
+.ozel-medya-onizle {
+  padding: 6px 10px;
+  background: var(--white);
+  border-top: 1px solid #eee;
+  display: flex; align-items: center; gap: 8px;
+}
+.ozel-medya-onizle img,
+.ozel-medya-onizle video { max-height: 60px; border-radius: 8px; }

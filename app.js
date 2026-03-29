@@ -89,7 +89,7 @@ function playLikeSound() {
         osc.frequency.setValueAtTime(523.25, ctx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.15);
         gain.gain.setValueAtTime(0, ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 0.02);
+        gain.gain.linearRampToValueAtTime(0.7, ctx.currentTime + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
         osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.25);
     } catch(e) {}
@@ -104,7 +104,7 @@ function playMessageSound() {
             osc.connect(gain); gain.connect(ctx.destination);
             osc.type = "sine"; osc.frequency.value = 880;
             gain.gain.setValueAtTime(0, ctx.currentTime + delay);
-            gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + delay + 0.02);
+            gain.gain.linearRampToValueAtTime(0.65, ctx.currentTime + delay + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.11);
             osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.11);
         });
@@ -121,7 +121,7 @@ function playApproveSound() {
             osc.type = "sine"; osc.frequency.value = freq;
             const t = ctx.currentTime + i * 0.12;
             gain.gain.setValueAtTime(0, t);
-            gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+            gain.gain.linearRampToValueAtTime(0.6, t + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
             osc.start(t); osc.stop(t + 0.15);
         });
@@ -450,7 +450,7 @@ function nostaljiDinle() {
 }
 
 function nostaljiOnayBekleyenleriDinle() {
-    db.collection("nostalgia").where("status","==","pending").orderBy("time","asc").onSnapshot(snap => {
+    db.collection("nostalgia").where("status","==","pending").orderBy("time","desc").onSnapshot(snap => {
         const list = document.getElementById("nostaljiPendingList"), badge = document.getElementById("nostalji-badge"), countText = document.getElementById("pendingCountText");
         const count = snap.size;
         if (count > 0) { badge.classList.remove("hidden"); badge.textContent = count; if (countText) countText.textContent = count; }
@@ -522,7 +522,7 @@ function ilanFiltre(kat, btn) {
 }
 
 function ilanOnayBekleyenleriDinle() {
-    db.collection("ilanlar").where("status","==","pending").orderBy("time","asc").onSnapshot(snap => {
+    db.collection("ilanlar").where("status","==","pending").orderBy("time","desc").onSnapshot(snap => {
         const list = document.getElementById("ilanOnayList"), badge = document.getElementById("ilan-badge"), countEl = document.getElementById("ilanOnayCount");
         const count = snap.size;
         if (count > 0) { badge.classList.remove("hidden"); badge.textContent = count; if (countEl) countEl.textContent = count; }
@@ -698,6 +698,10 @@ async function mesajSil(msgId) { if (!confirm("Bu mesajı silmek istiyor musunuz
 //  ÖZEL MESAJ
 // ═══════════════════════════════════════════
 
+// ─── ÖZEL MESAJ SİSTEMİ ───
+// Yapı: ozelMesajlar/{konusmaId}/mesajlar/{msgId}
+// konusmaId = [uid1, uid2].sort().join("_")
+
 async function profilGorunurlukYukle() {
     if (!currentUser) return;
     const toggle=document.getElementById("profilGorunurToggle"); if (!toggle) return;
@@ -711,43 +715,107 @@ async function profilGorunurlukDegistir() {
     if (!currentUser) return;
     const gorunur=document.getElementById("profilGorunurToggle").checked;
     try {
-        await db.collection("rehber").doc(currentUser.uid).set({ uid:currentUser.uid, name:userProfile.name, gorunur, time:firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+        await db.collection("rehber").doc(currentUser.uid).set({
+            uid:currentUser.uid, name:userProfile.name,
+            gorunur, time:firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge:true });
+        alert(gorunur ? "✅ Profiliniz listede görünüyor!" : "Profiliniz gizlendi.");
     } catch(e) { alert("Hata: " + e.message); }
 }
 
 function koyluListesiYukle() {
     const el=document.getElementById("koyluListesi"); if (!el) return;
-    db.collection("rehber").where("gorunur","==",true).onSnapshot(snap => {
-        if (snap.empty) { el.innerHTML=`<div style="text-align:center;color:#888;padding:20px;font-size:14px;">Henüz kimse listede görünmüyor</div>`; return; }
+    // Tüm kayıtlı kullanıcıları göster
+    db.collection("users").orderBy("lastSeen","desc").onSnapshot(snap => {
+        if (snap.empty) {
+            el.innerHTML='<div style="text-align:center;color:#888;padding:24px;font-size:14px;">Henüz kullanıcı yok</div>';
+            return;
+        }
         el.innerHTML="";
         snap.forEach(doc => {
             const u=doc.data(), uid=doc.id;
-            if (uid===currentUser?.uid) return; // Kendini gösterme
+            if (uid===currentUser?.uid) return;
             const div=document.createElement("div"); div.className="koylular-satir";
-            div.innerHTML=`<div class="koylular-avatar">${(u.name||"?")[0].toUpperCase()}</div><div class="koylular-bilgi"><div class="koylular-ad">${escapeHtml(u.name||"İsimsiz")}</div>${u.not?`<div class="koylular-not">${escapeHtml(u.not)}</div>`:""}</div><button class="mesaj-btn" onclick="ozelSohbetAc('${uid}','${escapeHtml(u.name||"İsimsiz")}')">✉️</button>`;
+            const telBtn = u.phone
+                ? `<a href="tel:${u.phone}" style="background:#e8f5e9;color:#2e7d32;font-size:18px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0;">📞</a>`
+                : "";
+            const adSafe = (u.name||"İsimsiz").replace(/'/g,"").replace(/"/g,"");
+            div.innerHTML=`<div class="koylular-avatar">${(u.name||"?")[0].toUpperCase()}</div><div class="koylular-bilgi"><div class="koylular-ad">${escapeHtml(u.name||"İsimsiz")}</div><div class="${u.online?"status-online":"status-offline"}" style="font-size:12px;">${u.online?"🟢 Çevrimiçi":"⚫ Çevrimdışı"}</div></div><div style="display:flex;gap:6px;align-items:center;">${telBtn}<button class="mesaj-btn" onclick="ozelSohbetAc('${uid}','${adSafe}')">✉️</button></div>`;
             el.appendChild(div);
         });
     });
 }
 
 let ozelSohbetUnsubscribe = null;
+let ozelSohbetMedyaFile = null;
+
 function ozelSohbetAc(kisiUid, kisiAd) {
     ozelSohbetKisiUid=kisiUid;
     document.getElementById("koyluListesi").classList.add("hidden");
     document.getElementById("ozelSohbet").classList.remove("hidden");
-    document.getElementById("ozelSohbetBaslik").textContent=kisiAd;
+    document.getElementById("ozelSohbetBaslik").textContent = kisiAd;
     if (ozelSohbetUnsubscribe) ozelSohbetUnsubscribe();
-    const konusmaId = [currentUser.uid, kisiUid].sort().join("_");
-    ozelSohbetUnsubscribe = db.collection("ozelMesajlar").where("konusmaId","==",konusmaId).orderBy("time","asc").onSnapshot(snap => {
-        const box=document.getElementById("ozelMesajBox"); box.innerHTML="";
-        snap.forEach(doc => {
-            const m=doc.data(), isMe=m.gonderen===currentUser.uid;
-            const wrapper=document.createElement("div"); wrapper.className=`msg-wrapper ${isMe?"me":"them"}`;
-            wrapper.innerHTML=`<div class="msg-bubble">${!isMe?`<span class="msg-sender">${escapeHtml(m.gonderenAd||"")}</span>`:""}<span class="msg-text">${escapeHtml(m.metin||"")}</span><div class="msg-footer"><span class="msg-time">${zamanFarki(m.time)}</span></div></div>`;
-            box.appendChild(wrapper);
+
+    const konusmaId=[currentUser.uid, kisiUid].sort().join("_");
+    const on10GunOnce = new Date(Date.now() - 10*24*60*60*1000);
+
+    ozelSohbetUnsubscribe = db.collection("ozelMesajlar")
+        .doc(konusmaId)
+        .collection("mesajlar")
+        .orderBy("time","asc")
+        .onSnapshot(snap => {
+            const box=document.getElementById("ozelMesajBox");
+            const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+            box.innerHTML="";
+            let eskiMesajlar=[];
+
+            const prevCount = snap.metadata.fromCache ? -1 : 0;
+        snap.docChanges().forEach(change => {
+            if (change.type === "added") {
+                const m = change.doc.data();
+                if (m.gonderen !== currentUser?.uid && !snap.metadata.hasPendingWrites) {
+                    playMessageSound();
+                    if (document.hidden) {
+                        telefonBildirimi("✉️ " + (m.gonderenAd||"Biri"), m.metin||"📷 Medya", "ozel");
+                    }
+                }
+            }
         });
-        box.scrollTop=box.scrollHeight;
-    });
+
+        snap.forEach(doc => {
+                const m=doc.data();
+                // 10 günden eski mesajları işaretle ve sil
+                if (m.time && m.time.toDate && m.time.toDate() < on10GunOnce) {
+                    eskiMesajlar.push(doc.id); return;
+                }
+                const isMe=m.gonderen===currentUser.uid;
+                const mediaHTML = m.mediaUrl ? (m.mediaType==="video"
+                    ? `<video src="${m.mediaUrl}" controls class="chat-media" preload="metadata"></video>`
+                    : `<img src="${m.mediaUrl}" class="chat-media" onclick="resimTamEkran('${m.mediaUrl}')" loading="lazy">`) : "";
+                const wrapper=document.createElement("div");
+                wrapper.className=`msg-wrapper ${isMe?"me":"them"}`;
+                wrapper.innerHTML=`<div class="msg-bubble">
+                    ${!isMe?`<span class="msg-sender">${escapeHtml(m.gonderenAd||"")}</span>`:""}
+                    ${m.metin?`<span class="msg-text">${escapeHtml(m.metin)}</span>`:""}
+                    ${mediaHTML}
+                    <div class="msg-footer"><span class="msg-time">${zamanFarki(m.time)}</span></div>
+                </div>`;
+                box.appendChild(wrapper);
+            });
+
+            if (atBottom) box.scrollTop=box.scrollHeight;
+
+            // 10 günden eski mesajları arka planda sil
+            if (eskiMesajlar.length>0) {
+                eskiMesajlar.forEach(id => {
+                    db.collection("ozelMesajlar").doc(konusmaId).collection("mesajlar").doc(id).delete().catch(()=>{});
+                });
+            }
+        }, err => {
+            console.error("Özel mesaj hatası:", err.message);
+            const box=document.getElementById("ozelMesajBox");
+            box.innerHTML=`<div style="text-align:center;color:#888;padding:20px;">⚠️ Mesajlar yüklenemedi<br><small>${err.message}</small></div>`;
+        });
 }
 
 function ozelSohbetKapat() {
@@ -759,13 +827,55 @@ function ozelSohbetKapat() {
 
 async function ozelMesajGonder() {
     if (!ozelSohbetKisiUid||!currentUser) return;
-    const metin=document.getElementById("ozelMsgInput").value.trim(); if (!metin) return;
-    if (kufurKontrol(metin)) return alert("⚠️ Uygunsuz içerik!");
+    const input=document.getElementById("ozelMsgInput");
+    const metin=input.value.trim();
+    if (!metin && !ozelSohbetMedyaFile) return;
+    if (metin && kufurKontrol(metin)) return alert("⚠️ Uygunsuz içerik!");
+
     const konusmaId=[currentUser.uid,ozelSohbetKisiUid].sort().join("_");
+    const btn=document.getElementById("ozelSendBtn"); if(btn) btn.disabled=true;
+
     try {
-        await db.collection("ozelMesajlar").add({ metin, gonderen:currentUser.uid, gonderenAd:userProfile.name, alici:ozelSohbetKisiUid, konusmaId, time:firebase.firestore.FieldValue.serverTimestamp() });
-        document.getElementById("ozelMsgInput").value="";
-    } catch(e) { alert("Mesaj gönderilemedi: " + e.message); }
+        let mediaUrl="", mediaType="";
+        if (ozelSohbetMedyaFile) {
+            const r=await cloudinaryYukle(ozelSohbetMedyaFile);
+            mediaUrl=r.url; mediaType=r.type;
+            ozelSohbetMedyaFile=null;
+            const prev=document.getElementById("ozelMedyaOnizle");
+            if(prev){prev.innerHTML=""; prev.classList.add("hidden");}
+        }
+        await db.collection("ozelMesajlar").doc(konusmaId).collection("mesajlar").add({
+            metin:metin||"", mediaUrl, mediaType,
+            gonderen:currentUser.uid, gonderenAd:userProfile.name,
+            alici:ozelSohbetKisiUid,
+            time:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        input.value="";
+        // Ses çal
+        playMessageSound();
+    } catch(e) {
+        alert("Mesaj gönderilemedi: " + e.message);
+    }
+    if(btn) btn.disabled=false;
+}
+
+function ozelMedyaSec(input) {
+    ozelSohbetMedyaFile = input.files[0] || null;
+    const prev=document.getElementById("ozelMedyaOnizle");
+    if (!prev) return;
+    if (!ozelSohbetMedyaFile) { prev.innerHTML=""; prev.classList.add("hidden"); return; }
+    prev.classList.remove("hidden");
+    const url=URL.createObjectURL(ozelSohbetMedyaFile);
+    prev.innerHTML=ozelSohbetMedyaFile.type.startsWith("video")
+        ? `<video src="${url}" style="max-height:60px;border-radius:8px;" controls></video><button onclick="ozelMedyaTemizle()" class="media-clear-btn" style="margin-left:8px;">✕</button>`
+        : `<img src="${url}" style="max-height:60px;border-radius:8px;"><button onclick="ozelMedyaTemizle()" class="media-clear-btn" style="margin-left:8px;">✕</button>`;
+}
+function ozelMedyaTemizle() {
+    ozelSohbetMedyaFile=null;
+    const prev=document.getElementById("ozelMedyaOnizle");
+    if(prev){prev.innerHTML=""; prev.classList.add("hidden");}
+    const fi=document.getElementById("ozelMedyaInput");
+    if(fi) fi.value="";
 }
 
 // ═══════════════════════════════════════════

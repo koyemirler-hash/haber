@@ -218,11 +218,17 @@
       <div class="ozel-sohbet-header">
         <button class="geri-btn" onclick="ozelSohbetKapat()">← Geri</button>
         <span id="ozelSohbetBaslik">Konuşma</span>
+        <span style="font-size:11px;color:rgba(255,255,255,0.7);margin-left:auto;">🔒 Özel · 10 gün sonra silinir</span>
       </div>
       <div id="ozelMesajBox" class="chat-box"></div>
+      <!-- Medya önizleme -->
+      <div id="ozelMedyaOnizle" class="ozel-medya-onizle hidden"></div>
       <div class="chat-input-bar">
+        <label class="chat-attach" title="Fotoğraf/Video">📎
+          <input type="file" id="ozelMedyaInput" accept="image/*,video/*" onchange="ozelMedyaSec(this)">
+        </label>
         <input id="ozelMsgInput" placeholder="Mesaj yazın..." class="chat-input-field" onkeypress="if(event.key==='Enter')ozelMesajGonder()">
-        <button class="chat-send-btn" onclick="ozelMesajGonder()">➤</button>
+        <button class="chat-send-btn" id="ozelSendBtn" onclick="ozelMesajGonder()">➤</button>
       </div>
     </div>
   </section>

@@ -18,14 +18,14 @@
 </head>
 <body>
 
-<!-- PWA Yükleme Banner -->
+<!-- PWA Banner -->
 <div id="pwaInstallBanner" class="pwa-banner hidden">
   <div class="pwa-banner-inner">
     <div class="pwa-banner-left">
       <img src="ikon_192.png" class="pwa-icon" alt="ikon">
       <div>
         <div class="pwa-banner-title">Emirler Köyü</div>
-        <div class="pwa-banner-sub">Ana ekrana ekle, her zaman erişim!</div>
+        <div class="pwa-banner-sub">Ana ekrana ekle!</div>
       </div>
     </div>
     <div class="pwa-banner-btns">
@@ -81,36 +81,67 @@
 <!-- Ana Uygulama -->
 <div id="app" class="hidden">
 
-  <!-- AKIŞ BÖLÜMÜ -->
+  <!-- AKIŞ -->
   <section id="view-feed" class="view">
     <div class="top-header">
       <span class="header-title">🏠 Köy Meydanı</span>
-      <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()" title="Ses Aç/Kapat">🔔</button>
+      <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()">🔔</button>
     </div>
     <div id="postPanel" class="post-panel hidden">
       <div class="post-panel-inner">
         <input id="postTitle" placeholder="Başlık..." class="input-field">
         <textarea id="postText" placeholder="Ne paylaşmak istersiniz?" class="textarea-field" rows="3"></textarea>
-        <label class="file-label">
-          📎 Fotoğraf / Video Ekle
+        <label class="file-label">📎 Fotoğraf / Video Ekle
           <input type="file" id="postFile" accept="image/*,video/*" onchange="previewFile(this,'postPreview')">
         </label>
         <div id="postPreview" class="media-preview"></div>
         <button class="btn btn-primary" id="postBtn" onclick="akisPaylas()">📢 Paylaş</button>
       </div>
     </div>
-    <div id="postList" class="post-list">
-      <div class="loading-spinner">⏳ Yükleniyor...</div>
-    </div>
+    <div id="postList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- NOSTALJİ BÖLÜMÜ -->
+  <!-- İLAN TAHTASI -->
+  <section id="view-ilan" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">📋 İlan Tahtası</span>
+      <button class="header-action-btn" onclick="ilanFormToggle()">+ İlan Ver</button>
+    </div>
+    <div id="ilanFormDiv" class="ilan-form-panel hidden">
+      <div class="post-panel-inner">
+        <select id="ilanKategori" class="input-field">
+          <option value="satilik">🏷️ Satılık</option>
+          <option value="kiralik">🔑 Kiralık</option>
+          <option value="araniyor">🔍 Aranıyor</option>
+          <option value="kayip">⚠️ Kayıp İlanı</option>
+          <option value="diger">📌 Diğer</option>
+        </select>
+        <input id="ilanBaslik" placeholder="Başlık *" class="input-field">
+        <textarea id="ilanAciklama" placeholder="Açıklama..." class="textarea-field" rows="3"></textarea>
+        <input id="ilanTelefon" placeholder="İletişim telefonu" class="input-field" type="tel">
+        <label class="file-label">📸 Fotoğraf Ekle (max 5)
+          <input type="file" id="ilanFotolar" accept="image/*" multiple onchange="ilanFotoOnizle(this)">
+        </label>
+        <div id="ilanFotoOnizleDiv" class="ilan-foto-onizle"></div>
+        <button class="btn btn-primary" id="ilanPaylasBtnMain" onclick="ilanPaylas()">📋 İlanı Yayınla</button>
+      </div>
+    </div>
+    <!-- Kategori filtre -->
+    <div class="ilan-filtre-bar">
+      <button class="ilan-filtre-btn active" onclick="ilanFiltre('hepsi',this)">Hepsi</button>
+      <button class="ilan-filtre-btn" onclick="ilanFiltre('satilik',this)">🏷️ Satılık</button>
+      <button class="ilan-filtre-btn" onclick="ilanFiltre('kiralik',this)">🔑 Kiralık</button>
+      <button class="ilan-filtre-btn" onclick="ilanFiltre('kayip',this)">⚠️ Kayıp</button>
+      <button class="ilan-filtre-btn" onclick="ilanFiltre('araniyor',this)">🔍 Aranıyor</button>
+    </div>
+    <div id="ilanList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
+  </section>
+
+  <!-- NOSTALJİ -->
   <section id="view-nostalji" class="view hidden">
     <div class="top-header">
       <span class="header-title">📸 Nostalji</span>
     </div>
-
-    <!-- Onay Bekleyenler - sadece yetkililer görür -->
     <div id="nostaljiPendingSection" class="pending-section hidden">
       <div class="pending-header">
         <span>⏳ Onay Bekleyen Gönderiler</span>
@@ -118,16 +149,13 @@
       </div>
       <div id="nostaljiPendingList" class="post-list" style="padding-top:6px;"></div>
     </div>
-
-    <!-- Anı gönder formu -->
     <div class="post-panel">
       <div class="post-panel-inner nostalji-form">
         <div class="nostalji-form-title">📸 Anı Paylaş</div>
         <input id="nostaljiTitle" placeholder="Başlık... (örn: Köy Meydanı 1985)" class="input-field">
-        <input id="nostaljiYear" placeholder="📅 Yıl / Dönem  (örn: 1990'lar)" class="input-field">
+        <input id="nostaljiYear" placeholder="📅 Yıl / Dönem (örn: 1990'lar)" class="input-field">
         <textarea id="nostaljiText" placeholder="Bu anıyı anlatın..." class="textarea-field" rows="3"></textarea>
-        <label class="file-label">
-          📷 Fotoğraf Ekle
+        <label class="file-label">📷 Fotoğraf Ekle
           <input type="file" id="nostaljiFile" accept="image/*,video/*" onchange="previewFile(this,'nostaljiPreview')">
         </label>
         <div id="nostaljiPreview" class="media-preview"></div>
@@ -135,28 +163,21 @@
         <p class="approval-note" id="nostaljiApprovalNote">⏳ Gönderiniz yetkililer tarafından onaylandıktan sonra yayınlanacak.</p>
       </div>
     </div>
-
-    <!-- Yayınlanan anılar -->
-    <div id="nostaljiList" class="post-list">
-      <div class="loading-spinner">⏳ Yükleniyor...</div>
-    </div>
+    <div id="nostaljiList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- SOHBET BÖLÜMÜ -->
+  <!-- SOHBET -->
   <section id="view-chat" class="view hidden">
     <div class="top-header">
       <span class="header-title">💬 Köy Sohbeti</span>
     </div>
-    <div id="chatBox" class="chat-box">
-      <div class="loading-spinner">⏳ Yükleniyor...</div>
-    </div>
+    <div id="chatBox" class="chat-box"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
     <div class="chat-media-preview-bar hidden" id="chatMediaBar">
       <div id="chatMediaPreview"></div>
       <button onclick="chatMediaTemizle()" class="media-clear-btn">✕ Kaldır</button>
     </div>
     <div class="chat-input-bar">
-      <label class="chat-attach" title="Medya Ekle">
-        📎
+      <label class="chat-attach">📎
         <input type="file" id="chatFile" accept="image/*,video/*" onchange="chatMediaSec(this)">
       </label>
       <input id="msgInput" placeholder="Mesaj yazın..." class="chat-input-field" onkeypress="enterMesaj(event)">
@@ -164,7 +185,7 @@
     </div>
   </section>
 
-  <!-- FİRMALAR BÖLÜMÜ -->
+  <!-- FİRMALAR -->
   <section id="view-biz" class="view hidden">
     <div class="top-header">
       <span class="header-title">🏢 Köy Firmaları</span>
@@ -172,10 +193,8 @@
     <p class="swipe-hint">← Kaydırarak diğer firmaları görün →</p>
     <div id="bizList" class="biz-container"></div>
     <div id="bizEmpty" class="empty-state hidden">
-      <div class="empty-icon">🏢</div>
-      <p>Henüz firma eklenmemiş</p>
+      <div class="empty-icon">🏢</div><p>Henüz firma eklenmemiş</p>
     </div>
-    <!-- SABİT REKLAM ALANI -->
     <div id="reklamAlani" class="reklam-alani hidden">
       <div class="reklam-etiket">📢 Reklam</div>
       <div class="reklam-icerik">
@@ -187,132 +206,117 @@
     </div>
   </section>
 
-  <!-- KEŞFET BÖLÜMÜ -->
-  <section id="view-kesfet" class="view hidden">
+  <!-- KÖY BİLGİLERİ (açmalı-kapatmalı) -->
+  <section id="view-koy" class="view hidden">
     <div class="top-header">
-      <span class="header-title">🔍 Köy Özellikleri</span>
+      <span class="header-title">🌾 Köy Bilgileri</span>
     </div>
-    <div class="kesfet-content">
+    <div class="koy-content">
 
       <!-- HAVA DURUMU -->
-      <div class="kesfet-card" id="card-hava">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">🌤️</span>
-          <h4>Hava Durumu</h4>
+      <div class="akordeon-kart" id="kart-hava">
+        <div class="akordeon-baslik" onclick="akordeonToggle('hava')">
+          <span>🌤️ Hava Durumu</span>
+          <span class="akordeon-ok" id="ok-hava">▼</span>
         </div>
-        <div id="havaDurumuWidget" class="hava-widget">
-          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        <div class="akordeon-icerik hidden" id="icerik-hava">
+          <div id="havaWidget"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
         </div>
       </div>
 
       <!-- NAMAZ VAKİTLERİ -->
-      <div class="kesfet-card" id="card-namaz">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">🕌</span>
-          <h4>Namaz Vakitleri</h4>
+      <div class="akordeon-kart" id="kart-namaz">
+        <div class="akordeon-baslik" onclick="akordeonToggle('namaz')">
+          <span>🕌 Namaz Vakitleri</span>
+          <span class="akordeon-ok" id="ok-namaz">▼</span>
         </div>
-        <div id="namazWidget" class="namaz-widget">
-          <div class="loading-spinner">⏳ Yükleniyor...</div>
-        </div>
-      </div>
-
-      <!-- İLAN TAHTASI -->
-      <div class="kesfet-card" id="card-ilan">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">📋</span>
-          <h4>İlan Tahtası</h4>
-          <button class="kesfet-ekle-btn" id="ilanEkleBtn" onclick="ilanFormGoster()">+ İlan Ver</button>
-        </div>
-        <div id="ilanFormDiv" class="ilan-form hidden">
-          <select id="ilanKategori" class="input-field">
-            <option value="satilik">🏷️ Satılık</option>
-            <option value="kiralik">🔑 Kiralık</option>
-            <option value="araniyor">🔍 Aranıyor</option>
-            <option value="kayip">⚠️ Kayıp</option>
-            <option value="diger">📌 Diğer</option>
-          </select>
-          <input id="ilanBaslik" placeholder="Başlık (örn: Satılık Tarla)" class="input-field">
-          <textarea id="ilanAciklama" placeholder="Açıklama..." class="textarea-field" rows="2"></textarea>
-          <input id="ilanTelefon" placeholder="İletişim telefonu" class="input-field" type="tel">
-          <button class="btn btn-primary" onclick="ilanPaylas()">📋 İlanı Yayınla</button>
-          <button class="btn btn-secondary" style="margin-top:6px;" onclick="ilanFormGizle()">İptal</button>
-        </div>
-        <div id="ilanList" class="ilan-list">
-          <div class="loading-spinner">⏳ Yükleniyor...</div>
-        </div>
-      </div>
-
-      <!-- ANKET -->
-      <div class="kesfet-card" id="card-anket">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">🗳️</span>
-          <h4>Köy Anketi</h4>
-        </div>
-        <div id="anketWidget">
-          <div class="empty-state" style="padding:20px;">
-            <p style="color:#888;font-size:13px;">Şu an aktif anket yok</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- LİDER TABLOSU -->
-      <div class="kesfet-card" id="card-lider">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">🏆</span>
-          <h4>Köy Lider Tablosu</h4>
-        </div>
-        <div id="liderWidget" class="lider-list">
-          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        <div class="akordeon-icerik hidden" id="icerik-namaz">
+          <div id="namazWidget"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
         </div>
       </div>
 
       <!-- TARIM TAKVİMİ -->
-      <div class="kesfet-card" id="card-tarim">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">🌾</span>
-          <h4>Tarım Takvimi</h4>
+      <div class="akordeon-kart" id="kart-tarim">
+        <div class="akordeon-baslik" onclick="akordeonToggle('tarim')">
+          <span>🌾 Tarım Takvimi</span>
+          <span class="akordeon-ok" id="ok-tarim">▼</span>
         </div>
-        <div id="tarimWidget" class="tarim-liste">
-          <div class="loading-spinner">⏳ Yükleniyor...</div>
+        <div class="akordeon-icerik hidden" id="icerik-tarim">
+          <div id="tarimWidget"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
         </div>
       </div>
 
-      <!-- KÖYLÜ REHBERİ -->
-      <div class="kesfet-card" id="card-rehber">
-        <div class="kesfet-card-header">
-          <span class="kesfet-card-icon">📞</span>
-          <h4>Köylü Rehberi</h4>
-          <button class="kesfet-ekle-btn" id="rehberEkleBtn" onclick="rehberFormGoster()">+ Ekle</button>
+      <!-- HAYVAN AŞI TAKVİMİ -->
+      <div class="akordeon-kart" id="kart-asi">
+        <div class="akordeon-baslik" onclick="akordeonToggle('asi')">
+          <span>💉 Hayvan Aşı Takvimi</span>
+          <span class="akordeon-ok" id="ok-asi">▼</span>
         </div>
-        <div id="rehberFormDiv" class="ilan-form hidden">
-          <input id="rehberAd" placeholder="Ad Soyad *" class="input-field">
-          <input id="rehberTel" placeholder="Telefon *" class="input-field" type="tel">
-          <input id="rehberNot" placeholder="Not (örn: Çiftçi, Muhtarlık...)" class="input-field">
-          <button class="btn btn-primary" onclick="rehberEkle()">📞 Kaydet</button>
-          <button class="btn btn-secondary" style="margin-top:6px;" onclick="rehberFormGizle()">İptal</button>
+        <div class="akordeon-icerik hidden" id="icerik-asi">
+          <div id="asiWidget"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
         </div>
-        <div id="rehberList" class="rehber-list">
-          <div class="loading-spinner">⏳ Yükleniyor...</div>
+      </div>
+
+      <!-- HAYVAN HASTALIKLARI -->
+      <div class="akordeon-kart" id="kart-hastalik">
+        <div class="akordeon-baslik" onclick="akordeonToggle('hastalik')">
+          <span>🏥 Hayvan Hastalıkları</span>
+          <span class="akordeon-ok" id="ok-hastalik">▼</span>
+        </div>
+        <div class="akordeon-icerik hidden" id="icerik-hastalik">
+          <div id="hastalikWidget"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
+        </div>
+      </div>
+
+      <!-- ANKET -->
+      <div class="akordeon-kart" id="kart-anket">
+        <div class="akordeon-baslik" onclick="akordeonToggle('anket')">
+          <span>🗳️ Köy Anketi</span>
+          <span class="akordeon-ok" id="ok-anket">▼</span>
+        </div>
+        <div class="akordeon-icerik hidden" id="icerik-anket">
+          <div id="anketWidget"><div style="text-align:center;color:#888;padding:16px;font-size:13px;">Şu an aktif anket yok</div></div>
+        </div>
+      </div>
+
+      <!-- LİDER TABLOSU -->
+      <div class="akordeon-kart" id="kart-lider">
+        <div class="akordeon-baslik" onclick="akordeonToggle('lider')">
+          <span>🏆 Lider Tablosu</span>
+          <span class="akordeon-ok" id="ok-lider">▼</span>
+        </div>
+        <div class="akordeon-icerik hidden" id="icerik-lider">
+          <div id="liderWidget"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
         </div>
       </div>
 
     </div>
   </section>
 
-  <!-- AYARLAR BÖLÜMÜ -->
+  <!-- AYARLAR -->
   <section id="view-settings" class="view hidden">
     <div class="top-header">
       <span class="header-title">⚙️ Ayarlar</span>
     </div>
     <div class="settings-content">
 
-      <!-- Online Kullanıcılar -->
-      <div class="settings-card">
+      <!-- Kullanıcılar - SADECE ADMIN GÖRÜR -->
+      <div class="settings-card hidden" id="onlineKullanicilarKart">
         <h4>👥 Kullanıcılar</h4>
         <div id="userList"><div class="loading-spinner">⏳</div></div>
       </div>
 
-      <!-- QR Kod & PWA Yükleme -->
+      <!-- Telefon Rehberi (herkes kendi numarasını ekler) -->
+      <div class="settings-card">
+        <h4>📞 Numaramı Paylaş</h4>
+        <p style="font-size:13px;color:#888;margin-bottom:12px;">Köylüler seni arayabilsin diye numaranı ekle</p>
+        <div id="benimNumaramDiv"></div>
+        <input id="numaraInput" placeholder="Telefon numaranız" class="input-field" type="tel">
+        <input id="numaraNotInput" placeholder="Not (örn: Çiftçi, Şoför...)" class="input-field">
+        <button class="btn btn-secondary" onclick="numaramiPaylas()">📞 Numaramı Ekle / Güncelle</button>
+      </div>
+
+      <!-- QR -->
       <div class="settings-card text-center">
         <h4>📱 Uygulama QR Kodu</h4>
         <img src="karekod.png" class="qr-img" alt="QR Kod">
@@ -324,37 +328,43 @@
       <div class="settings-card">
         <h4>📞 İletişim</h4>
         <div class="contact-buttons">
-          <a href="tel:+905375120777" class="contact-btn phone-btn">
-            <span class="contact-icon">📞</span>
-            <span>Telefon ile Ara</span>
-          </a>
-          <a href="mailto:koyemirler@gmail.com" class="contact-btn email-btn">
-            <span class="contact-icon">✉️</span>
-            <span>E-Posta Gönder</span>
-          </a>
-          <a href="https://wa.me/905375120777" target="_blank" class="contact-btn whatsapp-btn">
-            <span class="contact-icon">💬</span>
-            <span>WhatsApp</span>
-          </a>
+          <a href="tel:+905375120777" class="contact-btn phone-btn"><span class="contact-icon">📞</span><span>Telefon ile Ara</span></a>
+          <a href="mailto:koyemirler@gmail.com" class="contact-btn email-btn"><span class="contact-icon">✉️</span><span>E-Posta Gönder</span></a>
+          <a href="https://wa.me/905375120777" target="_blank" class="contact-btn whatsapp-btn"><span class="contact-icon">💬</span><span>WhatsApp</span></a>
+        </div>
+      </div>
+
+      <!-- İzinler -->
+      <div class="settings-card">
+        <h4>🔐 Uygulama İzinleri</h4>
+        <div class="izin-listesi">
+          <div class="izin-satir">
+            <div class="izin-sol"><span class="izin-ikon">🔔</span><div><div class="izin-ad">Bildirimler</div><div class="izin-aciklama" id="bildirimDurumText">Yeni mesaj ve duyurularda haber al</div></div></div>
+            <button class="izin-btn" id="bildirimBtn" onclick="bildirimIzniIste()">İzin Ver</button>
+          </div>
+          <div class="izin-satir">
+            <div class="izin-sol"><span class="izin-ikon">🔊</span><div><div class="izin-ad">Sesler</div><div class="izin-aciklama">Beğeni ve mesaj sesleri</div></div></div>
+            <button class="izin-btn izin-btn-aktif" id="sesBtn" onclick="sesToggle()">Açık</button>
+          </div>
         </div>
       </div>
 
       <!-- Hakkımızda -->
       <div class="settings-card">
         <h4>🏡 Hakkımızda</h4>
-        <p class="about-text">Emirler Köyü Portalı, köy sakinlerini bir araya getirmek, duyuruları paylaşmak ve iletişimi kolaylaştırmak için yapılmıştır.</p>
+        <p class="about-text">Emirler Köyü Portalı, köy sakinlerini bir araya getirmek için yapılmıştır.</p>
         <p class="about-text">📍 Emirler Köyü, Türkiye</p>
-        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 3.0 · PWA</p>
+        <p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 4.0 · PWA</p>
       </div>
 
-      <!-- Görüş & Öneri -->
+      <!-- Görüş -->
       <div class="settings-card">
         <h4>💡 Görüş & Öneri</h4>
         <textarea id="feedbackText" placeholder="Görüş veya önerinizi buraya yazın..." class="textarea-field" rows="3"></textarea>
         <button class="btn btn-primary" onclick="gorusBildir()">Gönder 📨</button>
       </div>
 
-      <!-- Admin Paneli -->
+      <!-- ADMİN PANELİ -->
       <div id="adminPanel" class="hidden">
         <div class="settings-card admin-card">
           <h4>🛡️ Admin Paneli</h4>
@@ -371,33 +381,21 @@
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
-            <p class="section-label">📢 Sabit Reklam (Firmalar Sayfası)</p>
-            <label class="reklam-toggle-label">
-              <input type="checkbox" id="reklamAktif" onchange="reklamToggle()">
-              <span>Reklam alanını göster</span>
-            </label>
-            <input id="reklamMetinInput" placeholder="Reklam metni / açıklama" class="input-field" style="margin-top:8px;">
-            <input id="reklamLinkInput" placeholder="Tıklanınca açılacak link (https://...)" class="input-field">
-            <label class="file-label">
-              🖼️ Reklam Görseli (isteğe bağlı)
-              <input type="file" id="reklamFile" accept="image/*" onchange="previewFile(this,'reklamPreview')">
-            </label>
+            <p class="section-label">📢 Sabit Reklam (Firmalar)</p>
+            <label class="reklam-toggle-label"><input type="checkbox" id="reklamAktif" onchange="reklamToggle()"><span>Reklamı göster</span></label>
+            <input id="reklamMetinInput" placeholder="Reklam metni" class="input-field" style="margin-top:8px;">
+            <input id="reklamLinkInput" placeholder="Tıklanınca açılacak link" class="input-field">
+            <label class="file-label">🖼️ Görsel<input type="file" id="reklamFile" accept="image/*" onchange="previewFile(this,'reklamPreview')"></label>
             <div id="reklamPreview" class="media-preview"></div>
             <button class="btn btn-secondary" id="reklamKaydetBtn" onclick="reklamKaydet()">💾 Reklamı Kaydet</button>
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
             <p class="section-label">🎯 Köşe Reklam (Tüm Sayfalar)</p>
-            <label class="reklam-toggle-label">
-              <input type="checkbox" id="floatReklamAktif" onchange="floatReklamToggle()">
-              <span>Köşe reklamını göster</span>
-            </label>
+            <label class="reklam-toggle-label"><input type="checkbox" id="floatReklamAktif" onchange="floatReklamToggle()"><span>Köşe reklamını göster</span></label>
             <input id="floatReklamMetinInput" placeholder="Reklam metni" class="input-field" style="margin-top:8px;">
-            <input id="floatReklamLinkInput" placeholder="Tıklanınca açılacak link (https://...)" class="input-field">
-            <label class="file-label">
-              🖼️ Reklam Görseli (isteğe bağlı)
-              <input type="file" id="floatReklamFile" accept="image/*" onchange="previewFile(this,'floatReklamPreview')">
-            </label>
+            <input id="floatReklamLinkInput" placeholder="Tıklanınca açılacak link" class="input-field">
+            <label class="file-label">🖼️ Görsel<input type="file" id="floatReklamFile" accept="image/*" onchange="previewFile(this,'floatReklamPreview')"></label>
             <div id="floatReklamPreview" class="media-preview"></div>
             <button class="btn btn-secondary" id="floatReklamKaydetBtn" onclick="floatReklamKaydet()">💾 Kaydet</button>
           </div>
@@ -408,100 +406,40 @@
             <input id="anketSecA" placeholder="Seçenek A" class="input-field">
             <input id="anketSecB" placeholder="Seçenek B" class="input-field">
             <input id="anketSecC" placeholder="Seçenek C (isteğe bağlı)" class="input-field">
-            <input id="anketSecD" placeholder="Seçenek D (isteğe bağlı)" class="input-field">
             <button class="btn btn-secondary" onclick="anketOlustur()">🗳️ Anketi Yayınla</button>
             <button class="btn btn-danger" style="margin-top:6px;" onclick="anketSil()">🗑️ Anketi Kaldır</button>
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
-            <p class="section-label">🌾 Tarım Takvimi</p>
+            <p class="section-label">🌾 Tarım Takvimi Ekle</p>
             <input id="tarimAy" placeholder="Ay (örn: Mart)" class="input-field">
             <input id="tarimIs" placeholder="Yapılacak iş" class="input-field">
             <button class="btn btn-secondary" onclick="tarimEkle()">🌾 Takvime Ekle</button>
           </div>
 
           <div class="admin-section" style="margin-top:14px;">
-            <p class="section-label">🔍 Keşfet Özellikleri Aç/Kapat</p>
-            <div class="ozellik-toggle-listesi" id="ozellikToggleListesi">
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-hava" checked onchange="ozellikToggle('hava',this.checked)"><span>🌤️ Hava Durumu</span></label>
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-namaz" checked onchange="ozellikToggle('namaz',this.checked)"><span>🕌 Namaz Vakitleri</span></label>
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-ilan" checked onchange="ozellikToggle('ilan',this.checked)"><span>📋 İlan Tahtası</span></label>
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-anket" checked onchange="ozellikToggle('anket',this.checked)"><span>🗳️ Anket</span></label>
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-lider" checked onchange="ozellikToggle('lider',this.checked)"><span>🏆 Lider Tablosu</span></label>
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-tarim" checked onchange="ozellikToggle('tarim',this.checked)"><span>🌾 Tarım Takvimi</span></label>
-              <label class="ozellik-toggle"><input type="checkbox" id="tog-rehber" checked onchange="ozellikToggle('rehber',this.checked)"><span>📞 Köylü Rehberi</span></label>
-            </div>
-          </div>
-
-          <div class="admin-section" style="margin-top:14px;">
-            <p class="section-label">🏘️ Köy Hizmetleri Yönetimi</p>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <div style="font-size:13px;color:#555;">Köy sekmesindeki özellikler admin kontrolündedir. İlan/Rehber onayları Köy → ilgili sekme'den yapılır.</div>
-              <div style="background:#e8f5e9;border-radius:10px;padding:10px;font-size:13px;">
-                📍 <b>Köy Koordinatları</b> (Hava & Namaz için)<br>
-                <input id="koyLat" placeholder="Enlem (örn: 39.9334)" class="input-field" style="margin-top:6px;margin-bottom:0;">
-                <input id="koyLng" placeholder="Boylam (örn: 32.8597)" class="input-field" style="margin-bottom:0;">
-                <button class="btn btn-secondary" style="margin-top:8px;" onclick="koyKoordKaydet()">📍 Kaydet</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="admin-section" style="margin-top:14px;">
-            <p class="section-label">🏢 Firma Ekle / Düzenle</p>
+            <p class="section-label">🏢 Firma Ekle</p>
             <input id="bizName" placeholder="Firma Adı *" class="input-field">
-            <input id="bizCat" placeholder="Kategori (Örn: Market, Kafe...)" class="input-field">
-            <input id="bizPhone" placeholder="📞 Telefon (boş bırakabilirsiniz)" class="input-field" type="tel">
-            <input id="bizWhatsapp" placeholder="💬 WhatsApp numarası (örn: 905551234567)" class="input-field" type="tel">
-            <input id="bizEmail" placeholder="✉️ E-posta adresi" class="input-field" type="email">
-            <input id="bizUrl" placeholder="🌐 Web sitesi / URL (https://...)" class="input-field">
+            <input id="bizCat" placeholder="Kategori" class="input-field">
+            <input id="bizPhone" placeholder="📞 Telefon" class="input-field" type="tel">
+            <input id="bizWhatsapp" placeholder="💬 WhatsApp (905551234567)" class="input-field" type="tel">
+            <input id="bizEmail" placeholder="✉️ E-posta" class="input-field" type="email">
+            <input id="bizUrl" placeholder="🌐 Web sitesi (https://...)" class="input-field">
             <input id="bizAddr" placeholder="📍 Adres" class="input-field">
             <textarea id="bizDesc" placeholder="Açıklama" class="textarea-field" rows="2"></textarea>
-            <label class="file-label">
-              📸 Firma Görseli
-              <input type="file" id="bizFile" accept="image/*" onchange="previewFile(this,'bizPreview')">
-            </label>
+            <label class="file-label">📸 Firma Görseli<input type="file" id="bizFile" accept="image/*" onchange="previewFile(this,'bizPreview')"></label>
             <div id="bizPreview" class="media-preview"></div>
             <button class="btn btn-secondary" id="bizAddBtn" onclick="firmaEkle()">🏢 Firma Ekle</button>
           </div>
-        </div>
-      </div>
-
-      <!-- İzinler Kartı -->
-      <div class="settings-card" id="izinlerKart">
-        <h4>🔐 Uygulama İzinleri</h4>
-        <div class="izin-listesi">
-
-          <div class="izin-satir">
-            <div class="izin-sol">
-              <span class="izin-ikon">🔔</span>
-              <div>
-                <div class="izin-ad">Bildirimler</div>
-                <div class="izin-aciklama" id="bildirimDurumText">Yeni mesaj ve duyurularda haber al</div>
-              </div>
-            </div>
-            <button class="izin-btn" id="bildirimBtn" onclick="bildirimIzniIste()">İzin Ver</button>
-          </div>
-
-          <div class="izin-satir">
-            <div class="izin-sol">
-              <span class="izin-ikon">🔊</span>
-              <div>
-                <div class="izin-ad">Sesler</div>
-                <div class="izin-aciklama">Beğeni ve mesaj sesleri</div>
-              </div>
-            </div>
-            <button class="izin-btn izin-btn-aktif" id="sesBtn" onclick="sesToggle()">Açık</button>
-          </div>
 
         </div>
       </div>
 
-      <!-- Çıkış -->
       <button class="btn btn-danger" onclick="cikisYap()">🚪 Çıkış Yap</button>
     </div>
   </section>
 
-  <!-- Yorum Modalı -->
+  <!-- YORUM MODALI -->
   <div id="commentsModal" class="modal hidden">
     <div class="modal-overlay" onclick="modalKapat()"></div>
     <div class="modal-content">
@@ -517,14 +455,14 @@
     </div>
   </div>
 
-  <!-- Resim Tam Ekran -->
+  <!-- RESİM TAM EKRAN -->
   <div id="imgFullscreen" class="img-fullscreen hidden" onclick="this.classList.add('hidden')">
     <img id="imgFullscreenSrc" src="">
   </div>
 
 </div>
 
-<!-- Floating Banner Reklam (Tüm Sayfalarda) -->
+<!-- FLOATING REKLAM -->
 <div id="floatingReklam" class="floating-reklam hidden">
   <button class="floating-reklam-kapat" onclick="floatingReklamKapat()">✕</button>
   <a id="floatingReklamLink" href="#" target="_blank" class="floating-reklam-icerik">
@@ -533,37 +471,29 @@
   </a>
 </div>
 
-<!-- Alt Navigasyon -->
+<!-- ALT NAVİGASYON -->
 <nav class="nav-footer hidden" id="navBar">
   <div class="nav-item active" id="nav-feed" onclick="tabDegistir('feed')">
-    <span class="nav-icon">🏠</span>
-    <span class="nav-label">Akış</span>
+    <span class="nav-icon">🏠</span><span class="nav-label">Akış</span>
   </div>
   <div class="nav-item" id="nav-nostalji" onclick="tabDegistir('nostalji')">
-    <span class="nav-icon">📸</span>
-    <span class="nav-label">Nostalji</span>
+    <span class="nav-icon">📸</span><span class="nav-label">Nostalji</span>
     <span class="nav-badge hidden" id="nostalji-badge">0</span>
   </div>
+  <div class="nav-item" id="nav-ilan" onclick="tabDegistir('ilan')">
+    <span class="nav-icon">📋</span><span class="nav-label">İlanlar</span>
+  </div>
   <div class="nav-item" id="nav-chat" onclick="tabDegistir('chat')">
-    <span class="nav-icon">💬</span>
-    <span class="nav-label">Sohbet</span>
-  </div>
-  <div class="nav-item" id="nav-biz" onclick="tabDegistir('biz')">
-    <span class="nav-icon">🏢</span>
-    <span class="nav-label">Firmalar</span>
-  </div>
-  <div class="nav-item" id="nav-kesfet" onclick="tabDegistir('kesfet')">
-    <span class="nav-icon">🔍</span>
-    <span class="nav-label">Keşfet</span>
+    <span class="nav-icon">💬</span><span class="nav-label">Sohbet</span>
   </div>
   <div class="nav-item" id="nav-koy" onclick="tabDegistir('koy')">
-    <span class="nav-icon">🏘️</span>
-    <span class="nav-label">Köy</span>
-    <span class="nav-badge hidden" id="koy-badge">0</span>
+    <span class="nav-icon">🌾</span><span class="nav-label">Köy</span>
+  </div>
+  <div class="nav-item" id="nav-biz" onclick="tabDegistir('biz')">
+    <span class="nav-icon">🏢</span><span class="nav-label">Firmalar</span>
   </div>
   <div class="nav-item" id="nav-settings" onclick="tabDegistir('settings')">
-    <span class="nav-icon">⚙️</span>
-    <span class="nav-label">Ayarlar</span>
+    <span class="nav-icon">⚙️</span><span class="nav-label">Ayarlar</span>
   </div>
 </nav>
 

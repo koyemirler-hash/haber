@@ -1056,3 +1056,53 @@ video.chat-media { background: #000; }
 .ozellik-toggle-listesi { display: flex; flex-direction: column; gap: 10px; }
 .ozellik-toggle { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; font-weight: 500; }
 .ozellik-toggle input { width: 20px; height: 20px; accent-color: var(--green); cursor: pointer; }
+
+/* ─── 7 NAV İTEM ─── */
+.nav-footer { padding: 4px 0 3px; }
+.nav-footer .nav-icon { font-size: 17px; }
+.nav-footer .nav-label { font-size: 9px; }
+
+/* ─── KÖY SAYFASI ─── */
+.koy-content { padding: 10px; display: flex; flex-direction: column; gap: 8px; padding-bottom: 80px; }
+
+/* ─── AKORDEON ─── */
+.akordeon-kart { background: white; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.akordeon-baslik { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; font-size: 15px; font-weight: 700; color: #222; user-select: none; }
+.akordeon-baslik:active { background: #f5f5f5; }
+.akordeon-ok { font-size: 13px; color: #888; transition: transform 0.2s; }
+.akordeon-icerik { border-top: 1px solid #f0f0f0; }
+
+/* ─── HEADER ACTION BTN ─── */
+.header-action-btn { background: rgba(255,255,255,0.25); color: white; border: none; border-radius: 16px; padding: 6px 12px; font-size: 13px; font-weight: 700; cursor: pointer; margin-left: auto; }
+
+/* ─── İLAN FİLTRE ─── */
+.ilan-filtre-bar { display: flex; gap: 8px; padding: 10px 12px 4px; overflow-x: auto; scrollbar-width: none; }
+.ilan-filtre-bar::-webkit-scrollbar { display: none; }
+.ilan-filtre-btn { background: #f0f0f0; border: none; border-radius: 16px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; color: #666; flex-shrink: 0; }
+.ilan-filtre-btn.active { background: var(--green); color: white; }
+.ilan-form-panel { padding: 10px 12px 0; }
+.ilan-foto-slayt { display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px; scrollbar-width: none; }
+.ilan-foto-slayt::-webkit-scrollbar { display: none; }
+.ilan-foto-img { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; flex-shrink: 0; cursor: pointer; }
+.ilan-foto-onizle { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.ilan-onizle-img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; }
+.ilan-kat-badge { background: #fff3e0; color: #e65100; font-size: 11px; padding: 1px 7px; border-radius: 10px; font-weight: 600; }
+.ilan-tel-btn { background: var(--green); color: white; border-radius: 14px; padding: 7px 16px; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-block; }
+.ilan-sil-btn { background: none; border: none; font-size: 16px; cursor: pointer; color: #ccc; }
+
+/* ─── NUMARA PAYLAŞIM ─── */
+.mevcut-numara { background: #e8f5e9; color: #2e7d32; padding: 10px 14px; border-radius: 10px; font-size: 14px; margin-bottom: 10px; }
+
+/* ─── HAYVAN AŞI TAKVİMİ ─── */
+.asi-satir { display: flex; align-items: flex-start; gap: 10px; padding: 10px 16px; border-bottom: 1px solid #f5f5f5; }
+.asi-satir:last-child { border-bottom: none; }
+.asi-hayvan { font-size: 13px; font-weight: 800; color: var(--green-dark); min-width: 80px; }
+.asi-ad { font-size: 14px; font-weight: 700; color: #222; }
+.asi-detay { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* ─── HAYVAN HASTALIKLARI ─── */
+.hastalik-kart { margin: 8px 12px; border-radius: 12px; padding: 12px; border: 1px solid #eee; background: #fafafa; }
+.hastalik-acil { background: #fff3e0; border-color: #ff9800; }
+.hastalik-isim { font-size: 14px; font-weight: 800; color: #222; margin-bottom: 6px; }
+.hastalik-satir { font-size: 13px; color: #555; margin-bottom: 3px; line-height: 1.4; }
+.hastalik-etiket { font-weight: 700; color: var(--green-dark); }

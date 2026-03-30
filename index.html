@@ -41,16 +41,36 @@
     <div class="terms-logo">🏡</div>
     <h2>Emirler Köyü</h2>
     <p class="terms-sub">Köy Portalına Hoşgeldiniz</p>
-    <div class="terms-box">
-      <p>📌 Küfür ve hakaret kesinlikle yasaktır.</p>
-      <p>🔒 Kişisel verileriniz güvenle saklanır.</p>
-      <p>⚠️ Kurallara uymayan hesaplar kaldırılabilir.</p>
-      <p>👥 Bu uygulama Emirler köy sakinlerine aittir.</p>
+    <div class="terms-box" style="max-height:220px;overflow-y:auto;text-align:left;font-size:12px;line-height:1.7;">
+      <b>KULLANIM ŞARTLARI VE KVKK AYDINLATMA METNİ</b><br><br>
+      <b>1. KİŞİSEL VERİLERİN KORUNMASI (KVKK)</b><br>
+      6698 sayılı Kanun uyarınca; adınız, iletişim bilgileriniz ve profil bilgileriniz uygulama kaydı, güvenlik ve hizmet kalitesi amacıyla işlenmektedir. Verileriniz yasal zorunluluklar (adli makam talebi vb.) dışında üçüncü şahıslarla paylaşılmaz. Hesabınızı silerek verilerinizin kaldırılmasını talep edebilirsiniz.<br><br>
+      <b>2. KULLANICI SORUMLULUKLARI</b><br>
+      Uygulama içinde paylaştığınız her türlü içeriğin hukuki sorumluluğu doğrudan size aittir. Küfür, hakaret, tehdit, taciz, nefret söylemi ve yasadışı içerik paylaşımı kesinlikle yasaktır.<br><br>
+      <b>3. YER SAĞLAYICI BEYANI</b><br>
+      Uygulama yönetimi yer sağlayıcı konumundadır; içeriklerin doğruluğunu denetlemekle yükümlü olmamakla birlikte hukuka aykırı içerikleri kaldırma, hesabı askıya alma ve gerektiğinde adli makamlara kayıt sunma hakkını saklı tutar.<br><br>
+      <b>4. KABUL BEYANI</b><br>
+      Uygulamaya kayıt olarak bu şartları kabul etmiş sayılırsınız. Kurallara aykırı davranışlardan doğacak tüm hukuki sorumluluk kullanıcıya aittir.<br><br>
+      <span style="color:#888;">Güncelleme: 29 Mart 2026</span>
     </div>
     <label class="terms-label">
-      <input type="checkbox" id="termsCheck"> Şartları okudum, kabul ediyorum.
+      <input type="checkbox" id="termsCheck"> Kullanım Şartlarını ve KVKK Aydınlatma Metni'ni okudum; paylaştığım içeriklerin tüm hukuki sorumluluğunun şahsıma ait olduğunu kabul ediyorum.
     </label>
     <button class="btn btn-primary" onclick="onayVer()">Uygulamaya Gir</button>
+  </div>
+</div>
+
+<!-- Anket Katılım Popup -->
+<div id="anketPopup" class="overlay-screen hidden">
+  <div class="terms-card">
+    <div class="terms-logo">🗳️</div>
+    <h2>Köy Anketi</h2>
+    <p id="anketPopupSoru" style="font-size:14px;color:#444;margin:12px 0 6px;text-align:center;font-weight:600;"></p>
+    <p style="font-size:13px;color:#888;margin-bottom:20px;text-align:center;">Bu ankete katılmak ister misiniz?</p>
+    <div style="display:flex;gap:12px;justify-content:center;">
+      <button class="btn btn-primary" onclick="anketKatilimEvet()">✅ Katılmak İstiyorum</button>
+      <button class="btn btn-secondary" onclick="anketKatilimHayir()">Hayır</button>
+    </div>
   </div>
 </div>
 
@@ -306,14 +326,7 @@
         </div>
       </div>
 
-      <div class="akordeon-kart" id="kart-anket">
-        <div class="akordeon-baslik" onclick="akordeonToggle('anket')">
-          <span>🗳️ Köy Anketi</span><span class="akordeon-ok" id="ok-anket">▼</span>
-        </div>
-        <div class="akordeon-icerik hidden" id="icerik-anket">
-          <div id="anketWidget"><div style="text-align:center;color:#888;padding:16px;font-size:13px;">Şu an aktif anket yok</div></div>
-        </div>
-      </div>
+
 
     </div>
   </section>
@@ -325,14 +338,37 @@
     </div>
     <div class="settings-content">
 
-      <!-- Numaramı Paylaş -->
+      <!-- Köy Anketi (Herkes) -->
       <div class="settings-card">
-        <h4>📞 Numaramı Paylaş</h4>
-        <p style="font-size:13px;color:#888;margin-bottom:12px;">Köylüler seni arayabilsin diye numaranı ekle</p>
-        <div id="benimNumaramDiv"></div>
-        <input id="numaraInput" placeholder="Telefon numaranız" class="input-field" type="tel">
-        <input id="numaraNotInput" placeholder="Not (örn: Çiftçi, Şoför...)" class="input-field">
-        <button class="btn btn-secondary" onclick="numaramiPaylas()">📞 Ekle / Güncelle</button>
+        <div class="ayar-baslik-toggle" onclick="ayarToggle('anketkullanici')">
+          <h4>🗳️ Köy Anketi</h4>
+          <span class="akordeon-ok" id="ok-anketkullanici">▼</span>
+        </div>
+        <div id="icerik-anketkullanici" class="hidden" style="padding-top:12px;">
+          <div id="anketSettingsWidget"><div style="text-align:center;color:#888;padding:16px;font-size:13px;">⏳ Yükleniyor...</div></div>
+        </div>
+      </div>
+
+      <!-- Yönetici Anket Paneli -->
+      <div class="settings-card" id="anketYonetimPanel" style="display:none;">
+        <div class="ayar-baslik-toggle" onclick="ayarToggle('anketadminsettings')">
+          <h4>🗳️ Anket Yönetimi</h4>
+          <span class="akordeon-ok" id="ok-anketadminsettings">▼</span>
+        </div>
+        <div id="icerik-anketadminsettings" class="hidden" style="padding-top:12px;">
+          <input id="anketSoru" placeholder="Anket sorusu *" class="input-field">
+          <input id="anketSecA" placeholder="Seçenek A *" class="input-field">
+          <input id="anketSecB" placeholder="Seçenek B *" class="input-field">
+          <input id="anketSecC" placeholder="Seçenek C (isteğe bağlı)" class="input-field">
+          <input id="anketSecD" placeholder="Seçenek D (isteğe bağlı)" class="input-field">
+          <label style="font-size:12px;color:#888;margin-bottom:4px;display:block;">⏱️ Oylama bitiş tarihi ve saati</label>
+          <input id="anketBitis" type="datetime-local" class="input-field">
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn btn-secondary" onclick="anketOlustur()">🗳️ Yayınla</button>
+            <button class="btn" style="background:#fff3e0;color:#e65100;" onclick="anketToggle()">⏸️ Aç/Kapat</button>
+            <button class="btn btn-danger" onclick="anketSil()">🗑️ Kaldır</button>
+          </div>
+        </div>
       </div>
 
       <!-- İletişim - tıklanabilir, açılır -->
@@ -496,22 +532,6 @@
                 <input id="tarimAy" placeholder="Ay (örn: Mart)" class="input-field">
                 <input id="tarimIs" placeholder="Yapılacak iş" class="input-field">
                 <button class="btn btn-secondary" onclick="tarimEkle()">🌾 Takvime Ekle</button>
-              </div>
-            </div>
-
-            <!-- Anket -->
-            <div class="admin-section" style="margin-top:10px;">
-              <div class="ayar-baslik-toggle" onclick="ayarToggle('anketadmin')">
-                <p class="section-label" style="margin:0;">🗳️ Anket Yönetimi</p>
-                <span style="font-size:12px;color:#888;" id="ok-anketadmin">▼</span>
-              </div>
-              <div id="icerik-anketadmin" class="hidden" style="margin-top:10px;">
-                <input id="anketSoru" placeholder="Anket sorusu" class="input-field">
-                <input id="anketSecA" placeholder="Seçenek A" class="input-field">
-                <input id="anketSecB" placeholder="Seçenek B" class="input-field">
-                <input id="anketSecC" placeholder="Seçenek C (isteğe bağlı)" class="input-field">
-                <button class="btn btn-secondary" onclick="anketOlustur()">🗳️ Anketi Yayınla</button>
-                <button class="btn btn-danger" style="margin-top:6px;" onclick="anketSil()">🗑️ Anketi Kaldır</button>
               </div>
             </div>
 

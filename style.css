@@ -376,3 +376,20 @@ video.chat-media { background: #000; }
 }
 .ozel-medya-onizle img,
 .ozel-medya-onizle video { max-height: 60px; border-radius: 8px; }
+
+/* ─── ANKET GERİ SAYIM ─── */
+.anket-geri-sayim {
+  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+  border: 1px solid #a5d6a7;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #2e7d32;
+  text-align: center;
+  margin-bottom: 12px;
+  font-family: monospace;
+}
+.anket-geri-sayim b { font-size: 15px; }
+
+/* ─── ANKET POPUP ─── */
+#anketPopup .terms-card { max-width: 340px; }

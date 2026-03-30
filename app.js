@@ -25,7 +25,7 @@ let commentsUnsubscribe = null, deferredInstallPrompt = null;
 let chatDocCount = -1, akisDocCount = -1, soundEnabled = localStorage.getItem("soundEnabled") !== "false";
 let audioCtx = null, ilanlarDinleBasladi = false, aktifIlanFiltre = "hepsi";
 let havaYuklendi = false, namazYuklendi = false, ilanUnsubscribe = null;
-let floatReklamKapatildi = false, ozelSohbetKisiUid = null;
+let floatReklamKapatildi = false, ozelSohbetKisiUid = null, anketCountdownInterval = null;
 
 // ═══════════════════════════════════════════
 //  PWA
@@ -303,6 +303,7 @@ auth.onAuthStateChanged(async user => {
             document.getElementById("nostaljiApprovalNote").classList.add("hidden");
             document.getElementById("ilanOnaySection").classList.remove("hidden");
             document.getElementById("ilanOnayNotu").classList.add("hidden");
+            const avp = document.getElementById("anketYonetimPanel"); if (avp) avp.style.display = "";
         }
         if (adminMi()) {
             document.getElementById("adminPanel").classList.remove("hidden");
@@ -312,12 +313,13 @@ auth.onAuthStateChanged(async user => {
 
         bildirimBtnGuncelle(("Notification" in window) ? Notification.permission : "denied");
         updateSoundBtn();
-        numaramiYukle();
         resetTalepYukle();
         hakkimizdaYukle();
         reklamYukle();
         floatReklamYukle();
         profilGorunurlukYukle();
+        anketDinle();
+        setTimeout(() => anketKatilimKontrol(), 2500);
 
         tabDegistir("feed");
         akisDinle();
@@ -345,7 +347,8 @@ function tabDegistir(t) {
     const fr = document.getElementById("floatingReklam");
     if (fr) fr.style.visibility = (t === "biz") ? "hidden" : "";
     if (t === "ilan" && !ilanlarDinleBasladi) { ilanlarDinleBasladi = true; ilanlarDinle(); }
-    if (t === "koy") { havaDurumuYukle(); namazYukle(); tarimDinle(); asiYukle(); hastalikYukle(); anketDinle(); }
+    if (t === "koy") { havaDurumuYukle(); namazYukle(); tarimDinle(); asiYukle(); hastalikYukle(); }
+    if (t === "settings") anketDinle();
     if (t === "ozel") { koyluListesiYukle(); }
 }
 
@@ -361,7 +364,6 @@ function akordeonToggle(id) {
         if (id === "tarim") tarimDinle();
         if (id === "asi") asiYukle();
         if (id === "hastalik") hastalikYukle();
-        if (id === "anket") anketDinle();
     }
 }
 
@@ -372,6 +374,7 @@ function ayarToggle(id) {
     icerik.classList.toggle("hidden", acik);
     if (ok) ok.textContent = acik ? "▼" : "▲";
     if (!acik && id === "kullanici") onlineListesiYukle();
+    if (!acik && id === "anketkullanici") anketDinle();
 }
 
 // ═══════════════════════════════════════════
@@ -1238,33 +1241,134 @@ const HASTALIK_LISTESI=[{isim:"🦠 Şap Hastalığı",belirtiler:"Ağız/ayakla
 function hastalikYukle() { const w=document.getElementById("hastalikWidget"); if (!w) return; w.innerHTML=HASTALIK_LISTESI.map(h=>`<div class="hastalik-kart ${h.vurgu?"hastalik-acil":""}"><div class="hastalik-isim">${h.isim}</div><div class="hastalik-satir"><span class="hastalik-etiket">Belirtiler:</span> ${h.belirtiler}</div><div class="hastalik-satir"><span class="hastalik-etiket">Önlem:</span> ${h.onlem}</div></div>`).join(""); }
 
 async function anketDinle() {
-    const el=document.getElementById("anketWidget"); if (!el) return;
+    const el = document.getElementById("anketSettingsWidget"); if (!el) return;
+    if (anketCountdownInterval) { clearInterval(anketCountdownInterval); anketCountdownInterval = null; }
     try {
-        const snap=await db.collection("settings").doc("anket").get();
-        if (!snap.exists||!snap.data().aktif) { el.innerHTML=`<div style="text-align:center;color:#888;padding:16px;font-size:13px;">Şu an aktif anket yok</div>`; return; }
-        const a=snap.data(), oylar=a.oylar||{}, benimOyum=currentUser?oylar[currentUser.uid]:null;
-        const secenekler=[a.secA,a.secB,a.secC,a.secD].filter(Boolean), toplamOy=Object.values(oylar).length;
-        el.innerHTML=`<div class="anket-soru">${escapeHtml(a.soru)}</div>${secenekler.map((sec,i)=>{ const harf=["A","B","C","D"][i], bu=Object.values(oylar).filter(v=>v===harf).length, yuzde=toplamOy>0?Math.round((bu/toplamOy)*100):0; return `<div class="anket-secenek ${benimOyum===harf?"anket-secildi":""}" onclick="anketOy('${harf}')"><div class="anket-sec-ust"><span class="anket-harf">${harf}</span><span class="anket-sec-text">${escapeHtml(sec)}</span><span class="anket-yuzde">${yuzde}%</span></div><div class="anket-bar"><div class="anket-bar-dolu" style="width:${yuzde}%"></div></div></div>`; }).join("")}<div class="anket-toplam">Toplam ${toplamOy} oy · Canlı sonuçlar</div>`;
+        const snap = await db.collection("settings").doc("anket").get();
+        if (!snap.exists || !snap.data().aktif) {
+            el.innerHTML = `<div style="text-align:center;color:#888;padding:16px;font-size:13px;">Şu an aktif anket yok</div>`; return;
+        }
+        const a = snap.data(), oylar = a.oylar || {}, toplamOy = Object.values(oylar).length;
+        const secenekler = [a.secA,a.secB,a.secC,a.secD].filter(Boolean);
+        const bitisZaman = a.bitis ? (a.bitis.toDate ? a.bitis.toDate() : new Date(a.bitis)) : null;
+        const simdi = new Date(), bitti = bitisZaman && simdi >= bitisZaman;
+
+        if (bitti && !a.sonucYayinlandi) {
+            const sonucBitis = new Date((bitisZaman||simdi).getTime() + 24*60*60*1000);
+            try { await db.collection("settings").doc("anket").update({ sonucYayinlandi:true, sonucBitis:firebase.firestore.Timestamp.fromDate(sonucBitis) }); } catch(e2) {}
+            setTimeout(() => anketDinle(), 500); return;
+        }
+
+        if (a.sonucYayinlandi) {
+            const sb = a.sonucBitis ? (a.sonucBitis.toDate ? a.sonucBitis.toDate() : new Date(a.sonucBitis)) : null;
+            if (sb && simdi >= sb) {
+                try { await db.collection("settings").doc("anket").update({ aktif:false }); } catch(e2) {}
+                el.innerHTML = `<div style="text-align:center;color:#888;padding:16px;font-size:13px;">Şu an aktif anket yok</div>`; return;
+            }
+            const kalanSaat = sb ? Math.max(0, Math.ceil((sb.getTime()-simdi.getTime())/3600000)) : 0;
+            const benimOyum = currentUser ? oylar[currentUser.uid] : null;
+            el.innerHTML = `<div style="background:#e8f5e9;padding:8px 12px;border-radius:8px;margin-bottom:12px;font-size:12px;color:#2e7d32;text-align:center;">✅ Anket Sonuçları Açıklandı${kalanSaat>0?` · ${kalanSaat} saat sonra kaldırılacak`:''}</div>
+            <div class="anket-soru">${escapeHtml(a.soru)}</div>
+            ${secenekler.map((sec,i)=>{ const harf=["A","B","C","D"][i],bu=Object.values(oylar).filter(v=>v===harf).length,yuzde=toplamOy>0?Math.round((bu/toplamOy)*100):0; return `<div class="anket-secenek ${benimOyum===harf?'anket-secildi':''}" style="cursor:default;"><div class="anket-sec-ust"><span class="anket-harf">${harf}</span><span class="anket-sec-text">${escapeHtml(sec)}</span><span class="anket-yuzde">${yuzde}% (${bu} oy)</span></div><div class="anket-bar"><div class="anket-bar-dolu" style="width:${yuzde}%"></div></div></div>`; }).join("")}
+            <div class="anket-toplam">Toplam ${toplamOy} oy</div>`;
+            return;
+        }
+
+        const benimOyum = currentUser ? oylar[currentUser.uid] : null;
+        const ilkSure = (() => { if (!bitisZaman) return ''; const r=bitisZaman.getTime()-simdi.getTime(); if(r<=0) return ''; const g=Math.floor(r/(24*3600*1000)),s=Math.floor((r%(24*3600*1000))/3600000),d=Math.floor((r%3600000)/60000),sn=Math.floor((r%60000)/1000); return g>0?`${g}g ${s}s ${d}dk`:`${s}:${String(d).padStart(2,'0')}:${String(sn).padStart(2,'0')}`; })();
+
+        el.innerHTML = `${bitisZaman?`<div class="anket-geri-sayim" id="anketCountdown">⏱️ Kalan süre: <b>${ilkSure||'Süre doldu!'}</b></div>`:''}
+        <div class="anket-soru">${escapeHtml(a.soru)}</div>
+        ${secenekler.map((sec,i)=>{ const harf=["A","B","C","D"][i],bu=Object.values(oylar).filter(v=>v===harf).length,yuzde=toplamOy>0?Math.round((bu/toplamOy)*100):0; return `<div class="anket-secenek ${benimOyum===harf?'anket-secildi':''}" onclick="anketOy('${harf}')"><div class="anket-sec-ust"><span class="anket-harf">${harf}</span><span class="anket-sec-text">${escapeHtml(sec)}</span><span class="anket-yuzde">${yuzde}%</span></div><div class="anket-bar"><div class="anket-bar-dolu" style="width:${yuzde}%"></div></div></div>`; }).join("")}
+        <div class="anket-toplam">Toplam ${toplamOy} oy · Canlı sonuçlar</div>`;
+
+        if (bitisZaman) {
+            anketCountdownInterval = setInterval(() => {
+                const cdEl = document.getElementById("anketCountdown"); if (!cdEl) { clearInterval(anketCountdownInterval); anketCountdownInterval=null; return; }
+                const rem = bitisZaman.getTime()-Date.now();
+                if (rem <= 0) { clearInterval(anketCountdownInterval); anketCountdownInterval=null; cdEl.innerHTML='⏱️ Süre doldu!'; setTimeout(()=>anketDinle(),1500); return; }
+                const g=Math.floor(rem/(24*3600*1000)),s=Math.floor((rem%(24*3600*1000))/3600000),d=Math.floor((rem%3600000)/60000),sn=Math.floor((rem%60000)/1000);
+                cdEl.innerHTML=`⏱️ Kalan süre: <b>${g>0?`${g}g ${s}s ${d}dk`:`${s}:${String(d).padStart(2,'0')}:${String(sn).padStart(2,'0')}`}</b>`;
+            }, 1000);
+        }
     } catch(e) { console.warn("Anket:", e); }
 }
+
 async function anketOy(harf) {
     if (!currentUser) return alert("Oy vermek için giriş yapın!");
     try { await db.collection("settings").doc("anket").update({ [`oylar.${currentUser.uid}`]:harf }); anketDinle(); }
     catch(e) { alert("Hata: " + e.message); }
 }
+
 async function anketOlustur() {
     if (!ayricaliklimi()) return alert("Yetkiniz yok!");
     const soru=document.getElementById("anketSoru").value.trim(), secA=document.getElementById("anketSecA").value.trim(), secB=document.getElementById("anketSecB").value.trim();
     if (!soru||!secA||!secB) return alert("Soru ve en az 2 seçenek zorunludur!");
-    const veri={soru,secA,secB,aktif:true,oylar:{},time:firebase.firestore.FieldValue.serverTimestamp()};
-    const secC=document.getElementById("anketSecC").value.trim(); if (secC) veri.secC=secC;
-    try { await db.collection("settings").doc("anket").set(veri); ["anketSoru","anketSecA","anketSecB","anketSecC"].forEach(id=>document.getElementById(id).value=""); anketDinle(); alert("✅ Anket yayınlandı!"); }
-    catch(e) { alert("Hata: " + e.message); }
+    const bitisInput=document.getElementById("anketBitis").value;
+    if (!bitisInput) return alert("Bitiş tarihi ve saati zorunludur!");
+    const bitis=new Date(bitisInput);
+    if (bitis<=new Date()) return alert("Bitiş tarihi gelecekte olmalı!");
+    const veri={soru,secA,secB,aktif:true,oylar:{},sonucYayinlandi:false,sonucBitis:null,bitis:firebase.firestore.Timestamp.fromDate(bitis),time:firebase.firestore.FieldValue.serverTimestamp()};
+    const secC=document.getElementById("anketSecC").value.trim(); if(secC) veri.secC=secC;
+    const secDEl=document.getElementById("anketSecD"); const secD=secDEl?secDEl.value.trim():""; if(secD) veri.secD=secD;
+    try {
+        await db.collection("settings").doc("anket").set(veri);
+        ["anketSoru","anketSecA","anketSecB","anketSecC","anketSecD","anketBitis"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+        anketDinle(); alert("✅ Anket yayınlandı!");
+    } catch(e) { alert("Hata: " + e.message); }
 }
+
+async function anketToggle() {
+    if (!ayricaliklimi()) return;
+    try {
+        const snap=await db.collection("settings").doc("anket").get();
+        if (!snap.exists) return alert("Önce anket oluşturun!");
+        const yeni=!snap.data().aktif;
+        await db.collection("settings").doc("anket").update({aktif:yeni});
+        anketDinle(); alert(yeni?"✅ Anket aktif edildi!":"Anket durduruldu.");
+    } catch(e) { alert("Hata: " + e.message); }
+}
+
 async function anketSil() {
-    if (!ayricaliklimi()||!confirm("Anketi kaldırmak istiyor musunuz?")) return;
+    if (!ayricaliklimi()||!confirm("Aktif anketi kaldırmak istiyor musunuz?")) return;
     try { await db.collection("settings").doc("anket").update({aktif:false}); anketDinle(); }
     catch(e) { alert("Hata: " + e.message); }
+}
+
+// ─── ANKET KATILIM POPUP ───
+async function anketKatilimKontrol() {
+    if (!currentUser) return;
+    try {
+        const snap=await db.collection("settings").doc("anket").get();
+        if (!snap.exists||!snap.data().aktif||snap.data().sonucYayinlandi) return;
+        const a=snap.data();
+        const bitisZaman=a.bitis?(a.bitis.toDate?a.bitis.toDate():new Date(a.bitis)):null;
+        if (bitisZaman&&new Date()>=bitisZaman) return;
+        const anketId=a.time?a.time.seconds:"default";
+        if (localStorage.getItem(`anketSoruldu_${anketId}`)) return;
+        const popup=document.getElementById("anketPopup"); if(!popup) return;
+        const soruEl=document.getElementById("anketPopupSoru"); if(soruEl) soruEl.textContent=a.soru;
+        popup.setAttribute("data-anket-id",anketId);
+        popup.classList.remove("hidden");
+    } catch(e) {}
+}
+
+function anketKatilimEvet() {
+    const popup=document.getElementById("anketPopup"); if(!popup) return;
+    const anketId=popup.getAttribute("data-anket-id");
+    if(anketId) localStorage.setItem(`anketSoruldu_${anketId}`,"evet");
+    popup.classList.add("hidden");
+    tabDegistir("settings");
+    const icerik=document.getElementById("icerik-anketkullanici"), ok=document.getElementById("ok-anketkullanici");
+    if(icerik) icerik.classList.remove("hidden"); if(ok) ok.textContent="▲";
+    setTimeout(()=>{ anketDinle(); const el=document.getElementById("anketSettingsWidget"); if(el) el.scrollIntoView({behavior:"smooth"}); },400);
+}
+
+function anketKatilimHayir() {
+    const popup=document.getElementById("anketPopup"); if(!popup) return;
+    const anketId=popup.getAttribute("data-anket-id");
+    if(anketId) localStorage.setItem(`anketSoruldu_${anketId}`,"hayir");
+    popup.classList.add("hidden");
 }
 
 // ═══════════════════════════════════════════

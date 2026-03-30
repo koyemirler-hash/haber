@@ -1003,7 +1003,16 @@ async function hakkimizdaYukle() {
                 const ti=document.getElementById("hakkimizdaTelefon"); if (ti) ti.value=d.telefon||"";
             }
         } else {
-            el.innerHTML=`<p class="about-text">Emirler Köyü Portalı, köy sakinlerini bir araya getirmek için yapılmıştır.</p><p class="about-text">📍 Emirler Köyü, Türkiye</p><p class="about-text" style="font-size:12px;color:#999;margin-top:8px;">Sürüm 4.0 · PWA</p>`;
+            el.innerHTML=`
+                <p class="about-text" style="font-size:15px;font-weight:700;color:#2d6a4f;">🏡 Emirler Köyü Portalı</p>
+                <p class="about-text">Emirler Köyü Portalı; köy sakinlerini tek bir çatı altında buluşturmak, duyuruları anında iletmek ve komşuluk ruhunu dijital dünyaya taşımak amacıyla kurulmuştur.</p>
+                <p class="about-text">📢 <b>Köy Meydanı</b> ile muhtar ve yetkililerin duyuruları anında herkesin ekranına ulaşır. Artık "duymadım" diye bir şey kalmaz.</p>
+                <p class="about-text">📸 <b>Nostalji</b> bölümünde eski fotoğraflar, anılar ve köyün geçmişi bir araya gelir. Bugünleri yarına taşırken dünleri de unutmuyoruz.</p>
+                <p class="about-text">📋 <b>İlan Tahtası</b> ile satılık, kiralık, kayıp ve aranan ilanlarınızı köy içinde kolayca paylaşabilirsiniz.</p>
+                <p class="about-text">💬 <b>Köy Sohbeti</b> ve özel mesajlaşma ile komşunuza ulaşmak artık çok daha kolay. Telefon defterinden isim arayıp durmak yok.</p>
+                <p class="about-text">🌾 <b>Köy Bilgileri</b> bölümünde hava durumu, namaz vakitleri, tarım takvimi ve hayvan sağlığı rehberi hep güncel şekilde sizinle.</p>
+                <p class="about-text">🗳️ <b>Köy Anketi</b> ile köy meselelerinde herkesin sesi var. Karar vermeden önce komşuya sor!</p>
+                <p class="about-text" style="margin-top:16px;padding-top:12px;border-top:1px solid #eee;font-size:12px;color:#999;">📍 Emirler Köyü, Türkiye<br>✉️ koyemirler@gmail.com<br><br>Sürüm 4.0 · Bu uygulama köylüler için, köylüler tarafından yapılmıştır. 💚</p>`;
         }
     } catch(e) { el.innerHTML=`<p class="about-text">Emirler Köyü Portalı</p>`; }
 }

@@ -393,35 +393,3 @@ video.chat-media { background: #000; }
 
 /* ─── ANKET POPUP ─── */
 #anketPopup .terms-card { max-width: 340px; }
-
-/* ─── HİKAYELER ÇUBUĞU ─── */
-.hikaye-cubugu { display:flex;align-items:center;gap:12px;padding:10px 14px 8px;background:var(--white);border-bottom:1px solid #f0f0f0;overflow-x:auto;-webkit-overflow-scrolling:touch; }
-.hikaye-cubugu::-webkit-scrollbar { display:none; }
-.hikaye-item { display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;cursor:pointer; }
-.hikaye-daire { width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:800;font-size:22px;flex-shrink:0; }
-.hikaye-yeni { border:3px solid var(--green);background:linear-gradient(135deg,#a8e063,#56ab2f);color:white; }
-.hikaye-goruldu { border:3px solid #ccc;background:linear-gradient(135deg,#e0e0e0,#bdbdbd);color:white; }
-.hikaye-benim { border:3px solid #ff9800;background:linear-gradient(135deg,#ffd180,#ff9800);color:white; }
-.hikaye-ekle-btn { display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;cursor:pointer; }
-.hikaye-ekle-daire { width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#e8f5e9,#c8e6c9);border:2px dashed var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--green); }
-.hikaye-isim { font-size:10px;color:#555;font-weight:500;text-align:center;max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
-
-/* ─── HİKAYE GÖRÜNTÜLEME MODALI ─── */
-.hikaye-modal { position:fixed;inset:0;z-index:9000;display:flex;align-items:flex-end;justify-content:center; }
-.hikaye-modal.hidden { display:none; }
-.hikaye-modal-arka { position:absolute;inset:0;background:rgba(0,0,0,0.88); }
-.hikaye-modal-icerik { position:relative;width:100%;max-width:500px;background:#1a1a1a;border-radius:24px 24px 0 0;max-height:95vh;overflow-y:auto;display:flex;flex-direction:column;animation:slideUp 0.3s ease; }
-.hikaye-modal-baslik { display:flex;align-items:center;gap:12px;padding:16px 16px 12px; }
-.hikaye-modal-avatar { width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#588157,#a7c957);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:white;overflow:hidden;flex-shrink:0; }
-.hikaye-modal-kapat { margin-left:auto;background:rgba(255,255,255,0.15);border:none;color:white;width:34px;height:34px;border-radius:50%;font-size:16px;cursor:pointer;flex-shrink:0; }
-.hikaye-modal-medya { padding:0 12px; }
-.hikaye-modal-metin { padding:10px 16px;color:#eee;font-size:14px;line-height:1.5; }
-.hikaye-izleyenler { padding:6px 16px 10px;color:rgba(255,255,255,0.5);font-size:12px; }
-
-/* ─── PROFİL AVATAR ─── */
-.profil-avatar-buyuk { width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#588157,#a7c957);display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:white;overflow:hidden;flex-shrink:0; }
-
-/* ─── DURUM SEÇİCİ ─── */
-.durum-secici { display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px; }
-.durum-btn { background:#f5f5f5;border:2px solid #e0e0e0;border-radius:20px;padding:7px 13px;font-size:13px;cursor:pointer;transition:all 0.2s; }
-.durum-btn-secili { background:#e8f5e9;border-color:var(--green);color:var(--green-dark);font-weight:700; }

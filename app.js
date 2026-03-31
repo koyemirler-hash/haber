@@ -26,6 +26,7 @@ let chatDocCount = -1, akisDocCount = -1, soundEnabled = localStorage.getItem("s
 let audioCtx = null, ilanlarDinleBasladi = false, aktifIlanFiltre = "hepsi";
 let havaYuklendi = false, namazYuklendi = false, ilanUnsubscribe = null;
 let floatReklamKapatildi = false, ozelSohbetKisiUid = null, anketCountdownInterval = null;
+let secilenDurum = "", secilenAvatarDosya = null, aktifHikayeId = null;
 
 // ═══════════════════════════════════════════
 //  PWA
@@ -318,11 +319,13 @@ auth.onAuthStateChanged(async user => {
         reklamYukle();
         floatReklamYukle();
         profilGorunurlukYukle();
+        settingsProfilGuncelle();
         anketDinle();
         setTimeout(() => anketKatilimKontrol(), 2500);
 
         tabDegistir("feed");
         akisDinle();
+        hikayeleriYukle();
         mesajlariDinle();
         isletmeleriYukle();
         nostaljiDinle();
@@ -350,6 +353,7 @@ function tabDegistir(t) {
     if (t === "koy") { havaDurumuYukle(); namazYukle(); tarimDinle(); asiYukle(); hastalikYukle(); }
     if (t === "settings") anketDinle();
     if (t === "ozel") { koyluListesiYukle(); }
+    if (t === "feed") { hikayeleriYukle(); }
 }
 
 function akordeonToggle(id) {
@@ -743,7 +747,12 @@ function koyluListesiYukle() {
                 ? `<a href="tel:${u.phone}" style="background:#e8f5e9;color:#2e7d32;font-size:18px;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;text-decoration:none;flex-shrink:0;">📞</a>`
                 : "";
             const adSafe = (u.name||"İsimsiz").replace(/'/g,"").replace(/"/g,"");
-            div.innerHTML=`<div class="koylular-avatar">${(u.name||"?")[0].toUpperCase()}</div><div class="koylular-bilgi"><div class="koylular-ad">${escapeHtml(u.name||"İsimsiz")}</div><div class="${u.online?"status-online":"status-offline"}" style="font-size:12px;">${u.online?"🟢 Çevrimiçi":"⚫ Çevrimdışı"}</div></div><div style="display:flex;gap:6px;align-items:center;">${telBtn}<button class="mesaj-btn" onclick="ozelSohbetAc('${uid}','${adSafe}')">✉️</button></div>`;
+            const avatarHtml = u.avatar
+                ? `<div class="koylular-avatar" style="background:none;padding:0;overflow:hidden;"><img src="${u.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"></div>`
+                : `<div class="koylular-avatar">${(u.name||"?")[0].toUpperCase()}</div>`;
+            const durumHtml = u.durum ? `<div style="font-size:11px;color:#666;margin-top:1px;">${escapeHtml(u.durum)}</div>` : "";
+            const bioHtml = u.bio ? `<div style="font-size:11px;color:#999;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;">${escapeHtml(u.bio)}</div>` : "";
+            div.innerHTML=`${avatarHtml}<div class="koylular-bilgi"><div class="koylular-ad">${escapeHtml(u.name||"İsimsiz")}</div>${durumHtml}${bioHtml}<div class="${u.online?"status-online":"status-offline"}" style="font-size:11px;">${u.online?"🟢 Çevrimiçi":"⚫ Çevrimdışı"}</div></div><div style="display:flex;gap:6px;align-items:center;">${telBtn}<button class="mesaj-btn" onclick="ozelSohbetAc('${uid}','${adSafe}')">✉️</button></div>`;
             el.appendChild(div);
         });
     });
@@ -1378,6 +1387,228 @@ function anketKatilimHayir() {
     const anketId=popup.getAttribute("data-anket-id");
     if(anketId) localStorage.setItem(`anketSoruldu_${anketId}`,"hayir");
     popup.classList.add("hidden");
+}
+
+
+// ═══════════════════════════════════════════
+//  PROFİL & DURUM
+// ═══════════════════════════════════════════
+
+function settingsProfilGuncelle() {
+    if (!userProfile) return;
+    const avatarEl = document.getElementById("settingsAvatar");
+    const adEl = document.getElementById("settingsAd");
+    const durumEl = document.getElementById("settingsDurum");
+    const bioEl = document.getElementById("settingsBio");
+    const btnEl = document.getElementById("profilAvatarBtn");
+    if (avatarEl) {
+        if (userProfile.avatar) {
+            avatarEl.innerHTML = `<img src="${userProfile.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+            avatarEl.style.background = "none"; avatarEl.style.padding = "0";
+        } else {
+            avatarEl.textContent = (userProfile.name||"?")[0].toUpperCase(); avatarEl.style.background = "";
+        }
+    }
+    if (btnEl) {
+        if (userProfile.avatar) {
+            btnEl.innerHTML = `<img src="${userProfile.avatar}" style="width:36px;height:36px;object-fit:cover;border-radius:50%;display:block;">`;
+            btnEl.style.padding = "0";
+        } else { btnEl.textContent = "👤"; }
+    }
+    if (adEl) adEl.textContent = userProfile.name || "";
+    if (durumEl) durumEl.textContent = userProfile.durum || "";
+    if (bioEl) bioEl.textContent = userProfile.bio || "";
+}
+
+function profilDuzenleAc() {
+    if (!currentUser) return;
+    secilenDurum = userProfile?.durum || "";
+    secilenAvatarDosya = null;
+    const modal = document.getElementById("profilDuzenleModal");
+    modal.classList.remove("hidden");
+    const avatarEl = document.getElementById("profilDuzenleAvatar");
+    if (userProfile?.avatar) {
+        avatarEl.innerHTML = `<img src="${userProfile.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+        avatarEl.style.background = "none"; avatarEl.style.padding = "0";
+    } else {
+        avatarEl.textContent = (userProfile?.name||"?")[0].toUpperCase(); avatarEl.style.background = "";
+    }
+    document.getElementById("profilBio").value = userProfile?.bio || "";
+    document.querySelectorAll(".durum-btn").forEach(btn => {
+        btn.classList.toggle("durum-btn-secili", btn.textContent.trim() === secilenDurum);
+    });
+    document.getElementById("profilKaydetHata").style.display = "none";
+}
+
+function profilDuzenleKapat() {
+    document.getElementById("profilDuzenleModal").classList.add("hidden");
+    secilenAvatarDosya = null;
+}
+
+function durumSec(durum, btn) {
+    secilenDurum = durum;
+    document.querySelectorAll(".durum-btn").forEach(b => b.classList.remove("durum-btn-secili"));
+    btn.classList.add("durum-btn-secili");
+}
+
+function profilAvatarOnizle(input) {
+    if (!input.files[0]) return;
+    secilenAvatarDosya = input.files[0];
+    const url = URL.createObjectURL(secilenAvatarDosya);
+    const el = document.getElementById("profilDuzenleAvatar");
+    el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+    el.style.background = "none"; el.style.padding = "0";
+}
+
+async function profilKaydet() {
+    if (!currentUser) return;
+    const btn = document.getElementById("profilKaydetBtn");
+    const hata = document.getElementById("profilKaydetHata");
+    btn.textContent = "⏳ Kaydediliyor..."; btn.disabled = true; hata.style.display = "none";
+    try {
+        const bio = document.getElementById("profilBio").value.trim().slice(0, 150);
+        const guncelle = { bio, durum: secilenDurum };
+        if (secilenAvatarDosya) {
+            const sonuc = await cloudinaryYukle(secilenAvatarDosya);
+            guncelle.avatar = sonuc.url;
+        }
+        await db.collection("users").doc(currentUser.uid).update(guncelle);
+        userProfile = { ...userProfile, ...guncelle };
+        settingsProfilGuncelle();
+        profilDuzenleKapat();
+        hikayeleriYukle();
+        alert("✅ Profiliniz güncellendi!");
+    } catch(e) {
+        hata.textContent = "Hata: " + e.message; hata.style.display = "block";
+    }
+    btn.textContent = "💾 Kaydet"; btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════
+//  HİKAYELER (WhatsApp Tarzı)
+// ═══════════════════════════════════════════
+
+async function hikayeleriYukle() {
+    const liste = document.getElementById("hikayeListesi");
+    if (!liste || !currentUser) return;
+    try {
+        const simdi = new Date();
+        const snap = await db.collection("stories").orderBy("time","desc").get();
+        snap.forEach(d => {
+            const exp = d.data().expireAt;
+            if (exp && (exp.toDate ? exp.toDate() : new Date(exp)) <= simdi) {
+                d.ref.delete().catch(()=>{});
+            }
+        });
+        liste.innerHTML = "";
+        const kullaniciBazli = {};
+        snap.forEach(doc => {
+            const d = doc.data();
+            const exp = d.expireAt ? (d.expireAt.toDate ? d.expireAt.toDate() : new Date(d.expireAt)) : null;
+            if (exp && exp <= simdi) return;
+            if (!kullaniciBazli[d.uid]) kullaniciBazli[d.uid] = { hikayeler:[], kullanici:d };
+            kullaniciBazli[d.uid].hikayeler.push({ id:doc.id, ...d });
+        });
+        Object.values(kullaniciBazli).forEach(({ hikayeler, kullanici }) => {
+            const benimMi = kullanici.uid === currentUser?.uid;
+            const gorundu = hikayeler.every(h => h.viewers && h.viewers[currentUser?.uid]);
+            const item = document.createElement("div"); item.className = "hikaye-item";
+            const avatarHtml = kullanici.avatarUrl
+                ? `<img src="${kullanici.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : `<span style="font-size:22px;font-weight:700;color:#fff;">${(kullanici.senderName||"?")[0].toUpperCase()}</span>`;
+            item.innerHTML = `<div class="hikaye-daire ${benimMi?"hikaye-benim":gorundu?"hikaye-goruldu":"hikaye-yeni"}" onclick="hikayeGoruntule('${hikayeler[0].id}','${kullanici.uid}')">${avatarHtml}</div><span class="hikaye-isim">${escapeHtml((kullanici.senderName||"?").split(" ")[0])}</span>`;
+            liste.appendChild(item);
+        });
+    } catch(e) { console.warn("Hikaye:", e); }
+}
+
+function hikayeEkleAc() {
+    document.getElementById("hikayeEkleModal").classList.remove("hidden");
+    document.getElementById("hikayeOnizleDiv").innerHTML = "";
+    document.getElementById("hikayeMetin").value = "";
+    document.getElementById("hikayeDosya").value = "";
+}
+function hikayeEkleKapat() { document.getElementById("hikayeEkleModal").classList.add("hidden"); }
+function hikayeOnizle(input) {
+    if (!input.files[0]) return;
+    const url = URL.createObjectURL(input.files[0]);
+    const el = document.getElementById("hikayeOnizleDiv");
+    el.innerHTML = input.files[0].type.startsWith("video")
+        ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;max-height:220px;"></video>`
+        : `<img src="${url}" style="max-width:100%;border-radius:10px;max-height:220px;object-fit:cover;">`;
+}
+
+async function hikayeGonder() {
+    if (!currentUser) return;
+    const dosya = document.getElementById("hikayeDosya").files[0];
+    const metin = document.getElementById("hikayeMetin").value.trim();
+    if (!dosya) return alert("Lütfen bir fotoğraf veya video seçin!");
+    const btn = document.getElementById("hikayeGonderBtn");
+    btn.textContent = "⏳ Yükleniyor..."; btn.disabled = true;
+    try {
+        const sonuc = await cloudinaryYukle(dosya);
+        const bitis = new Date(Date.now() + 24*60*60*1000);
+        await db.collection("stories").add({
+            uid: currentUser.uid,
+            senderName: userProfile?.name || "Anonim",
+            avatarUrl: userProfile?.avatar || "",
+            mediaUrl: sonuc.url,
+            mediaType: sonuc.type,
+            metin,
+            time: firebase.firestore.FieldValue.serverTimestamp(),
+            expireAt: firebase.firestore.Timestamp.fromDate(bitis),
+            viewers: {}
+        });
+        hikayeEkleKapat();
+        hikayeleriYukle();
+    } catch(e) { alert("Hata: " + e.message); }
+    btn.textContent = "🚀 Hikaye Paylaş"; btn.disabled = false;
+}
+
+async function hikayeGoruntule(storyId, storyUid) {
+    aktifHikayeId = storyId;
+    try {
+        const doc = await db.collection("stories").doc(storyId).get();
+        if (!doc.exists) { hikayeleriYukle(); return; }
+        const d = doc.data();
+        const modal = document.getElementById("hikayeModal");
+        modal.classList.remove("hidden");
+        const avEl = document.getElementById("hikayeModalAvatar");
+        if (d.avatarUrl) {
+            avEl.innerHTML = `<img src="${d.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            avEl.style.background = "none";
+        } else {
+            avEl.textContent = (d.senderName||"?")[0].toUpperCase(); avEl.style.background = "";
+        }
+        document.getElementById("hikayeModalAd").textContent = d.senderName || "Anonim";
+        document.getElementById("hikayeModalZaman").textContent = d.time ? zamanFarki(d.time) : "";
+        const medyaEl = document.getElementById("hikayeModalMedya");
+        medyaEl.innerHTML = d.mediaType === "video"
+            ? `<video src="${d.mediaUrl}" controls autoplay style="width:100%;max-height:55vh;object-fit:contain;border-radius:12px;"></video>`
+            : `<img src="${d.mediaUrl}" style="width:100%;max-height:55vh;object-fit:contain;border-radius:12px;" onclick="resimTamEkran('${d.mediaUrl}')">`;
+        document.getElementById("hikayeModalMetin").textContent = d.metin || "";
+        const viewers = d.viewers || {};
+        document.getElementById("hikayeModalIzleyenler").textContent = `👁 ${Object.keys(viewers).length} kişi izledi`;
+        const silBtn = document.getElementById("hikayeSilBtn");
+        silBtn.style.display = (d.uid === currentUser?.uid || adminMi()) ? "" : "none";
+        if (currentUser && !viewers[currentUser.uid]) {
+            db.collection("stories").doc(storyId).update({ [`viewers.${currentUser.uid}`]: true }).catch(()=>{});
+        }
+        hikayeleriYukle();
+    } catch(e) { console.warn("Hikaye görüntüle:", e); }
+}
+
+function hikayeKapat() {
+    document.getElementById("hikayeModal").classList.add("hidden");
+    aktifHikayeId = null;
+}
+
+async function hikayeSil() {
+    if (!aktifHikayeId || !confirm("Bu hikayeyi silmek istediğinize emin misiniz?")) return;
+    try {
+        await db.collection("stories").doc(aktifHikayeId).delete();
+        hikayeKapat(); hikayeleriYukle();
+    } catch(e) { alert("Hata: " + e.message); }
 }
 
 // ═══════════════════════════════════════════

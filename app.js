@@ -16,7 +16,7 @@ const CLOUD_NAME = "ddt11vhyb";
 const UPLOAD_PRESET = "koyapp";
 const ADMIN_EMAIL = "koyemirler@gmail.com";
 const EMOJIS = ["❤️","😂","😮","😢","😡","👍"];
-const YASAKLi_KELIMELER = ["küfür","aptal","salak","mal","orospu","siktir","oç","amk","amq"];
+const YASAKLi_KELIMELER = ["küfür","aptal","salak","orospu","siktir","oç","amk","amq"];
 const KOY_LAT = 39.72, KOY_LNG = 33.52;
 
 let currentUser = null, userProfile = null;

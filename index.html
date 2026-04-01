@@ -107,7 +107,18 @@
   <section id="view-feed" class="view">
     <div class="top-header">
       <span class="header-title">🏠 Köy Meydanı</span>
-      <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()">🔔</button>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()">🔔</button>
+        <button class="sound-toggle-btn" id="profilAvatarBtn" onclick="profilDuzenleAc()" style="font-size:19px;">👤</button>
+      </div>
+    </div>
+    <!-- HİKAYELER ÇUBUĞU -->
+    <div class="hikaye-cubugu" id="hikayeCubugu">
+      <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
+        <div class="hikaye-ekle-daire">＋</div>
+        <span class="hikaye-isim">Hikaye</span>
+      </div>
+      <div id="hikayeListesi" style="display:flex;gap:12px;padding:4px 0;"></div>
     </div>
     <div id="postPanel" class="post-panel hidden">
       <div class="post-panel-inner">
@@ -338,6 +349,19 @@
     </div>
     <div class="settings-content">
 
+      <!-- PROFİL KARTI -->
+      <div class="settings-card">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+          <div id="settingsAvatar" class="profil-avatar-buyuk"></div>
+          <div style="flex:1;overflow:hidden;">
+            <div id="settingsAd" style="font-size:16px;font-weight:700;color:#2d3748;"></div>
+            <div id="settingsDurum" style="font-size:13px;color:#555;margin-top:2px;"></div>
+            <div id="settingsBio" style="font-size:12px;color:#888;margin-top:2px;font-style:italic;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+          </div>
+        </div>
+        <button class="btn btn-secondary" onclick="profilDuzenleAc()" style="width:100%;">✏️ Profili Düzenle</button>
+      </div>
+
       <!-- Köy Anketi (Herkes) -->
       <div class="settings-card">
         <div class="ayar-baslik-toggle" onclick="ayarToggle('anketkullanici')">
@@ -381,7 +405,7 @@
           <div class="contact-buttons">
             <a href="tel:+905375120777" class="contact-btn phone-btn"><span class="contact-icon">📞</span><span>Telefon</span></a>
             <a href="sms:+905375120777" class="contact-btn phone-btn" style="background:#e3f2fd;color:#1565c0;"><span class="contact-icon">💬</span><span>SMS</span></a>
-            <a href="mailto:koyemirler@gmail.com" class="contact-btn email-btn"><span class="contact-icon">✉️</span><span>E-Posta</span></a>
+            <a href="/cdn-cgi/l/email-protection#8ce7e3f5e9e1e5fee0e9feccebe1ede5e0a2efe3e1" class="contact-btn email-btn"><span class="contact-icon">✉️</span><span>E-Posta</span></a>
             <a href="https://wa.me/905375120777" target="_blank" class="contact-btn whatsapp-btn"><span class="contact-icon">💬</span><span>WhatsApp</span></a>
           </div>
         </div>
@@ -558,6 +582,79 @@
     </div>
   </section>
 
+  <!-- HİKAYE GÖRÜNTÜLE MODALI -->
+  <div id="hikayeModal" class="hikaye-modal hidden">
+    <div class="hikaye-modal-arka" onclick="hikayeKapat()"></div>
+    <div class="hikaye-modal-icerik">
+      <div class="hikaye-modal-baslik">
+        <div id="hikayeModalAvatar" class="hikaye-modal-avatar"></div>
+        <div style="flex:1;min-width:0;">
+          <div id="hikayeModalAd" style="font-weight:700;color:#fff;font-size:15px;"></div>
+          <div id="hikayeModalZaman" style="font-size:12px;color:rgba(255,255,255,0.7);"></div>
+        </div>
+        <button class="hikaye-modal-kapat" onclick="hikayeKapat()">✕</button>
+      </div>
+      <div id="hikayeModalMedya" class="hikaye-modal-medya"></div>
+      <div id="hikayeModalMetin" class="hikaye-modal-metin"></div>
+      <div id="hikayeModalIzleyenler" class="hikaye-izleyenler"></div>
+      <button id="hikayeSilBtn" class="btn btn-danger" style="display:none;margin:8px 12px 16px;width:calc(100% - 24px);" onclick="hikayeSil()">🗑️ Hikayeyi Sil</button>
+    </div>
+  </div>
+
+  <!-- HİKAYE EKLE MODALI -->
+  <div id="hikayeEkleModal" class="modal hidden">
+    <div class="modal-overlay" onclick="hikayeEkleKapat()"></div>
+    <div class="modal-content" style="border-radius:24px 24px 0 0;">
+      <div class="modal-header">
+        <h4>📸 Hikaye Paylaş</h4>
+        <button class="modal-close-btn" onclick="hikayeEkleKapat()">✕</button>
+      </div>
+      <div style="padding:16px;">
+        <label class="file-label" style="display:block;margin-bottom:12px;">📷 Fotoğraf veya Video Seç *
+          <input type="file" id="hikayeDosya" accept="image/*,video/*" onchange="hikayeOnizle(this)">
+        </label>
+        <div id="hikayeOnizleDiv" class="media-preview" style="margin-bottom:12px;"></div>
+        <input id="hikayeMetin" placeholder="Açıklama yazın... (isteğe bağlı)" class="input-field">
+        <button class="btn btn-primary" id="hikayeGonderBtn" onclick="hikayeGonder()">🚀 Hikaye Paylaş</button>
+        <p style="font-size:11px;color:#888;text-align:center;margin-top:8px;">⏰ 24 saat sonra otomatik silinir</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFİL DÜZENLEME MODALI -->
+  <div id="profilDuzenleModal" class="modal hidden">
+    <div class="modal-overlay" onclick="profilDuzenleKapat()"></div>
+    <div class="modal-content" style="border-radius:24px 24px 0 0;max-height:92vh;overflow-y:auto;">
+      <div class="modal-header">
+        <h4>👤 Profilimi Düzenle</h4>
+        <button class="modal-close-btn" onclick="profilDuzenleKapat()">✕</button>
+      </div>
+      <div style="padding:16px;">
+        <div style="text-align:center;margin-bottom:18px;">
+          <div id="profilDuzenleAvatar" class="profil-avatar-buyuk" style="margin:0 auto 10px;cursor:pointer;" onclick="document.getElementById('profilAvatarDosya').click()"></div>
+          <label style="cursor:pointer;font-size:13px;color:#588157;font-weight:600;">📸 Fotoğraf Değiştir
+            <input type="file" id="profilAvatarDosya" accept="image/*" style="display:none;" onchange="profilAvatarOnizle(this)">
+          </label>
+        </div>
+        <p style="font-size:13px;font-weight:600;color:#444;margin-bottom:8px;">🟢 Durumunuzu seçin</p>
+        <div class="durum-secici">
+          <button class="durum-btn" onclick="durumSec('🟢 Müsait',this)">🟢 Müsait</button>
+          <button class="durum-btn" onclick="durumSec('🔴 Meşgul',this)">🔴 Meşgul</button>
+          <button class="durum-btn" onclick="durumSec('😴 Uyuyor',this)">😴 Uyuyor</button>
+          <button class="durum-btn" onclick="durumSec('😊 Mutlu',this)">😊 Mutlu</button>
+          <button class="durum-btn" onclick="durumSec('😢 Üzgün',this)">😢 Üzgün</button>
+          <button class="durum-btn" onclick="durumSec('🚗 Dışarıda',this)">🚗 Dışarıda</button>
+          <button class="durum-btn" onclick="durumSec('📵 Rahatsız Etme',this)">📵 Rahatsız Etme</button>
+          <button class="durum-btn" onclick="durumSec('🌾 Tarlada',this)">🌾 Tarlada</button>
+        </div>
+        <textarea id="profilBio" placeholder="Kendinizi tanıtın... (örn: Çiftçi, emekli öğretmen...)" class="textarea-field" rows="3" style="margin-top:14px;" maxlength="150"></textarea>
+        <p style="font-size:11px;color:#aaa;text-align:right;margin-top:-8px;margin-bottom:10px;">Max 150 karakter</p>
+        <p id="profilKaydetHata" style="color:#e53e3e;font-size:13px;display:none;margin-bottom:8px;"></p>
+        <button class="btn btn-primary" id="profilKaydetBtn" onclick="profilKaydet()">💾 Kaydet</button>
+      </div>
+    </div>
+  </div>
+
   <!-- YORUM MODALI -->
   <div id="commentsModal" class="modal hidden">
     <div class="modal-overlay" onclick="modalKapat()"></div>
@@ -618,6 +715,4 @@
   </div>
 </nav>
 
-<script src="app.js"></script>
-</body>
-</html>
+<scr

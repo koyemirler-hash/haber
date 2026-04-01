@@ -13,6 +13,8 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 
 const CLOUD_NAME = "ddt11vhyb";
+const ONESIGNAL_APP_ID = "0c68275c-fc83-4b1e-a945-2516c19c63d4";
+const ONESIGNAL_API_KEY = "os_v2_app_brucoxh4qnfr5kkfeulmdhdd2q5byifinq3umv52j46a7vfvj2zkm4k74gez2lmoitj4q6mqrkzulpxjpm2bjapbi6s5hrwcu5bgcza";
 const UPLOAD_PRESET = "koyapp";
 const ADMIN_EMAIL = "koyemirler@gmail.com";
 const EMOJIS = ["❤️","😂","😮","😢","😡","👍"];
@@ -60,7 +62,42 @@ window.addEventListener("DOMContentLoaded", () => {
     if (sb) sb.style.display = "none";
     updateSoundBtn();
     setTimeout(() => { if ("Notification" in window && Notification.permission === "default") bildirimiIzniAl(); }, 3000);
+    // OneSignal başlat
+    oneSignalBaslat();
 });
+
+function oneSignalBaslat() {
+    if (typeof OneSignalDeferred === "undefined") return;
+    OneSignalDeferred.push(async function(OneSignal) {
+        await OneSignal.init({
+            appId: ONESIGNAL_APP_ID,
+            safari_web_id: "",
+            notifyButton: { enable: false },
+            allowLocalhostAsSecureOrigin: true,
+        });
+    });
+}
+
+async function oneSignalBildirimGonder(baslik, mesaj, url) {
+    if (!ONESIGNAL_API_KEY) return;
+    try {
+        await fetch("https://onesignal.com/api/v1/notifications", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Basic " + ONESIGNAL_API_KEY
+            },
+            body: JSON.stringify({
+                app_id: ONESIGNAL_APP_ID,
+                included_segments: ["All"],
+                headings: { tr: baslik, en: baslik },
+                contents: { tr: mesaj, en: mesaj },
+                url: url || "https://koyemirler-hash.github.io/haber",
+                chrome_web_icon: "https://koyemirler-hash.github.io/haber/ikon_192.png"
+            })
+        });
+    } catch(e) { console.warn("OneSignal bildirim hatası:", e); }
+}
 
 // İlk dokunuşta ses + bildirim izni
 function ilkDokunusIzinleri() {
@@ -323,6 +360,12 @@ auth.onAuthStateChanged(async user => {
         setTimeout(() => anketKatilimKontrol(), 2500);
 
         settingsProfilGuncelle();
+        // OneSignal'a kullanıcı ID'sini bildir
+        if (typeof OneSignalDeferred !== "undefined") {
+            OneSignalDeferred.push(async function(OneSignal) {
+                try { await OneSignal.login(user.uid); } catch(e) {}
+            });
+        }
         tabDegistir("feed");
         akisDinle();
         hikayeleriYukle();
@@ -422,7 +465,8 @@ async function akisPaylas() {
         let mediaUrl="", mediaType="";
         if (file) { const r = await cloudinaryYukle(file); mediaUrl=r.url; mediaType=r.type; }
         await db.collection("announcements").add({ sender:userProfile.name, senderUid:currentUser.uid, senderRole:userProfile.rol||userProfile.role||"user", title, text, mediaUrl, mediaType, reactions:{}, commentCount:0, time:firebase.firestore.FieldValue.serverTimestamp() });
-        document.getElementById("postTitle").value=""; document.getElementById("postText").value=""; document.getElementById("postFile").value=""; document.getElementById("postPreview").innerHTML="";
+        document.getElementById("postTitle").value="";
+        oneSignalBildirimGonder("📢 " + userProfile.name, title||text||"Yeni duyuru paylaştı", "https://koyemirler-hash.github.io/haber"); document.getElementById("postText").value=""; document.getElementById("postFile").value=""; document.getElementById("postPreview").innerHTML="";
     } catch(e) { alert("⚠️ Paylaşım başarısız: " + e.message); }
     btn.disabled=false; btn.textContent="📢 Paylaş";
 }
@@ -695,6 +739,7 @@ async function mesajGonder() {
         if (chatMediaFile) { const r=await cloudinaryYukle(chatMediaFile); mediaUrl=r.url; mediaType=r.type; chatMediaTemizle(); }
         await db.collection("chat").add({ text:text||"", mediaUrl, mediaType, user:userProfile.name, uid:currentUser.uid, time:firebase.firestore.FieldValue.serverTimestamp() });
         document.getElementById("msgInput").value="";
+        oneSignalBildirimGonder("💬 " + userProfile.name, text||"📷 Medya paylaştı", "https://koyemirler-hash.github.io/haber");
         const box=document.getElementById("chatBox"); setTimeout(()=>box.scrollTop=box.scrollHeight,300);
     } catch(e) { alert("⚠️ Mesaj gönderilemedi: " + e.message); }
     btn.disabled=false;
@@ -861,8 +906,22 @@ async function ozelMesajGonder() {
             time:firebase.firestore.FieldValue.serverTimestamp()
         });
         input.value="";
-        // Ses çal
         playMessageSound();
+        // OneSignal - alıcıya bildirim gönder (external_id ile)
+        try {
+            await fetch("https://onesignal.com/api/v1/notifications", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Basic " + ONESIGNAL_API_KEY },
+                body: JSON.stringify({
+                    app_id: ONESIGNAL_APP_ID,
+                    filters: [{ field:"external_id", relation:"=", value: ozelSohbetKisiUid }],
+                    headings: { tr: "✉️ " + userProfile.name, en: "✉️ " + userProfile.name },
+                    contents: { tr: metin||"📷 Medya gönderdi", en: metin||"📷 Medya gönderdi" },
+                    url: "https://koyemirler-hash.github.io/haber",
+                    chrome_web_icon: "https://koyemirler-hash.github.io/haber/ikon_192.png"
+                })
+            });
+        } catch(e) {}
     } catch(e) {
         alert("Mesaj gönderilemedi: " + e.message);
     }

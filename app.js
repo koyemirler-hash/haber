@@ -8,7 +8,7 @@ const firebaseConfig = {
     projectId: "emirler-c5638",
     appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
 };
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 

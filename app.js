@@ -8,7 +8,6 @@ const firebaseConfig = {
     projectId: "emirler-c5638",
     appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
 };
-// Duplicate-app hatasını önle (PWA yenileme sonrası tekrar çalışır)
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
@@ -76,12 +75,9 @@ function oneSignalBaslat() {
                 notifyButton: { enable: false },
                 allowLocalhostAsSecureOrigin: true,
             });
-            // Kullaniciya bildirim izni sor
             const opted = OneSignal.User?.PushSubscription?.optedIn;
-            if (!opted) {
-                await OneSignal.Slidedown.promptPush().catch(()=>{});
-            }
-        } catch(e) { console.warn("OneSignal init:", e); }
+            if (!opted) await OneSignal.Slidedown.promptPush().catch(()=>{});
+        } catch(e) { console.warn("OneSignal:", e); }
     });
 }
 
@@ -399,4 +395,6 @@ function tabDegistir(t) {
     const navEl = document.getElementById("nav-" + t);
     if (navEl) navEl.classList.add("active");
     window.scrollTo(0, 0);
-    const fr = docu
+    const fr = document.getElementById("floatingReklam");
+    if (fr) fr.style.visibility = (t === "biz") ? "hidden" : "";
+    if (t === "ilan" && !ilanlarDinleBasladi) {

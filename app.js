@@ -8,7 +8,8 @@ const firebaseConfig = {
     projectId: "emirler-c5638",
     appId: "1:426225264136:web:ca5184984fc71b1e63853bd"
 };
-firebase.initializeApp(firebaseConfig);
+// Duplicate-app hatasını önle (PWA yenileme sonrası tekrar çalışır)
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
@@ -69,20 +70,18 @@ window.addEventListener("DOMContentLoaded", () => {
 function oneSignalBaslat() {
     if (typeof OneSignalDeferred === "undefined") return;
     OneSignalDeferred.push(async function(OneSignal) {
-        await OneSignal.init({
-            appId: ONESIGNAL_APP_ID,
-            // sw.js icinde OneSignal importScripts ekledik - cakisma giderildi
-            serviceWorkerPath: "sw.js",
-            serviceWorkerUpdaterPath: "sw.js",
-            notifyButton: { enable: false },
-            allowLocalhostAsSecureOrigin: true,
-        });
-        // Kullanici abone mi kontrol et ve izin iste
-        const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
-        if (!isSubscribed) {
-            await OneSignal.Slidedown.promptPush();
-        }
-        console.log("OneSignal hazir. Abone:", await OneSignal.User.PushSubscription.optedIn);
+        try {
+            await OneSignal.init({
+                appId: ONESIGNAL_APP_ID,
+                notifyButton: { enable: false },
+                allowLocalhostAsSecureOrigin: true,
+            });
+            // Kullaniciya bildirim izni sor
+            const opted = OneSignal.User?.PushSubscription?.optedIn;
+            if (!opted) {
+                await OneSignal.Slidedown.promptPush().catch(()=>{});
+            }
+        } catch(e) { console.warn("OneSignal init:", e); }
     });
 }
 
@@ -271,10 +270,12 @@ if (localStorage.getItem("termsAccepted")) {
     document.getElementById("loginPage").classList.remove("hidden");
 }
 function onayVer() {
-    if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
-    localStorage.setItem("termsAccepted","true");
-    document.getElementById("termsOverlay").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
+    try {
+        if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
+        localStorage.setItem("termsAccepted","true");
+        document.getElementById("termsOverlay").classList.add("hidden");
+        document.getElementById("loginPage").classList.remove("hidden");
+    } catch(e) { console.error("onayVer:", e); alert("Hata: "+e.message); }
 }
 
 // ═══════════════════════════════════════════
@@ -398,4 +399,4 @@ function tabDegistir(t) {
     const navEl = document.getElementById("nav-" + t);
     if (navEl) navEl.classList.add("active");
     window.scrollTo(0, 0);
-    const fr = document.getElementById("floatingRek
+    const fr = docu

@@ -69,15 +69,12 @@ window.addEventListener("DOMContentLoaded", () => {
 function oneSignalBaslat() {
     if (typeof OneSignalDeferred === "undefined") return;
     OneSignalDeferred.push(async function(OneSignal) {
-        try {
-            await OneSignal.init({
-                appId: ONESIGNAL_APP_ID,
-                notifyButton: { enable: false },
-                allowLocalhostAsSecureOrigin: true,
-            });
-            const opted = OneSignal.User?.PushSubscription?.optedIn;
-            if (!opted) await OneSignal.Slidedown.promptPush().catch(()=>{});
-        } catch(e) { console.warn("OneSignal:", e); }
+        await OneSignal.init({
+            appId: ONESIGNAL_APP_ID,
+            safari_web_id: "",
+            notifyButton: { enable: false },
+            allowLocalhostAsSecureOrigin: true,
+        });
     });
 }
 
@@ -266,12 +263,10 @@ if (localStorage.getItem("termsAccepted")) {
     document.getElementById("loginPage").classList.remove("hidden");
 }
 function onayVer() {
-    try {
-        if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
-        localStorage.setItem("termsAccepted","true");
-        document.getElementById("termsOverlay").classList.add("hidden");
-        document.getElementById("loginPage").classList.remove("hidden");
-    } catch(e) { console.error("onayVer:", e); alert("Hata: "+e.message); }
+    if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
+    localStorage.setItem("termsAccepted","true");
+    document.getElementById("termsOverlay").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
 }
 
 // ═══════════════════════════════════════════
@@ -397,4 +392,11 @@ function tabDegistir(t) {
     window.scrollTo(0, 0);
     const fr = document.getElementById("floatingReklam");
     if (fr) fr.style.visibility = (t === "biz") ? "hidden" : "";
-    if (t === "ilan" && !ilanlarDinleBasladi) {
+    if (t === "ilan" && !ilanlarDinleBasladi) { ilanlarDinleBasladi = true; ilanlarDinle(); }
+    if (t === "koy") { havaDurumuYukle(); namazYukle(); tarimDinle(); asiYukle(); hastalikYukle(); }
+    if (t === "settings") anketDinle();
+    if (t === "ozel") { koyluListesiYukle(); }
+    if (t === "feed") hikayeleriYukle();
+}
+
+function akordeonToggle(id)

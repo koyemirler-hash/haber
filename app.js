@@ -1580,3 +1580,59 @@ document.addEventListener("DOMContentLoaded", () => {
         if (webHeader) webHeader.style.display = "flex";
     }
 });
+// --- 1. AYRIM VE KONTROL ---
+const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// --- 2. WEB HEADER GÜNCELLEME (SAAT/TARİH) ---
+function updateWebHeader() {
+    const dtEl = document.getElementById("currentDateTime");
+    if (dtEl) {
+        const now = new Date();
+        const gunler = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+        const tarih = now.toLocaleDateString('tr-TR');
+        const saat = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        dtEl.innerHTML = `📅 ${tarih} ${gunler[now.getDay()]} | ⏰ ${saat}`;
+    }
+}
+
+// --- 3. ANA ÇALIŞTIRICI ---
+document.addEventListener("DOMContentLoaded", () => {
+    const splash = document.getElementById("webSplash");
+    const webHeader = document.getElementById("webHeaderInfo");
+    const chatBtn = document.getElementById("nav-chat");
+    const settingsBtn = document.getElementById("nav-settings"); // Varsa
+
+    // SPLASH SCREEN MANTIĞI
+    if (splash) {
+        // 3 saniye sonra yavaşça kaybol ve 0.5 saniye sonra tamamen yok et
+        setTimeout(() => {
+            splash.style.opacity = "0";
+            setTimeout(() => {
+                splash.style.display = "none";
+            }, 500);
+        }, 3000);
+    }
+
+    // WEB VE PWA ÖZEL AYARLARI
+    if (!isPWA) {
+        // BURASI WEB SİTESİ MODU (emirler.web.tr)
+        document.body.classList.add("web-site-mode");
+        
+        // Üst bilgi panelini göster
+        if (webHeader) webHeader.style.display = "flex";
+        
+        // İstemediğin kısımları gizle (Sohbet ve Ayarlar)
+        if (chatBtn) chatBtn.style.setProperty("display", "none", "important");
+        if (settingsBtn) settingsBtn.style.setProperty("display", "none", "important");
+
+        // Saati başlat
+        updateWebHeader();
+        setInterval(updateWebHeader, 1000);
+    } else {
+        // BURASI YÜKLÜ UYGULAMA (PWA) MODU
+        document.body.classList.add("pwa-app-mode");
+        if (webHeader) webHeader.style.display = "none";
+        // PWA'da splash screen beklemesin dersen:
+        if (splash) splash.style.display = "none";
+    }
+});

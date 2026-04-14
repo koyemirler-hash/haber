@@ -1,3 +1,26 @@
+// app.js en üst kısma
+const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+function platformAyarlariniUygula() {
+    if (!isPWA) {
+        // WEB SİTESİ MODU
+        document.body.classList.add("web-mode");
+        // İstemediğin kısımları gizle
+        const gizlenecekler = ["nav-chat", "nav-settings", "nav-ozel"];
+        gizlenecekler.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = "none";
+        });
+        // Web'e özel PWA yükleme butonu gösterimi
+        if (document.getElementById("webInstallPrompt")) {
+            document.getElementById("webInstallPrompt").style.display = "flex";
+        }
+    } else {
+        // PWA MODU
+        document.body.classList.add("pwa-mode");
+    }
+}
+window.addEventListener("DOMContentLoaded", platformAyarlariniUygula);
 const firebaseConfig = {
     apiKey: "\x41\x49\x7a\x61\x53\x79\x44\x55\x61\x67\x64\x61\x49\x6f\x4a\x6d\x6b\x67\x47\x6a\x57\x46\x76\x32\x61\x76\x59\x73\x43\x37\x6e\x5f\x2d\x34\x41\x4a\x37\x73\x30",
     authDomain: "\x65\x6d\x69\x72\x6c\x65\x72\x2d\x63\x35\x36\x33\x38\x2e\x66\x69\x72\x65\x62\x61\x73\x65\x61\x70\x70\x2e\x63\x6f\x6d",

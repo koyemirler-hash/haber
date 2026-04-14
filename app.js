@@ -1536,3 +1536,47 @@ async function hikayeSil() {
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW:", err));
 }
+// --- WEB ve PWA AYRIMI KONTROLÜ ---
+const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+// Web Header Bilgilerini Güncelleme Fonksiyonu
+function updateWebHeader() {
+    const dtEl = document.getElementById("currentDateTime");
+    if (dtEl) {
+        const now = new Date();
+        dtEl.textContent = now.toLocaleDateString('tr-TR') + " " + now.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+    }
+}
+
+// Sayfa yüklendiğinde çalışacak ana kontrol bloğu
+document.addEventListener("DOMContentLoaded", () => {
+    
+    // 1. Splash Screen'i 3 saniye sonra kaldır
+    setTimeout(() => {
+        const splash = document.getElementById("webSplash");
+        if (splash) {
+            splash.classList.add("fade-out");
+            // Animasyon bitince tıklamayı engellemek için tamamen gizle
+            setTimeout(() => splash.style.display = "none", 500);
+        }
+    }, 3000);
+
+    // 2. Eğer PWA değilse (Web sitesi modu)
+    if (!isPWA) {
+        // Saati başlat
+        updateWebHeader();
+        setInterval(updateWebHeader, 1000);
+        
+        // Profesyonellik için Web'de gizlenecek kısımlar
+        const chatBtn = document.getElementById("nav-chat");
+        if (chatBtn) chatBtn.style.display = "none";
+        
+        // Eğer index.html'de ayarlar butonuna id verdiysen onu da ekle:
+        // const settingsBtn = document.getElementById("nav-settings");
+        // if (settingsBtn) settingsBtn.style.display = "none";
+        
+        // Web Header'ı (Tarih/Hava durumu kısmını) görünür yap
+        const webHeader = document.getElementById("webHeaderInfo");
+        if (webHeader) webHeader.style.display = "flex";
+    }
+});

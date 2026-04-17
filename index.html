@@ -2,7 +2,11 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=web_index.html">
+<script>
+if (!location.pathname.includes("web_index.html")) {
+    window.location.replace("/web_index.html");
+}
+</script>
 </head>
 <body></body>
 </html>

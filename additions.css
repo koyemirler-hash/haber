@@ -1,274 +1,194 @@
 /* ══════════════════════════════════════════════════════ */
-/*  additions.css - Emirler Köyü Ek Stiller v4.1         */
-/*  Browser Mode Sidebar + Dernek + Muhtar + Mini Widget */
+/*  additions.css — Emirler Köyü v4.2                    */
+/*  Hamburger Toggle Sidebar + Dernek + Muhtar + Widget  */
 /* ══════════════════════════════════════════════════════ */
 
-/* ─── SIDEBAR NAV ─── */
+/* ─── HAMBURGER BUTTON (header içinde) ─── */
+.hamburger-btn {
+  background: rgba(255,255,255,0.18);
+  border: none;
+  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.hamburger-btn:hover,
+.hamburger-btn:active { background: rgba(255,255,255,0.32); }
+.hamburger-btn span {
+  display: block;
+  width: 20px;
+  height: 2.5px;
+  background: #fff;
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.2s;
+}
+.hamburger-btn.open span:nth-child(1) { transform: translateY(7.5px) rotate(45deg); }
+.hamburger-btn.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.hamburger-btn.open span:nth-child(3) { transform: translateY(-7.5px) rotate(-45deg); }
+
+/* ─── SIDEBAR OVERLAY (arka plan) ─── */
+#sidebarOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.52);
+  z-index: 1400;
+  animation: sbFadeIn 0.22s ease;
+}
+#sidebarOverlay.visible { display: block; }
+@keyframes sbFadeIn { from { opacity:0; } to { opacity:1; } }
+
+/* ─── SIDEBAR ─── */
 #sidebarNav {
   position: fixed;
-  right: 0;
+  right: -290px;          /* Kapalıyken ekran dışı */
   top: 0;
   bottom: 0;
-  width: 264px;
-  background: linear-gradient(180deg, #263228 0%, #1a2b1c 100%);
+  width: 272px;
+  background: linear-gradient(180deg, #1e2d20 0%, #152217 100%);
+  z-index: 1500;
+  display: flex;
   flex-direction: column;
-  z-index: 500;
   overflow-y: auto;
-  box-shadow: -4px 0 24px rgba(0,0,0,0.22);
   scrollbar-width: none;
-  display: none; /* JS ile browser-mode sınıfı eklenince gösterilir */
+  box-shadow: -8px 0 30px rgba(0,0,0,0.4);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 #sidebarNav::-webkit-scrollbar { display: none; }
+#sidebarNav.sidebar-open { right: 0; }
 
+/* ─── SIDEBAR HEADER ─── */
 .sidebar-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 22px 18px 16px;
+  padding: 22px 16px 16px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   flex-shrink: 0;
 }
 .sidebar-logo {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 44px; height: 44px;
+  border-radius: 12px;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.4);
 }
-.sidebar-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.2;
+.sidebar-title { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.2; }
+.sidebar-sub   { font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 3px; }
+.sidebar-close-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.1);
+  border: none; color: #fff;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background 0.2s;
 }
-.sidebar-sub {
-  font-size: 11px;
-  color: rgba(255,255,255,0.45);
-  margin-top: 3px;
-}
+.sidebar-close-btn:hover { background: rgba(255,255,255,0.22); }
+
+/* ─── SIDEBAR MENU ─── */
 .sidebar-menu {
   flex: 1;
   padding: 14px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 3px;
 }
 .sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 11px 14px;
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px;
   border-radius: 12px;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.7);
+  font-size: 14px; font-weight: 600;
+  color: rgba(255,255,255,0.68);
   transition: background 0.18s, color 0.18s;
   user-select: none;
-  position: relative;
-  text-decoration: none;
 }
-.sidebar-item:hover {
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-}
+.sidebar-item:hover { background: rgba(255,255,255,0.1); color: #fff; }
 .sidebar-item.active {
-  background: #588157;
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(88,129,87,0.45);
+  background: #588157; color: #fff;
+  box-shadow: 0 2px 12px rgba(88,129,87,0.4);
 }
-.sidebar-icon {
-  font-size: 19px;
-  flex-shrink: 0;
-  width: 24px;
-  text-align: center;
-}
+.sidebar-icon { font-size: 19px; flex-shrink: 0; width: 26px; text-align: center; }
 .sidebar-badge {
-  background: #dc3545;
-  color: white;
-  font-size: 10px;
-  font-weight: 800;
-  min-width: 18px;
-  height: 18px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  margin-left: auto;
+  background: #dc3545; color: white;
+  font-size: 10px; font-weight: 800;
+  min-width: 18px; height: 18px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; margin-left: auto;
 }
+
+/* ─── SIDEBAR FOOTER ─── */
 .sidebar-footer {
-  padding: 16px 14px 20px;
+  padding: 16px 14px 22px;
   border-top: 1px solid rgba(255,255,255,0.1);
-  text-align: center;
-  flex-shrink: 0;
+  text-align: center; flex-shrink: 0;
 }
 .sidebar-pwa-btn {
-  background: #588157;
-  color: white;
-  border: none;
-  border-radius: 22px;
-  padding: 10px 18px;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  width: 100%;
-  margin-bottom: 10px;
-  transition: background 0.2s;
+  background: linear-gradient(135deg, #588157, #3a5a40);
+  color: white; border: none; border-radius: 22px;
+  padding: 11px 18px; font-size: 13px; font-weight: 700;
+  cursor: pointer; width: 100%; margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(58,90,64,0.35);
+  transition: opacity 0.2s;
 }
-.sidebar-pwa-btn:hover { background: #3a5a40; }
-.sidebar-version {
-  font-size: 11px;
-  color: rgba(255,255,255,0.3);
-}
-
-/* ─── BROWSER MODE LAYOUT ─── */
-body.browser-mode {
-  padding-right: 264px;
-  padding-bottom: 0;
-}
-body.browser-mode #sidebarNav {
-  display: flex;
-}
-body.browser-mode #navBar {
-  display: none !important;
-}
-/* Fixed elemanları sidebar'dan uzaklaştır */
-body.browser-mode .pwa-banner {
-  right: 264px;
-}
-body.browser-mode .overlay-screen {
-  right: 264px;
-}
-body.browser-mode .modal {
-  right: 264px;
-}
-body.browser-mode .hikaye-modal {
-  right: 264px;
-}
-body.browser-mode .img-fullscreen {
-  right: 264px;
-}
-body.browser-mode #floatingReklam {
-  right: 278px;
-}
-body.browser-mode .chat-input-bar {
-  right: 264px;
-}
-body.browser-mode .chat-media-preview-bar {
-  right: 264px;
-}
-body.browser-mode .ozel-sohbet {
-  right: 264px;
-}
-
-/* ─── PWA MODE: Sohbet görünür, browser modda gizli ─── */
-body.browser-mode .pwa-chat-item {
-  display: none !important;
-}
+.sidebar-pwa-btn:active { opacity: 0.85; }
+.sidebar-version { font-size: 10px; color: rgba(255,255,255,0.22); line-height: 1.6; }
 
 /* ─── BROWSER ONLY / PWA ONLY ─── */
-.browser-only {
-  display: none !important;
-}
-body.browser-mode .browser-only {
-  display: flex !important;
-}
+.browser-only { display: none !important; }
+body.browser-mode .browser-only { display: flex !important; }
+body.browser-mode .pwa-chat-item { display: none !important; }
 
-/* ─── FEED TOP WIDGET (Hava + Namaz Mini) ─── */
+/* ─── FEED TOP WIDGET ─── */
 .feed-top-row {
-  background: #f8faf8;
+  background: #f3f6f3;
   padding: 12px 14px;
-  border-bottom: 1px solid #e8ede8;
-  gap: 10px;
-  flex-wrap: wrap;
+  border-bottom: 1px solid #e3eae3;
+  gap: 10px; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none;
 }
+.feed-top-row::-webkit-scrollbar { display: none; }
+
 .feed-mini-card {
-  flex: 1;
-  min-width: 150px;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border-radius: 14px;
-  padding: 13px 15px;
-  font-size: 13px;
-  transition: box-shadow 0.2s;
-}
-.feed-mini-card:hover {
-  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  flex: 1; min-width: 155px;
+  background: linear-gradient(135deg, #d9ecfa 0%, #b3d4f0 100%);
+  border-radius: 16px; padding: 13px 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
 }
 .feed-mini-card.namaz-mini {
-  background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+  background: linear-gradient(135deg, #ede7f6 0%, #d1c4e9 100%);
 }
-/* Hava Widget İçi */
-.feed-hava-ana {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-.feed-hava-icon { font-size: 30px; }
-.feed-hava-temp {
-  font-size: 24px;
-  font-weight: 900;
-  color: #1565c0;
-  line-height: 1;
-}
-.feed-hava-durum {
-  font-size: 11px;
-  color: #1976d2;
-  font-weight: 700;
-  margin-top: 2px;
-}
-.feed-hava-yer {
-  font-size: 11px;
-  color: #5c85d6;
-  margin-top: 5px;
-  font-weight: 600;
-}
-/* Namaz Widget İçi */
-.feed-namaz-baslik {
-  font-size: 12px;
-  font-weight: 800;
-  color: #6a1b9a;
-  margin-bottom: 7px;
-  letter-spacing: 0.3px;
-}
+.feed-hava-ana { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+.feed-hava-icon { font-size: 30px; line-height: 1; }
+.feed-hava-temp { font-size: 24px; font-weight: 900; color: #1565c0; line-height: 1; }
+.feed-hava-durum { font-size: 11px; color: #1976d2; font-weight: 700; margin-top: 2px; }
+.feed-hava-yer { font-size: 11px; color: #5c85d6; font-weight: 600; }
+
+.feed-namaz-baslik { font-size: 12px; font-weight: 800; color: #5e35b1; margin-bottom: 6px; }
 .feed-namaz-satir {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  padding: 3px 0;
-  color: #555;
-  border-bottom: 1px solid rgba(106,27,154,0.08);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12px; padding: 2px 0; color: #444;
+  border-bottom: 1px solid rgba(94,53,177,0.08);
 }
 .feed-namaz-satir:last-child { border-bottom: none; }
-.feed-namaz-aktif {
-  font-weight: 800;
-  color: #4a148c;
-  background: rgba(106,27,154,0.08);
-  border-radius: 6px;
-  padding: 1px 4px;
-  margin: -1px -4px;
-}
-.feed-namaz-aktif .feed-namaz-vakt { color: #4a148c; }
-.feed-namaz-vakt {
-  font-weight: 700;
-  color: #7b1fa2;
-}
+.feed-namaz-aktif { font-weight: 800; color: #4527a0; }
+.feed-namaz-aktif .feed-namaz-vakt { color: #4527a0; }
+.feed-namaz-vakt { font-weight: 700; color: #7b1fa2; font-size: 12px; }
 
-/* ─── NAV FOOTER - 9 Item için kompakt mod ─── */
-body.pwa-mode .nav-footer {
-  padding: 4px 0 2px;
-}
-body.pwa-mode .nav-icon { font-size: 16px; }
-body.pwa-mode .nav-label { font-size: 8px; }
+/* ─── NAV FOOTER — Kompakt (9 sekme) ─── */
+.nav-footer .nav-item { flex: 1; min-width: 0; }
+.nav-footer .nav-icon { font-size: 15px; }
+.nav-footer .nav-label { font-size: 8px; }
 
 /* ─── DERNEK ÇALIŞMALARI ─── */
 .dernek-kart {
-  background: #fff;
-  border-radius: 16px;
-  overflow: hidden;
+  background: #fff; border-radius: 16px; overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,0.07);
   border-left: 4px solid #588157;
 }
@@ -280,203 +200,71 @@ body.pwa-mode .nav-label { font-size: 8px; }
 
 .dernek-kart-ust {
   padding: 14px 16px 8px;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  flex-wrap: wrap;
+  display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap;
 }
 .dernek-tip-badge {
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: #e8f5e9;
-  color: #2e7d32;
-  flex-shrink: 0;
-  white-space: nowrap;
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 20px; flex-shrink: 0; white-space: nowrap;
+  background: #e8f5e9; color: #2e7d32;
 }
-.tip-toplanti { background: #e3f2fd; color: #1565c0; }
-.tip-karar    { background: #fff3e0; color: #e65100; }
-.tip-proje    { background: #e8f5e9; color: #388e3c; }
-.tip-etkinlik { background: #fce4ec; color: #c62828; }
-.tip-diger    { background: #f3e5f5; color: #6a1b9a; }
-
-.dernek-baslik {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1a1a1a;
-  flex: 1;
-  min-width: 0;
-  word-break: break-word;
-}
-.dernek-tarih {
-  padding: 0 16px 6px;
-  font-size: 12px;
-  color: #999;
-  font-weight: 600;
-}
-.dernek-aciklama {
-  padding: 0 16px 14px;
-  font-size: 14px;
-  color: #444;
-  line-height: 1.7;
-  white-space: pre-wrap;
-}
-.dernek-footer {
-  padding: 8px 16px 12px;
-  border-top: 1px solid #f5f5f5;
-  display: flex;
-  justify-content: flex-end;
-}
+.tip-toplanti { background:#e3f2fd;color:#1565c0; }
+.tip-karar    { background:#fff3e0;color:#e65100; }
+.tip-proje    { background:#e8f5e9;color:#388e3c; }
+.tip-etkinlik { background:#fce4ec;color:#c62828; }
+.tip-diger    { background:#f3e5f5;color:#6a1b9a; }
+.dernek-baslik { font-size:15px;font-weight:700;color:#1a1a1a;flex:1;min-width:0;word-break:break-word; }
+.dernek-tarih  { padding:0 16px 6px;font-size:12px;color:#999;font-weight:600; }
+.dernek-aciklama { padding:0 16px 14px;font-size:14px;color:#444;line-height:1.7;white-space:pre-wrap; }
+.dernek-footer { padding:8px 16px 12px;border-top:1px solid #f5f5f5;display:flex;justify-content:flex-end; }
 
 /* ─── MUHTAR HAKKINDA ─── */
-.muhtar-sayfa {
-  padding: 12px;
-  padding-bottom: 90px;
-  display: flex;
-  flex-direction: column;
-}
+.muhtar-sayfa { padding:12px;padding-bottom:90px;display:flex;flex-direction:column;gap:0; }
 .muhtar-profil-kart {
-  background: #fff;
-  border-radius: 22px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  margin-bottom: 14px;
+  background:#fff;border-radius:22px;overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,0,0,0.1);margin-bottom:14px;
 }
-.muhtar-profil-foto {
-  width: 100%;
-  max-height: 260px;
-  object-fit: cover;
-  display: block;
-}
+.muhtar-profil-foto { width:100%;max-height:260px;object-fit:cover;display:block; }
 .muhtar-profil-foto-placeholder {
-  width: 100%;
-  height: 180px;
-  background: linear-gradient(135deg, #588157, #3a5a40);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 90px;
+  width:100%;height:180px;
+  background:linear-gradient(135deg,#588157,#3a5a40);
+  display:flex;align-items:center;justify-content:center;font-size:90px;
 }
-.muhtar-profil-bilgi {
-  padding: 18px 18px 20px;
-}
-.muhtar-ad {
-  font-size: 22px;
-  font-weight: 900;
-  color: #1a1a1a;
-  margin-bottom: 6px;
-}
+.muhtar-profil-bilgi { padding:18px 18px 20px; }
+.muhtar-ad { font-size:22px;font-weight:900;color:#1a1a1a;margin-bottom:6px; }
 .muhtar-unvan {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 700;
-  color: #5c3d0e;
-  background: linear-gradient(135deg, #fff3cd, #ffe082);
-  padding: 4px 12px;
-  border-radius: 20px;
-  margin-bottom: 14px;
-  border: 1px solid #ffd54f;
+  display:inline-block;font-size:12px;font-weight:700;color:#5c3d0e;
+  background:linear-gradient(135deg,#fff3cd,#ffe082);
+  padding:4px 12px;border-radius:20px;margin-bottom:14px;border:1px solid #ffd54f;
 }
-.muhtar-bio {
-  font-size: 14px;
-  color: #555;
-  line-height: 1.75;
-}
-.muhtar-bolum-baslik-row {
-  padding: 14px 4px 10px;
-}
+.muhtar-bio { font-size:14px;color:#555;line-height:1.75; }
+.muhtar-bolum-baslik-row { padding:14px 4px 10px; }
 .muhtar-bolum-baslik {
-  font-size: 16px;
-  font-weight: 800;
-  color: #3a5a40;
-  border-left: 4px solid #588157;
-  padding-left: 12px;
+  font-size:16px;font-weight:800;color:#3a5a40;
+  border-left:4px solid #588157;padding-left:12px;
 }
-.muhtar-hizmet-listesi {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 6px;
-}
+.muhtar-hizmet-listesi { display:flex;flex-direction:column;gap:8px;margin-bottom:6px; }
 .muhtar-hizmet-kart {
-  background: #fff;
-  border-radius: 14px;
-  padding: 14px 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  background:#fff;border-radius:14px;padding:14px 16px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.07);
+  display:flex;gap:12px;align-items:flex-start;
 }
 .muhtar-hizmet-yil {
-  font-size: 12px;
-  font-weight: 800;
-  color: #3a5a40;
-  background: #e8f5e9;
-  border: 1px solid #a5d6a7;
-  padding: 4px 9px;
-  border-radius: 10px;
-  flex-shrink: 0;
-  min-width: 46px;
-  text-align: center;
+  font-size:12px;font-weight:800;color:#3a5a40;
+  background:#e8f5e9;border:1px solid #a5d6a7;
+  padding:4px 9px;border-radius:10px;flex-shrink:0;
+  min-width:46px;text-align:center;
 }
-.muhtar-hizmet-icerik { flex: 1; min-width: 0; }
-.muhtar-hizmet-baslik {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 3px;
-}
-.muhtar-hizmet-aciklama {
-  font-size: 13px;
-  color: #666;
-  line-height: 1.5;
-}
+.muhtar-hizmet-icerik { flex:1;min-width:0; }
+.muhtar-hizmet-baslik { font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:3px; }
+.muhtar-hizmet-aciklama { font-size:13px;color:#666;line-height:1.5; }
 .muhtar-hizmet-sil {
-  background: none;
-  border: none;
-  color: #ddd;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 2px;
-  flex-shrink: 0;
-  transition: color 0.2s;
+  background:none;border:none;color:#ddd;font-size:16px;
+  cursor:pointer;padding:2px;flex-shrink:0;transition:color 0.2s;
 }
-.muhtar-hizmet-sil:hover { color: #dc3545; }
-
-.muhtar-iletisim {
-  margin-bottom: 16px;
-}
-.muhtar-iletisim .contact-buttons {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-}
+.muhtar-hizmet-sil:hover { color:#dc3545; }
+.muhtar-iletisim { margin-bottom:16px; }
+.muhtar-iletisim .contact-buttons { flex-direction:row;flex-wrap:wrap;gap:10px; }
 .muhtar-iletisim .contact-btn {
-  flex: 1;
-  min-width: 120px;
-  justify-content: center;
-  border-radius: 14px;
-  padding: 12px 16px;
-  font-size: 14px;
-}
-
-/* ─── BROWSER MODE: Hava + Namaz ANA widgetleri de göster ─── */
-body.browser-mode #kart-hava,
-body.browser-mode #kart-namaz {
-  /* İsteğe bağlı: browser modda bu kartlar zaten koy sayfasında var */
-}
-
-/* ─── DESKTOP LAYOUT: İçerik genişliği ─── */
-@media (min-width: 900px) {
-  body.browser-mode .post-list,
-  body.browser-mode .koy-content,
-  body.browser-mode .settings-content,
-  body.browser-mode .muhtar-sayfa,
-  body.browser-mode #dernekList {
-    max-width: 720px;
-  }
-  body.browser-mode .feed-top-row {
-    max-width: 720px;
-  }
+  flex:1;min-width:120px;justify-content:center;
+  border-radius:14px;padding:12px 16px;font-size:14px;
 }

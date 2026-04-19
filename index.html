@@ -12,6 +12,7 @@
   <link rel="apple-touch-icon" href="ikon_192.png">
   <link rel="icon" href="ikon_192.png">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="additions.css">
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -104,6 +105,52 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SIDEBAR NAV (Browser Mode Only - Right Side)       -->
+<!-- ═══════════════════════════════════════════════════ -->
+<aside id="sidebarNav" class="sidebar-nav hidden">
+  <div class="sidebar-header">
+    <img src="ikon_192.png" class="sidebar-logo" alt="Emirler Köyü">
+    <div>
+      <div class="sidebar-title">Emirler Köyü</div>
+      <div class="sidebar-sub">emirler.web.tr</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-menu">
+    <div class="sidebar-item active" id="snav-feed" onclick="tabDegistir('feed')">
+      <span class="sidebar-icon">🏠</span><span>Akış</span>
+    </div>
+    <div class="sidebar-item" id="snav-ilan" onclick="tabDegistir('ilan')">
+      <span class="sidebar-icon">📋</span><span>İlanlar</span>
+      <span class="sidebar-badge hidden" id="ilan-sbadge">0</span>
+    </div>
+    <div class="sidebar-item" id="snav-nostalji" onclick="tabDegistir('nostalji')">
+      <span class="sidebar-icon">📸</span><span>Nostalji</span>
+    </div>
+    <div class="sidebar-item" id="snav-koy" onclick="tabDegistir('koy')">
+      <span class="sidebar-icon">🌾</span><span>Köy Bilgileri</span>
+    </div>
+    <div class="sidebar-item" id="snav-biz" onclick="tabDegistir('biz')">
+      <span class="sidebar-icon">🏢</span><span>Firmalar</span>
+    </div>
+    <div class="sidebar-item" id="snav-dernek" onclick="tabDegistir('dernek')">
+      <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span>
+    </div>
+    <div class="sidebar-item" id="snav-muhtar" onclick="tabDegistir('muhtar')">
+      <span class="sidebar-icon">👤</span><span>Muhtar Hakkında</span>
+    </div>
+    <div class="sidebar-item" id="snav-settings" onclick="tabDegistir('settings')">
+      <span class="sidebar-icon">⚙️</span><span>Ayarlar</span>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-pwa-btn" onclick="pwaYukleSettings()">📲 Uygulamayı İndir</button>
+    <div class="sidebar-version">Sürüm 4.1 · emirler.web.tr</div>
+  </div>
+</aside>
+
 <!-- Ana Uygulama -->
 <div id="app" class="hidden">
 
@@ -116,6 +163,17 @@
         <button class="sound-toggle-btn" id="profilAvatarBtn" onclick="profilDuzenleAc()" style="font-size:19px;">👤</button>
       </div>
     </div>
+
+    <!-- HAVA + NAMAZ MİNİ WİDGET (Sadece Browser Modunda Görünür) -->
+    <div id="feedTopWidget" class="feed-top-row browser-only">
+      <div class="feed-mini-card" id="feedHavaMini">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#888;">🌤️ Yükleniyor...</div>
+      </div>
+      <div class="feed-mini-card namaz-mini" id="feedNamazMini">
+        <div style="font-size:12px;color:#888;">🕌 Yükleniyor...</div>
+      </div>
+    </div>
+
     <!-- HİKAYELER ÇUBUĞU -->
     <div class="hikaye-cubugu" id="hikayeCubugu">
       <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
@@ -144,7 +202,6 @@
       <span class="header-title">📋 İlan Tahtası</span>
       <button class="header-action-btn" onclick="ilanFormToggle()">+ İlan Ver</button>
     </div>
-    <!-- Admin onay bölümü -->
     <div id="ilanOnaySection" class="pending-section hidden">
       <div class="pending-header">
         <span>⏳ Onay Bekleyen İlanlar</span>
@@ -211,11 +268,15 @@
     <div id="nostaljiList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- SOHBET (Genel) -->
+  <!-- SOHBET (Sadece PWA'da Görünür) -->
   <section id="view-chat" class="view hidden">
     <div class="top-header">
       <span class="header-title">💬 Köy Sohbeti</span>
       <button class="header-action-btn" onclick="tabDegistir('ozel')">✉️ Özel</button>
+    </div>
+    <!-- Tarayıcı uyarısı (browser modunda chat view açılırsa) -->
+    <div id="chatBrowserUyari" class="browser-only" style="background:#fff8e1;padding:14px 16px;border-bottom:1px solid #ffe082;display:none;">
+      <p style="font-size:13px;color:#856404;text-align:center;">💬 Sohbet özelliği yalnızca uygulamayı yükleyerek kullanılabilir.<br><button onclick="pwaYukleSettings()" style="background:var(--green);color:white;border:none;border-radius:20px;padding:8px 16px;margin-top:8px;font-size:13px;font-weight:700;cursor:pointer;">📲 Uygulamayı İndir</button></p>
     </div>
     <div id="chatBox" class="chat-box"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
     <div class="chat-media-preview-bar hidden" id="chatMediaBar">
@@ -234,21 +295,17 @@
     <div class="top-header">
       <span class="header-title">✉️ Köylüler</span>
     </div>
-    <!-- Profil görünürlük ayarı -->
     <div class="ozel-profil-bar">
       <label class="ozel-toggle-label">
         <input type="checkbox" id="profilGorunurToggle" onchange="profilGorunurlukDegistir()">
         <span>👤 Profilimi listede göster</span>
       </label>
     </div>
-    <!-- Konuşmalar listesi veya kullanıcı listesi -->
     <div id="ozelMesajIcerik" class="ozel-icerik">
-      <!-- Kullanıcı listesi -->
       <div id="koyluListesi" class="koylular-listesi">
         <div class="loading-spinner">⏳ Yükleniyor...</div>
       </div>
     </div>
-    <!-- Aktif konuşma alanı -->
     <div id="ozelSohbet" class="ozel-sohbet hidden">
       <div class="ozel-sohbet-header">
         <button class="geri-btn" onclick="ozelSohbetKapat()">← Geri</button>
@@ -256,7 +313,6 @@
         <span style="font-size:11px;color:rgba(255,255,255,0.7);margin-left:auto;">🔒 Özel · 10 gün sonra silinir</span>
       </div>
       <div id="ozelMesajBox" class="chat-box"></div>
-      <!-- Medya önizleme -->
       <div id="ozelMedyaOnizle" class="ozel-medya-onizle hidden"></div>
       <div class="chat-input-bar">
         <label class="chat-attach" title="Fotoğraf/Video">📎
@@ -295,7 +351,6 @@
       <span class="header-title">🌾 Köy Bilgileri</span>
     </div>
     <div class="koy-content">
-
       <div class="akordeon-kart" id="kart-hava">
         <div class="akordeon-baslik" onclick="akordeonToggle('hava')">
           <span>🌤️ Hava Durumu</span><span class="akordeon-ok" id="ok-hava">▼</span>
@@ -304,7 +359,6 @@
           <div id="havaWidget"><div class="loading-spinner">⏳</div></div>
         </div>
       </div>
-
       <div class="akordeon-kart" id="kart-namaz">
         <div class="akordeon-baslik" onclick="akordeonToggle('namaz')">
           <span>🕌 Namaz Vakitleri</span><span class="akordeon-ok" id="ok-namaz">▼</span>
@@ -313,7 +367,6 @@
           <div id="namazWidget"><div class="loading-spinner">⏳</div></div>
         </div>
       </div>
-
       <div class="akordeon-kart" id="kart-tarim">
         <div class="akordeon-baslik" onclick="akordeonToggle('tarim')">
           <span>🌾 Tarım Takvimi</span><span class="akordeon-ok" id="ok-tarim">▼</span>
@@ -322,7 +375,6 @@
           <div id="tarimWidget"><div class="loading-spinner">⏳</div></div>
         </div>
       </div>
-
       <div class="akordeon-kart" id="kart-asi">
         <div class="akordeon-baslik" onclick="akordeonToggle('asi')">
           <span>💉 Hayvan Aşı Takvimi</span><span class="akordeon-ok" id="ok-asi">▼</span>
@@ -331,7 +383,6 @@
           <div id="asiWidget"></div>
         </div>
       </div>
-
       <div class="akordeon-kart" id="kart-hastalik">
         <div class="akordeon-baslik" onclick="akordeonToggle('hastalik')">
           <span>🏥 Hayvan Hastalıkları</span><span class="akordeon-ok" id="ok-hastalik">▼</span>
@@ -340,9 +391,113 @@
           <div id="hastalikWidget"></div>
         </div>
       </div>
+    </div>
+  </section>
 
+  <!-- ══════════════════════════════════════════ -->
+  <!-- DERNEK ÇALIŞMALARI (YENİ BÖLÜM)          -->
+  <!-- ══════════════════════════════════════════ -->
+  <section id="view-dernek" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">🤝 Dernek Çalışmaları</span>
+      <button class="header-action-btn" id="dernekEkleBtn" onclick="dernekFormToggle()" style="display:none;">+ Ekle</button>
+    </div>
 
+    <!-- Filtre Bar -->
+    <div class="ilan-filtre-bar">
+      <button class="ilan-filtre-btn active" onclick="dernekFiltre('hepsi',this)">Hepsi</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('toplanti',this)">📅 Toplantı</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('karar',this)">⚖️ Karar</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('proje',this)">🏗️ Proje</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('etkinlik',this)">🎉 Etkinlik</button>
+    </div>
 
+    <!-- Admin Ekleme Formu -->
+    <div id="dernekFormDiv" class="ilan-form-panel hidden">
+      <div class="post-panel-inner">
+        <select id="dernekTip" class="input-field">
+          <option value="toplanti">📅 Toplantı Tutanağı</option>
+          <option value="karar">⚖️ Dernek Kararı</option>
+          <option value="proje">🏗️ Proje / Hizmet</option>
+          <option value="etkinlik">🎉 Etkinlik</option>
+          <option value="diger">📌 Diğer</option>
+        </select>
+        <input id="dernekBaslik" placeholder="Başlık *" class="input-field">
+        <input id="dernekTarih" type="date" class="input-field">
+        <textarea id="dernekAciklama" placeholder="Açıklama, tutanak metni, karar içeriği..." class="textarea-field" rows="5"></textarea>
+        <label class="file-label">📎 Fotoğraf / Belge Ekle
+          <input type="file" id="dernekDosya" accept="image/*" onchange="previewFile(this,'dernekOnizle')">
+        </label>
+        <div id="dernekOnizle" class="media-preview"></div>
+        <button class="btn btn-primary" id="dernekGonderBtn" onclick="dernekEkle()">✅ Yayınla</button>
+      </div>
+    </div>
+
+    <!-- Liste -->
+    <div id="dernekList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
+  </section>
+
+  <!-- ════════════════════════════════════════ -->
+  <!-- MUHTAR HAKKINDA (YENİ BÖLÜM)           -->
+  <!-- ════════════════════════════════════════ -->
+  <section id="view-muhtar" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">👤 Muhtar Hakkında</span>
+      <button class="header-action-btn" id="muhtarDuzenleBtn" onclick="muhtarEditToggle()" style="display:none;">✏️ Düzenle</button>
+    </div>
+
+    <div class="muhtar-sayfa">
+
+      <!-- Profil Kartı -->
+      <div id="muhtarProfilKart" class="muhtar-profil-kart">
+        <div class="muhtar-profil-foto-placeholder">👤</div>
+        <div class="muhtar-profil-bilgi">
+          <div class="muhtar-ad">Emirler Köyü Muhtarı</div>
+          <div class="muhtar-unvan">Köy Muhtarı</div>
+          <div class="muhtar-bio">Bilgiler yükleniyor...</div>
+        </div>
+      </div>
+
+      <!-- Hizmetler Başlık -->
+      <div class="muhtar-bolum-baslik-row">
+        <h3 class="muhtar-bolum-baslik">🏗️ Yürütülen Hizmetler</h3>
+      </div>
+
+      <!-- Hizmetler Listesi -->
+      <div id="muhtarHizmetlerList" class="muhtar-hizmet-listesi">
+        <div class="loading-spinner">⏳</div>
+      </div>
+
+      <!-- İletişim Başlık -->
+      <div class="muhtar-bolum-baslik-row" id="muhtarIletisimBaslik" style="display:none;">
+        <h3 class="muhtar-bolum-baslik">📞 İletişim</h3>
+      </div>
+      <div id="muhtarIletisimBolum" class="muhtar-iletisim"></div>
+
+      <!-- Admin Edit Paneli -->
+      <div id="muhtarEditPanel" class="hidden" style="padding:12px 0 80px;">
+        <div class="post-panel-inner" style="border-left-color:#7b3f00;">
+          <h4 style="margin-bottom:14px;color:#7b3f00;font-size:15px;">✏️ Muhtar Profil Bilgileri</h4>
+          <input id="muhtarAd" placeholder="Ad Soyad *" class="input-field">
+          <input id="muhtarUnvan" placeholder="Unvan (örn: Köy Muhtarı)" class="input-field">
+          <textarea id="muhtarBio" placeholder="Biyografi, özgeçmiş, mesaj..." class="textarea-field" rows="5"></textarea>
+          <input id="muhtarTel" placeholder="📞 Telefon" class="input-field" type="tel">
+          <input id="muhtarWa" placeholder="💬 WhatsApp (905XX...)" class="input-field" type="tel">
+          <input id="muhtarEmail" placeholder="✉️ E-posta" class="input-field" type="email">
+          <label class="file-label">📸 Fotoğraf
+            <input type="file" id="muhtarFoto" accept="image/*" onchange="previewFile(this,'muhtarFotoOnizle')">
+          </label>
+          <div id="muhtarFotoOnizle" class="media-preview"></div>
+          <button class="btn btn-primary" onclick="muhtarKaydet()" id="muhtarKaydetBtn">💾 Profili Kaydet</button>
+
+          <hr style="margin:20px 0 16px;border:none;border-top:2px solid #eee;">
+          <h4 style="margin-bottom:12px;color:#7b3f00;font-size:15px;">🏗️ Yeni Hizmet Ekle</h4>
+          <input id="muhtarHizmetBaslik" placeholder="Hizmet / Proje başlığı *" class="input-field">
+          <textarea id="muhtarHizmetAciklama" placeholder="Açıklama..." class="textarea-field" rows="2"></textarea>
+          <input id="muhtarHizmetYil" placeholder="Yıl (örn: 2024)" class="input-field" type="number">
+          <button class="btn btn-secondary" onclick="muhtarHizmetEkle()">+ Hizmet Ekle</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -353,7 +508,6 @@
     </div>
     <div class="settings-content">
 
-      <!-- PROFİL KARTI -->
       <div class="settings-card">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
           <div id="settingsAvatar" class="profil-avatar-buyuk"></div>
@@ -366,7 +520,6 @@
         <button class="btn btn-secondary" onclick="profilDuzenleAc()" style="width:100%;">✏️ Profili Düzenle</button>
       </div>
 
-      <!-- Köy Anketi (Herkes) -->
       <div class="settings-card">
         <div class="ayar-baslik-toggle" onclick="ayarToggle('anketkullanici')">
           <h4>🗳️ Köy Anketi</h4>
@@ -377,7 +530,6 @@
         </div>
       </div>
 
-      <!-- Yönetici Anket Paneli -->
       <div class="settings-card" id="anketYonetimPanel" style="display:none;">
         <div class="ayar-baslik-toggle" onclick="ayarToggle('anketadminsettings')">
           <h4>🗳️ Anket Yönetimi</h4>
@@ -399,7 +551,6 @@
         </div>
       </div>
 
-      <!-- İletişim - tıklanabilir, açılır -->
       <div class="settings-card">
         <div class="ayar-baslik-toggle" onclick="ayarToggle('iletisim')">
           <h4>📞 İletişim</h4>
@@ -415,15 +566,13 @@
         </div>
       </div>
 
-      <!-- QR -->
       <div class="settings-card text-center">
         <h4>📱 Uygulama QR Kodu</h4>
         <img src="karekod.png" class="qr-img" alt="QR Kod">
-        <p class="qr-url">koyemirler-hash.github.io/haber</p>
+        <p class="qr-url">emirler.web.tr</p>
         <button class="btn btn-secondary" style="margin-top:12px;" id="settingsInstallBtn" onclick="pwaYukleSettings()">📲 Uygulamayı Yükle</button>
       </div>
 
-      <!-- Hakkımızda (admin düzenler, herkes görür) -->
       <div class="settings-card">
         <h4>🏡 Hakkımızda</h4>
         <div id="hakkimizdaIcerik">
@@ -431,7 +580,6 @@
         </div>
       </div>
 
-      <!-- E-posta Sıfırlama Talebi -->
       <div class="settings-card" id="resetTalepKarti">
         <h4>🔄 E-posta Sıfırlama Talebi</h4>
         <p style="font-size:13px;color:#888;margin-bottom:12px;">E-postanızı değiştirmek için admin onayı gerekir.</p>
@@ -439,7 +587,6 @@
         <button class="btn btn-secondary" onclick="resetTalepGonder()">📨 Sıfırlama Talebi Gönder</button>
       </div>
 
-      <!-- İzinler -->
       <div class="settings-card">
         <h4>🔐 Uygulama İzinleri</h4>
         <div class="izin-listesi">
@@ -454,25 +601,19 @@
         </div>
       </div>
 
-      <!-- Görüş -->
       <div class="settings-card">
         <h4>💡 Görüş & Öneri</h4>
         <textarea id="feedbackText" placeholder="Görüş veya önerinizi yazın..." class="textarea-field" rows="3"></textarea>
         <button class="btn btn-primary" onclick="gorusBildir()">Gönder 📨</button>
       </div>
 
-      <!-- YÖNETİM PANELİ - SADECE ADMİN -->
       <div id="adminPanel" class="hidden">
         <div class="settings-card admin-card">
-
-          <!-- Başlık - tıklanınca açılır/kapanır -->
           <div class="ayar-baslik-toggle" onclick="ayarToggle('yonetim')">
             <h4>🛡️ Yönetim Paneli</h4>
             <span class="akordeon-ok" id="ok-yonetim">▼</span>
           </div>
           <div id="icerik-yonetim" class="hidden" style="padding-top:12px;">
-
-            <!-- Kullanıcı Yönetimi -->
             <div class="admin-section">
               <div class="ayar-baslik-toggle" onclick="ayarToggle('kullanici')">
                 <p class="section-label" style="margin:0;">👥 Kullanıcılar</p>
@@ -482,8 +623,6 @@
                 <div id="userList"><div class="loading-spinner">⏳</div></div>
               </div>
             </div>
-
-            <!-- Yetki Verme -->
             <div class="admin-section" style="margin-top:10px;">
               <div class="ayar-baslik-toggle" onclick="ayarToggle('yetki')">
                 <p class="section-label" style="margin:0;">🎖️ Yetki Yönetimi</p>
@@ -499,8 +638,6 @@
                 <button class="btn btn-secondary" onclick="yetkiVer()">✅ Yetki Ver</button>
               </div>
             </div>
-
-            <!-- E-posta Sıfırlama Talepleri -->
             <div class="admin-section" style="margin-top:10px;">
               <div class="ayar-baslik-toggle" onclick="ayarToggle('resetler')">
                 <p class="section-label" style="margin:0;">🔄 Sıfırlama Talepleri</p>
@@ -510,8 +647,6 @@
                 <div id="resetTalepListesi"><div style="color:#888;font-size:13px;">Bekleyen talep yok ✓</div></div>
               </div>
             </div>
-
-            <!-- Reklamlar -->
             <div class="admin-section" style="margin-top:10px;">
               <div class="ayar-baslik-toggle" onclick="ayarToggle('reklamlar')">
                 <p class="section-label" style="margin:0;">📢 Reklamlar</p>
@@ -535,8 +670,6 @@
                 <button class="btn btn-secondary" id="floatReklamKaydetBtn" onclick="floatReklamKaydet()">💾 Kaydet</button>
               </div>
             </div>
-
-            <!-- Firma & Tarım -->
             <div class="admin-section" style="margin-top:10px;">
               <div class="ayar-baslik-toggle" onclick="ayarToggle('icerik')">
                 <p class="section-label" style="margin:0;">🏢 Firma & Takvim</p>
@@ -562,8 +695,6 @@
                 <button class="btn btn-secondary" onclick="tarimEkle()">🌾 Takvime Ekle</button>
               </div>
             </div>
-
-            <!-- Hakkımızda Düzenle -->
             <div class="admin-section" style="margin-top:10px;">
               <div class="ayar-baslik-toggle" onclick="ayarToggle('hakkimizdaedit')">
                 <p class="section-label" style="margin:0;">🏡 Hakkımızda Düzenle</p>
@@ -577,8 +708,7 @@
                 <button class="btn btn-secondary" onclick="hakkimizdaKaydet()">💾 Kaydet</button>
               </div>
             </div>
-
-          </div><!-- /icerik-yonetim -->
+          </div>
         </div>
       </div>
 
@@ -651,7 +781,7 @@
           <button class="durum-btn" onclick="durumSec('📵 Rahatsız Etme',this)">📵 Rahatsız Etme</button>
           <button class="durum-btn" onclick="durumSec('🌾 Tarlada',this)">🌾 Tarlada</button>
         </div>
-        <textarea id="profilBio" placeholder="Kendinizi tanıtın... (örn: Çiftçi, emekli öğretmen...)" class="textarea-field" rows="3" style="margin-top:14px;" maxlength="150"></textarea>
+        <textarea id="profilBio" placeholder="Kendinizi tanıtın..." class="textarea-field" rows="3" style="margin-top:14px;" maxlength="150"></textarea>
         <p style="font-size:11px;color:#aaa;text-align:right;margin-top:-8px;margin-bottom:10px;">Max 150 karakter</p>
         <p id="profilKaydetHata" style="color:#e53e3e;font-size:13px;display:none;margin-bottom:8px;"></p>
         <button class="btn btn-primary" id="profilKaydetBtn" onclick="profilKaydet()">💾 Kaydet</button>
@@ -680,7 +810,7 @@
     <img id="imgFullscreenSrc" src="">
   </div>
 
-</div>
+</div><!-- /#app -->
 
 <!-- FLOATING REKLAM -->
 <div id="floatingReklam" class="floating-reklam hidden">
@@ -691,7 +821,7 @@
   </a>
 </div>
 
-<!-- NAVİGASYON -->
+<!-- NAVİGASYON (PWA / Mobil Alt Menü) -->
 <nav class="nav-footer hidden" id="navBar">
   <div class="nav-item active" id="nav-feed" onclick="tabDegistir('feed')">
     <span class="nav-icon">🏠</span><span class="nav-label">Akış</span>
@@ -704,7 +834,8 @@
     <span class="nav-icon">📸</span><span class="nav-label">Nostalji</span>
     <span class="nav-badge hidden" id="nostalji-badge">0</span>
   </div>
-  <div class="nav-item" id="nav-chat" onclick="tabDegistir('chat')">
+  <!-- Chat: Sadece PWA modunda görünür, CSS ile kontrol edilir -->
+  <div class="nav-item pwa-chat-item" id="nav-chat" onclick="tabDegistir('chat')">
     <span class="nav-icon">💬</span><span class="nav-label">Sohbet</span>
     <span class="nav-badge hidden" id="chat-badge">0</span>
   </div>
@@ -714,11 +845,18 @@
   <div class="nav-item" id="nav-biz" onclick="tabDegistir('biz')">
     <span class="nav-icon">🏢</span><span class="nav-label">Firmalar</span>
   </div>
+  <div class="nav-item" id="nav-dernek" onclick="tabDegistir('dernek')">
+    <span class="nav-icon">🤝</span><span class="nav-label">Dernek</span>
+  </div>
+  <div class="nav-item" id="nav-muhtar" onclick="tabDegistir('muhtar')">
+    <span class="nav-icon">👤</span><span class="nav-label">Muhtar</span>
+  </div>
   <div class="nav-item" id="nav-settings" onclick="tabDegistir('settings')">
     <span class="nav-icon">⚙️</span><span class="nav-label">Ayarlar</span>
   </div>
 </nav>
 
 <script src="app.js"></script>
+<script src="app_additions.js"></script>
 </body>
 </html>

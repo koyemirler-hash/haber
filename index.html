@@ -21,7 +21,7 @@
 </head>
 <body>
 
-<!-- ═══ PWA BANNER ═══ -->
+<!-- PWA BANNER -->
 <div id="pwaInstallBanner" class="pwa-banner hidden">
   <div class="pwa-banner-inner">
     <div class="pwa-banner-left">
@@ -38,7 +38,7 @@
   </div>
 </div>
 
-<!-- ═══ KULLANIM ŞARTLARI ═══ -->
+<!-- KULLANIM ŞARTLARI -->
 <div id="termsOverlay" class="overlay-screen">
   <div class="terms-card">
     <div class="terms-logo">🏡</div>
@@ -47,13 +47,13 @@
     <div class="terms-box" style="max-height:220px;overflow-y:auto;text-align:left;font-size:12px;line-height:1.7;">
       <b>KULLANIM ŞARTLARI VE KVKK AYDINLATMA METNİ</b><br><br>
       <b>1. KİŞİSEL VERİLERİN KORUNMASI (KVKK)</b><br>
-      6698 sayılı Kanun uyarınca; adınız, iletişim bilgileriniz ve profil bilgileriniz uygulama kaydı, güvenlik ve hizmet kalitesi amacıyla işlenmektedir. Verileriniz yasal zorunluluklar dışında üçüncü şahıslarla paylaşılmaz.<br><br>
+      6698 sayılı Kanun uyarınca; adınız, iletişim bilgileriniz ve profil bilgileriniz uygulama kaydı, güvenlik ve hizmet kalitesi amacıyla işlenmektedir. Verileriniz yasal zorunluluklar (adli makam talebi vb.) dışında üçüncü şahıslarla paylaşılmaz. Hesabınızı silerek verilerinizin kaldırılmasını talep edebilirsiniz.<br><br>
       <b>2. KULLANICI SORUMLULUKLARI</b><br>
       Uygulama içinde paylaştığınız her türlü içeriğin hukuki sorumluluğu doğrudan size aittir. Küfür, hakaret, tehdit, taciz, nefret söylemi ve yasadışı içerik paylaşımı kesinlikle yasaktır.<br><br>
       <b>3. YER SAĞLAYICI BEYANI</b><br>
-      Uygulama yönetimi yer sağlayıcı konumundadır; hukuka aykırı içerikleri kaldırma ve hesabı askıya alma hakkını saklı tutar.<br><br>
+      Uygulama yönetimi yer sağlayıcı konumundadır; içeriklerin doğruluğunu denetlemekle yükümlü olmamakla birlikte hukuka aykırı içerikleri kaldırma ve hesabı askıya alma hakkını saklı tutar.<br><br>
       <b>4. KABUL BEYANI</b><br>
-      Uygulamaya kayıt olarak bu şartları kabul etmiş sayılırsınız.<br><br>
+      Uygulamaya kayıt olarak bu şartları kabul etmiş sayılırsınız. Kurallara aykırı davranışlardan doğacak tüm hukuki sorumluluk kullanıcıya aittir.<br><br>
       <span style="color:#888;">Güncelleme: 29 Mart 2026</span>
     </div>
     <label class="terms-label">
@@ -63,7 +63,7 @@
   </div>
 </div>
 
-<!-- ═══ ANKET POPUP ═══ -->
+<!-- ANKET POPUP -->
 <div id="anketPopup" class="overlay-screen hidden">
   <div class="terms-card">
     <div class="terms-logo">🗳️</div>
@@ -77,7 +77,7 @@
   </div>
 </div>
 
-<!-- ═══ GİRİŞ / KAYIT ═══ -->
+<!-- GİRİŞ / KAYIT -->
 <div id="loginPage" class="overlay-screen hidden">
   <div class="login-card">
     <div class="login-logo">🏡</div>
@@ -103,88 +103,53 @@
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════════ -->
-<!-- SIDEBAR OVERLAY (tıklanınca kapanır)                        -->
-<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SIDEBAR OVERLAY -->
 <div id="sidebarOverlay" onclick="sidebarKapat()"></div>
 
-<!-- ════════════════════════════════════════════════════════════ -->
-<!-- SIDEBAR NAV                                                  -->
-<!-- ════════════════════════════════════════════════════════════ -->
+<!-- SIDEBAR -->
 <aside id="sidebarNav">
   <div class="sidebar-header">
-    <img src="ikon_192.png" class="sidebar-logo" alt="Emirler Köyü">
+    <img src="ikon_192.png" class="sidebar-logo" alt="logo">
     <div>
       <div class="sidebar-title">Emirler Köyü</div>
       <div class="sidebar-sub">emirler.web.tr</div>
     </div>
     <button class="sidebar-close-btn" onclick="sidebarKapat()">✕</button>
   </div>
-
   <nav class="sidebar-menu">
-    <div class="sidebar-item active" id="snav-feed" onclick="sidebarTabGit('feed')">
-      <span class="sidebar-icon">🏠</span><span>Akış</span>
-    </div>
-    <div class="sidebar-item" id="snav-ilan" onclick="sidebarTabGit('ilan')">
-      <span class="sidebar-icon">📋</span><span>İlanlar</span>
-      <span class="sidebar-badge hidden" id="ilan-sbadge">0</span>
-    </div>
-    <div class="sidebar-item" id="snav-nostalji" onclick="sidebarTabGit('nostalji')">
-      <span class="sidebar-icon">📸</span><span>Nostalji</span>
-    </div>
-    <div class="sidebar-item" id="snav-koy" onclick="sidebarTabGit('koy')">
-      <span class="sidebar-icon">🌾</span><span>Köy Bilgileri</span>
-    </div>
-    <div class="sidebar-item" id="snav-biz" onclick="sidebarTabGit('biz')">
-      <span class="sidebar-icon">🏢</span><span>Firmalar</span>
-    </div>
-    <div class="sidebar-item" id="snav-dernek" onclick="sidebarTabGit('dernek')">
-      <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span>
-    </div>
-    <div class="sidebar-item" id="snav-muhtar" onclick="sidebarTabGit('muhtar')">
-      <span class="sidebar-icon">👤</span><span>Muhtar Hakkında</span>
-    </div>
-    <div class="sidebar-item" id="snav-settings" onclick="sidebarTabGit('settings')">
-      <span class="sidebar-icon">⚙️</span><span>Ayarlar</span>
-    </div>
+    <div class="sidebar-item active" id="snav-feed"     onclick="sidebarTabGit('feed')">    <span class="sidebar-icon">🏠</span><span>Akış</span></div>
+    <div class="sidebar-item"        id="snav-ilan"     onclick="sidebarTabGit('ilan')">    <span class="sidebar-icon">📋</span><span>İlanlar</span></div>
+    <div class="sidebar-item"        id="snav-nostalji" onclick="sidebarTabGit('nostalji')"><span class="sidebar-icon">📸</span><span>Nostalji</span></div>
+    <div class="sidebar-item"        id="snav-koy"      onclick="sidebarTabGit('koy')">     <span class="sidebar-icon">🌾</span><span>Köy Bilgileri</span></div>
+    <div class="sidebar-item"        id="snav-biz"      onclick="sidebarTabGit('biz')">     <span class="sidebar-icon">🏢</span><span>Firmalar</span></div>
+    <div class="sidebar-item"        id="snav-dernek"   onclick="sidebarTabGit('dernek')">  <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span></div>
+    <div class="sidebar-item"        id="snav-muhtar"   onclick="sidebarTabGit('muhtar')">  <span class="sidebar-icon">👤</span><span>Muhtar Hakkında</span></div>
+    <div class="sidebar-item"        id="snav-settings" onclick="sidebarTabGit('settings')"><span class="sidebar-icon">⚙️</span><span>Ayarlar</span></div>
   </nav>
-
   <div class="sidebar-footer">
     <button class="sidebar-pwa-btn" onclick="pwaYukleSettings()">📲 Uygulamayı İndir</button>
-    <div class="sidebar-version">Sürüm 4.2 · emirler.web.tr</div>
+    <div class="sidebar-version">Sürüm 4.3 · emirler.web.tr</div>
   </div>
 </aside>
 
-<!-- ════════════════════════════════════════════════════════════ -->
-<!-- ANA UYGULAMA                                                 -->
-<!-- ════════════════════════════════════════════════════════════ -->
+<!-- ANA UYGULAMA -->
 <div id="app" class="hidden">
 
-  <!-- ═══ AKIŞ ═══ -->
+  <!-- AKIŞ -->
   <section id="view-feed" class="view">
     <div class="top-header">
       <span class="header-title">🏠 Köy Meydanı</span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
         <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()">🔔</button>
         <button class="sound-toggle-btn" id="profilAvatarBtn" onclick="profilDuzenleAc()" style="font-size:19px;">👤</button>
-        <!-- Hamburger butonu — sadece browser modunda görünür -->
-        <button class="hamburger-btn browser-only" id="hamburgerBtn" onclick="sidebarToggle()" aria-label="Menü">
-          <span></span><span></span><span></span>
-        </button>
+        <button class="hamburger-btn browser-only" onclick="sidebarToggle()"><span></span><span></span><span></span></button>
       </div>
     </div>
-
-    <!-- Hava + Namaz Mini Widget (sadece browser modunda) -->
+    <!-- Mini widget (sadece browser modunda) -->
     <div id="feedTopWidget" class="feed-top-row browser-only">
-      <div class="feed-mini-card" id="feedHavaMini">
-        <div style="font-size:12px;color:#888;">🌤️ Yükleniyor...</div>
-      </div>
-      <div class="feed-mini-card namaz-mini" id="feedNamazMini">
-        <div style="font-size:12px;color:#888;">🕌 Yükleniyor...</div>
-      </div>
+      <div class="feed-mini-card" id="feedHavaMini"><div style="font-size:12px;color:#888;">🌤️ Yükleniyor...</div></div>
+      <div class="feed-mini-card namaz-mini" id="feedNamazMini"><div style="font-size:12px;color:#888;">🕌 Yükleniyor...</div></div>
     </div>
-
-    <!-- Hikayeler -->
     <div class="hikaye-cubugu" id="hikayeCubugu">
       <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
         <div class="hikaye-ekle-daire">＋</div>
@@ -192,14 +157,11 @@
       </div>
       <div id="hikayeListesi" style="display:flex;gap:12px;padding:4px 0;"></div>
     </div>
-
     <div id="postPanel" class="post-panel hidden">
       <div class="post-panel-inner">
         <input id="postTitle" placeholder="Başlık..." class="input-field">
         <textarea id="postText" placeholder="Ne paylaşmak istersiniz?" class="textarea-field" rows="3"></textarea>
-        <label class="file-label">📎 Fotoğraf / Video Ekle
-          <input type="file" id="postFile" accept="image/*,video/*" onchange="previewFile(this,'postPreview')">
-        </label>
+        <label class="file-label">📎 Fotoğraf / Video Ekle<input type="file" id="postFile" accept="image/*,video/*" onchange="previewFile(this,'postPreview')"></label>
         <div id="postPreview" class="media-preview"></div>
         <button class="btn btn-primary" id="postBtn" onclick="akisPaylas()">📢 Paylaş</button>
       </div>
@@ -207,35 +169,28 @@
     <div id="postList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- ═══ İLAN TAHTASI ═══ -->
+  <!-- İLAN TAHTASI -->
   <section id="view-ilan" class="view hidden">
     <div class="top-header">
       <span class="header-title">📋 İlan Tahtası</span>
       <button class="header-action-btn" onclick="ilanFormToggle()">+ İlan Ver</button>
-      <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:8px;"><span></span><span></span><span></span></button>
+      <button class="hamburger-btn browser-only" onclick="sidebarToggle()"><span></span><span></span><span></span></button>
     </div>
     <div id="ilanOnaySection" class="pending-section hidden">
-      <div class="pending-header">
-        <span>⏳ Onay Bekleyen İlanlar</span>
-        <span class="pending-count-badge" id="ilanOnayCount">0</span>
-      </div>
+      <div class="pending-header"><span>⏳ Onay Bekleyen İlanlar</span><span class="pending-count-badge" id="ilanOnayCount">0</span></div>
       <div id="ilanOnayList"></div>
     </div>
     <div id="ilanFormDiv" class="ilan-form-panel hidden">
       <div class="post-panel-inner">
         <select id="ilanKategori" class="input-field">
-          <option value="satilik">🏷️ Satılık</option>
-          <option value="kiralik">🔑 Kiralık</option>
-          <option value="araniyor">🔍 Aranıyor</option>
-          <option value="kayip">⚠️ Kayıp İlanı</option>
+          <option value="satilik">🏷️ Satılık</option><option value="kiralik">🔑 Kiralık</option>
+          <option value="araniyor">🔍 Aranıyor</option><option value="kayip">⚠️ Kayıp İlanı</option>
           <option value="diger">📌 Diğer</option>
         </select>
         <input id="ilanBaslik" placeholder="Başlık *" class="input-field">
         <textarea id="ilanAciklama" placeholder="Açıklama..." class="textarea-field" rows="3"></textarea>
         <input id="ilanTelefon" placeholder="İletişim telefonu" class="input-field" type="tel">
-        <label class="file-label">📸 Fotoğraf Ekle (max 5)
-          <input type="file" id="ilanFotolar" accept="image/*" multiple onchange="ilanFotoOnizle(this)">
-        </label>
+        <label class="file-label">📸 Fotoğraf Ekle (max 5)<input type="file" id="ilanFotolar" accept="image/*" multiple onchange="ilanFotoOnizle(this)"></label>
         <div id="ilanFotoOnizleDiv" class="ilan-foto-onizle"></div>
         <button class="btn btn-primary" id="ilanPaylasBtnMain" onclick="ilanPaylas()">📋 İlanı Gönder</button>
         <p id="ilanOnayNotu" class="approval-note">⏳ İlanınız admin onayından sonra yayınlanacak.</p>
@@ -251,17 +206,14 @@
     <div id="ilanList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- ═══ NOSTALJİ ═══ -->
+  <!-- NOSTALJİ -->
   <section id="view-nostalji" class="view hidden">
     <div class="top-header">
       <span class="header-title">📸 Nostalji</span>
       <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:auto;"><span></span><span></span><span></span></button>
     </div>
     <div id="nostaljiPendingSection" class="pending-section hidden">
-      <div class="pending-header">
-        <span>⏳ Onay Bekleyen Gönderiler</span>
-        <span class="pending-count-badge" id="pendingCountText">0</span>
-      </div>
+      <div class="pending-header"><span>⏳ Onay Bekleyen Gönderiler</span><span class="pending-count-badge" id="pendingCountText">0</span></div>
       <div id="nostaljiPendingList" class="post-list" style="padding-top:6px;"></div>
     </div>
     <div class="post-panel">
@@ -270,9 +222,7 @@
         <input id="nostaljiTitle" placeholder="Başlık..." class="input-field">
         <input id="nostaljiYear" placeholder="📅 Yıl / Dönem" class="input-field">
         <textarea id="nostaljiText" placeholder="Bu anıyı anlatın..." class="textarea-field" rows="3"></textarea>
-        <label class="file-label">📷 Fotoğraf Ekle
-          <input type="file" id="nostaljiFile" accept="image/*,video/*" onchange="previewFile(this,'nostaljiPreview')">
-        </label>
+        <label class="file-label">📷 Fotoğraf Ekle<input type="file" id="nostaljiFile" accept="image/*,video/*" onchange="previewFile(this,'nostaljiPreview')"></label>
         <div id="nostaljiPreview" class="media-preview"></div>
         <button class="btn btn-primary" id="nostaljiBtn" onclick="nostaljiPaylas()">📸 Anıyı Gönder</button>
         <p class="approval-note" id="nostaljiApprovalNote">⏳ Gönderiniz yetkililer tarafından onaylandıktan sonra yayınlanacak.</p>
@@ -281,7 +231,7 @@
     <div id="nostaljiList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- ═══ SOHBET (Sadece PWA) ═══ -->
+  <!-- SOHBET (Sadece PWA) -->
   <section id="view-chat" class="view hidden">
     <div class="top-header">
       <span class="header-title">💬 Köy Sohbeti</span>
@@ -299,11 +249,9 @@
     </div>
   </section>
 
-  <!-- ═══ ÖZEL MESAJ ═══ -->
+  <!-- ÖZEL MESAJ -->
   <section id="view-ozel" class="view hidden">
-    <div class="top-header">
-      <span class="header-title">✉️ Köylüler</span>
-    </div>
+    <div class="top-header"><span class="header-title">✉️ Köylüler</span></div>
     <div class="ozel-profil-bar">
       <label class="ozel-toggle-label">
         <input type="checkbox" id="profilGorunurToggle" onchange="profilGorunurlukDegistir()">
@@ -311,9 +259,7 @@
       </label>
     </div>
     <div id="ozelMesajIcerik" class="ozel-icerik">
-      <div id="koyluListesi" class="koylular-listesi">
-        <div class="loading-spinner">⏳ Yükleniyor...</div>
-      </div>
+      <div id="koyluListesi" class="koylular-listesi"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
     </div>
     <div id="ozelSohbet" class="ozel-sohbet hidden">
       <div class="ozel-sohbet-header">
@@ -331,7 +277,7 @@
     </div>
   </section>
 
-  <!-- ═══ FİRMALAR ═══ -->
+  <!-- FİRMALAR -->
   <section id="view-biz" class="view hidden">
     <div class="top-header">
       <span class="header-title">🏢 Köy Firmaları</span>
@@ -351,35 +297,34 @@
     </div>
   </section>
 
-  <!-- ═══ KÖY BİLGİLERİ ═══ -->
+  <!-- KÖY BİLGİLERİ -->
   <section id="view-koy" class="view hidden">
     <div class="top-header">
       <span class="header-title">🌾 Köy Bilgileri</span>
       <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:auto;"><span></span><span></span><span></span></button>
     </div>
     <div class="koy-content">
-      <div class="akordeon-kart">
-        <div class="akordeon-baslik" onclick="akordeonToggle('hava')"><span>🌤️ Hava Durumu</span><span class="akordeon-ok" id="ok-hava">▼</span></div>
-        <div class="akordeon-icerik hidden" id="icerik-hava"><div id="havaWidget"><div class="loading-spinner">⏳</div></div></div>
-      </div>
-      <div class="akordeon-kart">
-        <div class="akordeon-baslik" onclick="akordeonToggle('namaz')"><span>🕌 Namaz Vakitleri</span><span class="akordeon-ok" id="ok-namaz">▼</span></div>
-        <div class="akordeon-icerik hidden" id="icerik-namaz"><div id="namazWidget"><div class="loading-spinner">⏳</div></div></div>
-      </div>
-      <div class="akordeon-kart">
-        <div class="akordeon-baslik" onclick="akordeonToggle('tarim')"><span>🌾 Tarım Takvimi</span><span class="akordeon-ok" id="ok-tarim">▼</span></div>
-        <div class="akordeon-icerik hidden" id="icerik-tarim"><div id="tarimWidget"><div class="loading-spinner">⏳</div></div></div>
-      </div>
-      <div class="akordeon-kart">
-        <div class="akordeon-baslik" onclick="akordeonToggle('asi')"><span>💉 Hayvan Aşı Takvimi</span><span class="akordeon-ok" id="ok-asi">▼</span></div>
-        <div class="akordeon-icerik hidden" id="icerik-asi"><div id="asiWidget"></div></div>
-      </div>
-      <div class="akordeon-kart">
-        <div class="akordeon-baslik" onclick="akordeonToggle('hastalik')"><span>🏥 Hayvan Hastalıkları</span><span class="akordeon-ok" id="ok-hastalik">▼</span></div>
-        <div class="akordeon-icerik hidden" id="icerik-hastalik"><div id="hastalikWidget"></div></div>
-      </div>
+      <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('hava')"><span>🌤️ Hava Durumu</span><span class="akordeon-ok" id="ok-hava">▼</span></div><div class="akordeon-icerik hidden" id="icerik-hava"><div id="havaWidget"><div class="loading-spinner">⏳</div></div></div></div>
+      <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('namaz')"><span>🕌 Namaz Vakitleri</span><span class="akordeon-ok" id="ok-namaz">▼</span></div><div class="akordeon-icerik hidden" id="icerik-namaz"><div id="namazWidget"><div class="loading-spinner">⏳</div></div></div></div>
+      <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('tarim')"><span>🌾 Tarım Takvimi</span><span class="akordeon-ok" id="ok-tarim">▼</span></div><div class="akordeon-icerik hidden" id="icerik-tarim"><div id="tarimWidget"><div class="loading-spinner">⏳</div></div></div></div>
+      <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('asi')"><span>💉 Hayvan Aşı Takvimi</span><span class="akordeon-ok" id="ok-asi">▼</span></div><div class="akordeon-icerik hidden" id="icerik-asi"><div id="asiWidget"></div></div></div>
+      <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('hastalik')"><span>🏥 Hayvan Hastalıkları</span><span class="akordeon-ok" id="ok-hastalik">▼</span></div><div class="akordeon-icerik hidden" id="icerik-hastalik"><div id="hastalikWidget"></div></div></div>
     </div>
   </section>
 
-  <!-- ═══ DERNEK ÇALIŞMALARI ═══ -->
-  <section id="view-dernek"
+  <!-- DERNEK ÇALIŞMALARI -->
+  <section id="view-dernek" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">🤝 Dernek Çalışmaları</span>
+      <button class="header-action-btn" id="dernekEkleBtn" onclick="dernekFormToggle()" style="display:none;">+ Ekle</button>
+      <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:8px;"><span></span><span></span><span></span></button>
+    </div>
+    <div class="ilan-filtre-bar">
+      <button class="ilan-filtre-btn active" onclick="dernekFiltre('hepsi',this)">Hepsi</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('toplanti',this)">📅 Toplantı</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('karar',this)">⚖️ Karar</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('proje',this)">🏗️ Proje</button>
+      <button class="ilan-filtre-btn" onclick="dernekFiltre('etkinlik',this)">🎉 Etkinlik</button>
+    </div>
+    <div id="dernekFormDiv" class="ilan-form-panel hidden">
+      <div class="po

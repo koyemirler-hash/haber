@@ -98,7 +98,7 @@ body.browser-mode .pwa-chat-item { display:none !important; }
   gap: 0;
   height: 100%;
   white-space: nowrap;
-  animation: tickerScroll 35s linear infinite;
+  animation: tickerScroll 22s linear infinite;
   will-change: transform;
 }
 .ticker-inner:hover { animation-play-state: paused; }
@@ -145,31 +145,20 @@ body.browser-mode .pwa-chat-item { display:none !important; }
   pointer-events: none;
 }
 
-/* ─── ALT NAVİGASYON — ETİKETSİZ (sadece ikon) ─── */
-.nav-footer {
-  height: 56px;
-}
-.nav-footer .nav-item {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 0;
-}
-/* Tüm .nav-label'ları gizle */
-.nav-footer .nav-label {
+/* ─── ALT NAVİGASYON ─── */
+/* Browser modunda alt menü TAMAMEN GİZLİ - yan menü var */
+body.browser-mode #navBar {
   display: none !important;
 }
-.nav-footer .nav-icon {
-  font-size: 20px;
-  line-height: 1;
+body.browser-mode {
+  padding-bottom: 0 !important;
 }
-/* body padding güncelle (label olmayınca daha az yer) */
-body {
-  padding-bottom: 58px !important;
-}
+/* PWA modunda sadece ikonlar */
+.nav-footer .nav-label { display: none !important; }
+.nav-footer { height: 52px; }
+.nav-footer .nav-item { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 0; }
+.nav-footer .nav-icon { font-size: 20px; line-height: 1; }
+body.pwa-mode { padding-bottom: 54px !important; }
 
 /* ─── DERNEK ─── */
 .dernek-kart { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.07); border-left:4px solid #588157; }

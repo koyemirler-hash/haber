@@ -98,7 +98,7 @@ body.browser-mode .pwa-chat-item { display:none !important; }
   gap: 0;
   height: 100%;
   white-space: nowrap;
-  animation: tickerScroll 22s linear infinite;
+  animation: tickerScroll 10s linear infinite;
   will-change: transform;
 }
 .ticker-inner:hover { animation-play-state: paused; }

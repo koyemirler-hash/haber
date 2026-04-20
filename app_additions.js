@@ -382,4 +382,23 @@ function muhtarKaydet(){
         var ff=document.getElementById('muhtarFoto')&&document.getElementById('muhtarFoto').files[0];
         function kaydet(fu){
             var veri=Object.assign({},eski,{ad:((document.getElementById('muhtarAd')||{}).value||'').trim(),unvan:((document.getElementById('muhtarUnvan')||{}).value||'Köy Muhtarı').trim(),bio:((document.getElementById('muhtarBio')||{}).value||'').trim(),tel:((document.getElementById('muhtarTel')||{}).value||'').trim(),whatsapp:((document.getElementById('muhtarWa')||{}).value||'').trim(),email:((document.getElementById('muhtarEmail')||{}).value||'').trim(),fotoUrl:fu});
-            db.collection('settings').doc('muhtar').set(veri).then(function(){_muhtarVerisi
+            db.collection('settings').doc('muhtar').set(veri).then(function(){_muhtarVerisi=veri;var p=document.getElementById('muhtarEditPanel');if(p)p.classList.add('hidden');muhtarYukle();alert('✅ Kaydedildi!');}).catch(function(e){alert('Hata: '+e.message);}).finally(function(){if(btn){btn.disabled=false;btn.textContent='💾 Profili Kaydet';}});
+        }
+        if(ff&&typeof cloudinaryYukle==='function'){cloudinaryYukle(ff).then(function(r){kaydet(r.url);}).catch(function(){kaydet(fUrl);});}else{kaydet(fUrl);}
+    }).catch(function(e){alert('Hata: '+e.message);if(btn){btn.disabled=false;btn.textContent='💾 Profili Kaydet';}});
+}
+function muhtarHizmetEkle(){
+    if(typeof ayricaliklimi!=='function'||!ayricaliklimi()) return alert('Yetkiniz yok!');
+    var b=((document.getElementById('muhtarHizmetBaslik')||{}).value||'').trim();if(!b)return alert('Başlık zorunludur!');
+    db.collection('settings').doc('muhtar').get().then(function(snap){
+        var eski=snap.exists?snap.data():{};var hz=Array.isArray(eski.hizmetler)?[].concat(eski.hizmetler):[];
+        hz.unshift({baslik:b,aciklama:((document.getElementById('muhtarHizmetAciklama')||{}).value||'').trim(),yil:((document.getElementById('muhtarHizmetYil')||{}).value||String(new Date().getFullYear()))});
+        return db.collection('settings').doc('muhtar').set(Object.assign({},eski,{hizmetler:hz}));
+    }).then(function(){['muhtarHizmetBaslik','muhtarHizmetAciklama','muhtarHizmetYil'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});muhtarYukle();alert('✅ Hizmet eklendi!');}).catch(function(e){alert('Hata: '+e.message);});
+}
+function muhtarHizmetSil(idx){
+    if(typeof ayricaliklimi!=='function'||!ayricaliklimi()) return;if(!confirm('Silmek istiyor musunuz?')) return;
+    db.collection('settings').doc('muhtar').get().then(function(snap){if(!snap.exists)return;var v=snap.data();var hz=Array.isArray(v.hizmetler)?[].concat(v.hizmetler):[];hz.splice(idx,1);return db.collection('settings').doc('muhtar').set(Object.assign({},v,{hizmetler:hz}));}).then(function(){muhtarYukle();}).catch(function(e){alert('Silinemedi: '+e.message);});
+}
+
+console.log('[Emirler] v4.5 yüklendi ✓');

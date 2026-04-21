@@ -123,6 +123,7 @@
     <div class="sidebar-item"        id="snav-koy"      onclick="sidebarTabGit('koy')">     <span class="sidebar-icon">🌾</span><span>Köy Bilgileri</span></div>
     <div class="sidebar-item"        id="snav-biz"      onclick="sidebarTabGit('biz')">     <span class="sidebar-icon">🏢</span><span>Firmalar</span></div>
     <div class="sidebar-item"        id="snav-dernek"   onclick="sidebarTabGit('dernek')">  <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span></div>
+    <div class="sidebar-item"        id="snav-dernekyon" onclick="sidebarTabGit('dernekyon')"><span class="sidebar-icon">👥</span><span>Dernek Yönetimi</span></div>
     <div class="sidebar-item"        id="snav-muhtar"   onclick="sidebarTabGit('muhtar')">  <span class="sidebar-icon">👤</span><span>Muhtar Hakkında</span></div>
     <div class="sidebar-item"        id="snav-settings" onclick="sidebarTabGit('settings')"><span class="sidebar-icon">⚙️</span><span>Ayarlar</span></div>
   </nav>
@@ -351,6 +352,40 @@
     <div id="dernekList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
+  <!-- DERNEK YÖNETİMİ -->
+  <section id="view-dernekyon" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">👥 Dernek Yönetimi</span>
+      <button class="header-action-btn" id="dernekYonEkleBtn" onclick="dernekYonFormToggle()" style="display:none;">+ Üye Ekle</button>
+      <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:8px;"><span></span><span></span><span></span></button>
+    </div>
+    <div id="dernekYonFormDiv" class="ilan-form-panel hidden">
+      <div class="post-panel-inner" style="border-left-color:#1976d2;">
+        <h4 style="margin-bottom:14px;color:#1976d2;">👤 Yönetim Üyesi Ekle</h4>
+        <select id="dernekYonGorev" class="input-field">
+          <option value="baskan">🏆 Dernek Başkanı</option>
+          <option value="baskan_yrd">🥈 Başkan Yardımcısı</option>
+          <option value="yonetim">📋 Yönetim Kurulu Üyesi</option>
+          <option value="denetim">🔍 Denetim Kurulu Üyesi</option>
+          <option value="diger">👤 Diğer</option>
+        </select>
+        <input id="dernekYonAd" placeholder="Ad Soyad *" class="input-field">
+        <input id="dernekYonTel" placeholder="📞 Telefon" class="input-field" type="tel">
+        <input id="dernekYonWa" placeholder="💬 WhatsApp (905XX...)" class="input-field" type="tel">
+        <input id="dernekYonEmail" placeholder="✉️ E-posta" class="input-field" type="email">
+        <textarea id="dernekYonBio" placeholder="Kısa biyografi, not..." class="textarea-field" rows="3"></textarea>
+        <label class="file-label">📸 Fotoğraf
+          <input type="file" id="dernekYonFoto" accept="image/*" onchange="previewFile(this,'dernekYonFotoOnizle')">
+        </label>
+        <div id="dernekYonFotoOnizle" class="media-preview"></div>
+        <button class="btn btn-primary" id="dernekYonKaydetBtn" onclick="dernekYonEkle()">✅ Üyeyi Kaydet</button>
+      </div>
+    </div>
+    <div id="dernekYonList" class="muhtar-sayfa" style="padding-top:8px;">
+      <div class="loading-spinner">⏳ Yükleniyor...</div>
+    </div>
+  </section>
+
   <!-- MUHTAR HAKKINDA -->
   <section id="view-muhtar" class="view hidden">
     <div class="top-header">
@@ -388,6 +423,10 @@
           <input id="muhtarHizmetBaslik" placeholder="Hizmet başlığı *" class="input-field">
           <textarea id="muhtarHizmetAciklama" placeholder="Açıklama..." class="textarea-field" rows="2"></textarea>
           <input id="muhtarHizmetYil" placeholder="Yıl (örn: 2024)" class="input-field" type="number">
+          <label class="file-label">📸 Hizmet Fotoğrafı (isteğe bağlı)
+            <input type="file" id="muhtarHizmetFoto" accept="image/*" onchange="previewFile(this,'muhtarHizmetFotoOnizle')">
+          </label>
+          <div id="muhtarHizmetFotoOnizle" class="media-preview"></div>
           <button class="btn btn-secondary" onclick="muhtarHizmetEkle()">+ Hizmet Ekle</button>
         </div>
       </div>
@@ -628,6 +667,7 @@
   <div class="nav-item"        id="nav-koy"      onclick="tabDegistir('koy')">     <span class="nav-icon">🌾</span><span class="nav-label">Köy</span></div>
   <div class="nav-item"        id="nav-biz"      onclick="tabDegistir('biz')">     <span class="nav-icon">🏢</span><span class="nav-label">Firmalar</span></div>
   <div class="nav-item"        id="nav-dernek"   onclick="showDernek()">           <span class="nav-icon">🤝</span><span class="nav-label">Dernek</span></div>
+  <div class="nav-item"        id="nav-dernekyon" onclick="showDernekYon()">        <span class="nav-icon">👥</span><span class="nav-label">D.Yön.</span></div>
   <div class="nav-item"        id="nav-muhtar"   onclick="showMuhtar()">           <span class="nav-icon">👤</span><span class="nav-label">Muhtar</span></div>
   <div class="nav-item"        id="nav-settings" onclick="tabDegistir('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">Ayarlar</span></div>
 </nav>

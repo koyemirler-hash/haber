@@ -65,8 +65,9 @@ function syncSidebar(t) {
 function sidebarTabGit(t) {
     sidebarKapat();
     setTimeout(function() {
-        if (t==='dernek') { showDernek(); return; }
-        if (t==='muhtar') { showMuhtar(); return; }
+        if (t==='dernek')    { showDernek();    return; }
+        if (t==='dernekyon') { showDernekYon(); return; }
+        if (t==='muhtar')    { showMuhtar();    return; }
         try { tabDegistir(t); } catch(e) {}
         syncSidebar(t);
     }, 180);
@@ -249,6 +250,19 @@ document.addEventListener('DOMContentLoaded', function() {
    Sıralama JavaScript'te yapılır */
 var _dernekFiltre = 'hepsi';
 
+
+function showDernekYon() {
+    try {
+        document.querySelectorAll('.view').forEach(function(v){ v.classList.add('hidden'); });
+        var v=document.getElementById('view-dernekyon'); if(v) v.classList.remove('hidden');
+        document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+        var n=document.getElementById('nav-dernekyon'); if(n) n.classList.add('active');
+        syncSidebar('dernekyon');
+        window.scrollTo(0,0);
+        dernekYonYukle();
+    } catch(e) {}
+}
+
 function dernekFormToggle() {
     var d=document.getElementById('dernekFormDiv'); if(d) d.classList.toggle('hidden');
 }
@@ -363,7 +377,7 @@ function muhtarYukle(){
             _muhtarVerisi=snap.data();var v=_muhtarVerisi;
             if(pEl)pEl.innerHTML=(v.fotoUrl?'<img src="'+v.fotoUrl+'" class="muhtar-profil-foto">':'<div class="muhtar-profil-foto-placeholder">👤</div>')+'<div class="muhtar-profil-bilgi"><div class="muhtar-ad">'+esc(v.ad||'Emirler Köyü Muhtarı')+'</div><div class="muhtar-unvan">'+esc(v.unvan||'Köy Muhtarı')+'</div>'+(v.bio?'<div class="muhtar-bio">'+esc(v.bio)+'</div>':'')+'</div>';
             var hz=v.hizmetler||[];
-            if(hEl)hEl.innerHTML=hz.length===0?'<div style="color:#aaa;font-size:14px;padding:10px;text-align:center;">Henüz hizmet bilgisi girilmemiş</div>':hz.map(function(h,i){return'<div class="muhtar-hizmet-kart"><div class="muhtar-hizmet-yil">'+esc(String(h.yil||'—'))+'</div><div class="muhtar-hizmet-icerik"><div class="muhtar-hizmet-baslik">'+esc(h.baslik||'')+'</div>'+(h.aciklama?'<div class="muhtar-hizmet-aciklama">'+esc(h.aciklama)+'</div>':'')+'</div>'+(isAdm?'<button class="muhtar-hizmet-sil" onclick="muhtarHizmetSil('+i+')">🗑️</button>':'')+'</div>';}).join('');
+            if(hEl)hEl.innerHTML=hz.length===0?'<div style="color:#aaa;font-size:14px;padding:10px;text-align:center;">Henüz hizmet bilgisi girilmemiş</div>':hz.map(function(h,i){return'<div class="muhtar-hizmet-kart" style="flex-direction:column;"><div style="display:flex;gap:12px;align-items:flex-start;"><div class="muhtar-hizmet-yil">'+esc(String(h.yil||'—'))+'</div><div class="muhtar-hizmet-icerik"><div class="muhtar-hizmet-baslik">'+esc(h.baslik||'')+'</div>'+(h.aciklama?'<div class="muhtar-hizmet-aciklama">'+esc(h.aciklama)+'</div>':'')+'</div>'+(isAdm?'<button class="muhtar-hizmet-sil" onclick="muhtarHizmetSil('+i+')">🗑️</button>':'')+'</div>'+(h.imageUrl?'<img src="'+h.imageUrl+'" class="muhtar-hizmet-img" onclick="resimTamEkran(''+h.imageUrl+'')" loading="lazy">':'')+'</div>';}).join('');
             var ilt=[];if(v.tel)ilt.push('<a href="tel:'+v.tel+'" class="contact-btn phone-btn"><span class="contact-icon">📞</span><span>Telefon</span></a>');if(v.whatsapp)ilt.push('<a href="https://wa.me/'+v.whatsapp.replace(/[^0-9]/g,'')+'" target="_blank" class="contact-btn whatsapp-btn"><span class="contact-icon">💬</span><span>WhatsApp</span></a>');if(v.email)ilt.push('<a href="mailto:'+v.email+'" class="contact-btn email-btn"><span class="contact-icon">✉️</span><span>E-Posta</span></a>');
             if(ilt.length>0){if(ibEl)ibEl.style.display='';if(iEl)iEl.innerHTML='<div class="contact-buttons">'+ilt.join('')+'</div>';}else{if(ibEl)ibEl.style.display='none';}
         }else{
@@ -389,12 +403,28 @@ function muhtarKaydet(){
 }
 function muhtarHizmetEkle(){
     if(typeof ayricaliklimi!=='function'||!ayricaliklimi()) return alert('Yetkiniz yok!');
-    var b=((document.getElementById('muhtarHizmetBaslik')||{}).value||'').trim();if(!b)return alert('Başlık zorunludur!');
-    db.collection('settings').doc('muhtar').get().then(function(snap){
-        var eski=snap.exists?snap.data():{};var hz=Array.isArray(eski.hizmetler)?[].concat(eski.hizmetler):[];
-        hz.unshift({baslik:b,aciklama:((document.getElementById('muhtarHizmetAciklama')||{}).value||'').trim(),yil:((document.getElementById('muhtarHizmetYil')||{}).value||String(new Date().getFullYear()))});
-        return db.collection('settings').doc('muhtar').set(Object.assign({},eski,{hizmetler:hz}));
-    }).then(function(){['muhtarHizmetBaslik','muhtarHizmetAciklama','muhtarHizmetYil'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});muhtarYukle();alert('✅ Hizmet eklendi!');}).catch(function(e){alert('Hata: '+e.message);});
+    var b=((document.getElementById('muhtarHizmetBaslik')||{}).value||'').trim();
+    if(!b) return alert('Başlık zorunludur!');
+    var file=document.getElementById('muhtarHizmetFoto')&&document.getElementById('muhtarHizmetFoto').files[0];
+    function kaydet(imgUrl){
+        db.collection('settings').doc('muhtar').get().then(function(snap){
+            var eski=snap.exists?snap.data():{};
+            var hz=Array.isArray(eski.hizmetler)?[].concat(eski.hizmetler):[];
+            hz.unshift({
+                baslik:b,
+                aciklama:((document.getElementById('muhtarHizmetAciklama')||{}).value||'').trim(),
+                yil:((document.getElementById('muhtarHizmetYil')||{}).value||String(new Date().getFullYear())),
+                imageUrl:imgUrl||''
+            });
+            return db.collection('settings').doc('muhtar').set(Object.assign({},eski,{hizmetler:hz}));
+        }).then(function(){
+            ['muhtarHizmetBaslik','muhtarHizmetAciklama','muhtarHizmetYil','muhtarHizmetFoto'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+            var pv=document.getElementById('muhtarHizmetFotoOnizle');if(pv)pv.innerHTML='';
+            muhtarYukle(); alert('✅ Hizmet eklendi!');
+        }).catch(function(e){alert('Hata: '+e.message);});
+    }
+    if(file&&typeof cloudinaryYukle==='function'){cloudinaryYukle(file).then(function(r){kaydet(r.url);}).catch(function(){kaydet('');});}
+    else{kaydet('');}
 }
 function muhtarHizmetSil(idx){
     if(typeof ayricaliklimi!=='function'||!ayricaliklimi()) return;if(!confirm('Silmek istiyor musunuz?')) return;
@@ -402,3 +432,112 @@ function muhtarHizmetSil(idx){
 }
 
 console.log('[Emirler] v4.5 yüklendi ✓');
+
+/* ════════════════════════════════════════
+   DERNEK YÖNETİM KADROSU
+════════════════════════════════════════ */
+var GOREV_METINLER = {
+    baskan:'🏆 Dernek Başkanı', baskan_yrd:'🥈 Başkan Yardımcısı',
+    yonetim:'📋 Yön. Kurulu Üyesi', denetim:'🔍 Denetim Kurulu', diger:'👤 Üye'
+};
+var GOREV_CSS = {
+    baskan:'gorev-baskan', baskan_yrd:'gorev-baskan_yrd',
+    yonetim:'gorev-yonetim', denetim:'gorev-denetim', diger:'gorev-diger'
+};
+var GOREV_SIRA = {baskan:0, baskan_yrd:1, yonetim:2, denetim:3, diger:4};
+
+function dernekYonFormToggle() {
+    var d=document.getElementById('dernekYonFormDiv'); if(d) d.classList.toggle('hidden');
+}
+
+function dernekYonYukle() {
+    var list=document.getElementById('dernekYonList');
+    if(!list||typeof db==='undefined') return;
+    list.innerHTML='<div class="loading-spinner">⏳ Yükleniyor...</div>';
+
+    var isAdm=typeof ayricaliklimi==='function'&&ayricaliklimi();
+    try { if(isAdm){var b=document.getElementById('dernekYonEkleBtn');if(b)b.style.display='';} }catch(e){}
+
+    db.collection('dernekYonetim').get()
+    .then(function(snap){
+        var docs=[];
+        snap.forEach(function(doc){ docs.push(Object.assign({id:doc.id},doc.data())); });
+
+        // Göreve göre sırala
+        docs.sort(function(a,b){
+            var sa=GOREV_SIRA[a.gorev]!==undefined?GOREV_SIRA[a.gorev]:99;
+            var sb=GOREV_SIRA[b.gorev]!==undefined?GOREV_SIRA[b.gorev]:99;
+            return sa-sb;
+        });
+
+        if(docs.length===0){
+            list.innerHTML='<div class="empty-state" style="padding:40px;"><div class="empty-icon">👥</div><p>Henüz yönetim üyesi eklenmemiş</p></div>';
+            return;
+        }
+
+        var esc=typeof escapeHtml==='function'?escapeHtml:function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
+        var html='<div class="dernekyon-grid">';
+        docs.forEach(function(item){
+            var gorevMetin=GOREV_METINLER[item.gorev]||'👤 Üye';
+            var gorevCss=GOREV_CSS[item.gorev]||'gorev-diger';
+            var iletisim='';
+            if(item.tel)      iletisim+='<a href="tel:'+item.tel+'" class="dy-tel" title="Telefon">📞</a>';
+            if(item.whatsapp) iletisim+='<a href="https://wa.me/'+item.whatsapp.replace(/[^0-9]/g,'')+'" target="_blank" class="dy-wp" title="WhatsApp">💬</a>';
+            if(item.email)    iletisim+='<a href="mailto:'+item.email+'" class="dy-mail" title="E-posta">✉️</a>';
+            html+='<div class="dernekyon-kart">';
+            if(isAdm) html+='<button class="dernekyon-sil-btn" onclick="dernekYonSil(\''+item.id+'\')">✕</button>';
+            html+=(item.fotoUrl?'<img src="'+item.fotoUrl+'" class="dernekyon-foto" loading="lazy" onclick="resimTamEkran(\''+item.fotoUrl+'\')">':'<div class="dernekyon-foto-placeholder">👤</div>');
+            html+='<div class="dernekyon-bilgi">';
+            html+='<div class="dernekyon-gorev '+gorevCss+'">'+gorevMetin+'</div>';
+            html+='<div class="dernekyon-ad">'+esc(item.ad||'')+'</div>';
+            if(item.bio) html+='<div class="dernekyon-bio">'+esc(item.bio)+'</div>';
+            if(iletisim) html+='<div class="dernekyon-iletisim">'+iletisim+'</div>';
+            html+='</div></div>';
+        });
+        html+='</div>';
+        list.innerHTML=html;
+    })
+    .catch(function(e){
+        var msg=e.code==='permission-denied'
+            ?'🔒 Firestore kurallarına "dernekYonetim" koleksiyonu ekleyin.'
+            :'⚠️ Yüklenemedi: '+e.message;
+        list.innerHTML='<div style="text-align:center;padding:24px;color:#888;">'+msg+'</div>';
+    });
+}
+
+function dernekYonEkle() {
+    if(typeof ayricaliklimi!=='function'||!ayricaliklimi()) return alert('Yetkiniz yok!');
+    var ad=((document.getElementById('dernekYonAd')||{}).value||'').trim();
+    if(!ad) return alert('Ad Soyad zorunludur!');
+    var btn=document.getElementById('dernekYonKaydetBtn');
+    if(btn){btn.disabled=true;btn.textContent='⏳';}
+    var file=document.getElementById('dernekYonFoto')&&document.getElementById('dernekYonFoto').files[0];
+    function kaydet(fotoUrl){
+        db.collection('dernekYonetim').add({
+            gorev:(document.getElementById('dernekYonGorev')||{}).value||'diger',
+            ad:ad,
+            tel:((document.getElementById('dernekYonTel')||{}).value||'').trim(),
+            whatsapp:((document.getElementById('dernekYonWa')||{}).value||'').trim(),
+            email:((document.getElementById('dernekYonEmail')||{}).value||'').trim(),
+            bio:(((document.getElementById('dernekYonBio')||{}).value||'').trim()),
+            fotoUrl:fotoUrl||'',
+            time:firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function(){
+            ['dernekYonAd','dernekYonTel','dernekYonWa','dernekYonEmail','dernekYonBio','dernekYonFoto'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+            var pv=document.getElementById('dernekYonFotoOnizle');if(pv)pv.innerHTML='';
+            var fm=document.getElementById('dernekYonFormDiv');if(fm)fm.classList.add('hidden');
+            dernekYonYukle(); alert('✅ Üye eklendi!');
+        }).catch(function(e){alert('Hata: '+e.message);})
+        .finally(function(){if(btn){btn.disabled=false;btn.textContent='✅ Üyeyi Kaydet';}});
+    }
+    if(file&&typeof cloudinaryYukle==='function'){cloudinaryYukle(file).then(function(r){kaydet(r.url);}).catch(function(){kaydet('');});}
+    else{kaydet('');}
+}
+
+function dernekYonSil(id){
+    if(typeof ayricaliklimi!=='function'||!ayricaliklimi()) return;
+    if(!confirm('Bu üyeyi silmek istiyor musunuz?')) return;
+    db.collection('dernekYonetim').doc(id).delete()
+        .then(function(){dernekYonYukle();})
+        .catch(function(){alert('Silinemedi!');});
+}

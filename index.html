@@ -63,6 +63,7 @@
       <input type="checkbox" id="termsCheck"> Kullanım Şartlarını ve KVKK Aydınlatma Metni'ni okudum; paylaştığım içeriklerin tüm hukuki sorumluluğunun şahsıma ait olduğunu kabul ediyorum.
     </label>
     <button class="btn btn-primary" onclick="onayVer()">Uygulamaya Gir</button>
+    <button class="btn btn-secondary" onclick="misafirGir()" style="margin-top:8px;">👀 Giriş Yapmadan Görüntüle</button>
   </div>
 </div>
 
@@ -95,12 +96,29 @@
       <button class="btn btn-primary" onclick="girisYap()">Giriş Yap</button>
     </div>
     <div id="registerForm" class="hidden">
-      <input id="regName" type="text" placeholder="Ad Soyad *" class="input-field">
-      <input id="regPhone" type="tel" placeholder="Telefon Numaranız * (05XX...)" class="input-field">
-      <input id="regEmail" type="email" placeholder="E-posta *" class="input-field">
-      <input id="regPass" type="password" placeholder="Şifre (min 6 karakter) *" class="input-field">
-      <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
-      <button class="btn btn-primary" onclick="kayitOl()">Kayıt Ol</button>
+      <!-- ADIM 1: Bilgi Girişi -->
+      <div id="regStep1">
+        <input id="regName" type="text" placeholder="Ad Soyad *" class="input-field">
+        <input id="regPhone" type="tel" placeholder="Telefon * (05XX XXX XX XX)" class="input-field">
+        <input id="regEmail" type="email" placeholder="E-posta *" class="input-field">
+        <input id="regPass" type="password" placeholder="Şifre (min 6 karakter) *" class="input-field">
+        <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
+        <!-- Görünmez reCAPTCHA -->
+        <div id="recaptcha-container"></div>
+        <button class="btn btn-primary" onclick="kayitAdim1()">📱 SMS Doğrulama Gönder</button>
+      </div>
+      <!-- ADIM 2: OTP Doğrulama -->
+      <div id="regStep2" class="hidden">
+        <div style="text-align:center;margin-bottom:14px;">
+          <div style="font-size:32px;margin-bottom:6px;">📱</div>
+          <p style="font-size:14px;font-weight:700;color:#2d3748;" id="otpTelGoster"></p>
+          <p style="font-size:12px;color:#888;">numaranıza SMS kodu gönderdik</p>
+        </div>
+        <input id="otpKod" type="number" placeholder="6 haneli SMS kodu" class="input-field" style="text-align:center;font-size:22px;font-weight:800;letter-spacing:8px;" maxlength="6">
+        <button class="btn btn-primary" onclick="otpDogrula()">✅ Doğrula ve Kayıt Ol</button>
+        <button class="btn btn-secondary" onclick="otpGeriDon()" style="margin-top:8px;">← Geri Dön</button>
+        <p style="font-size:12px;color:#888;text-align:center;margin-top:8px;" id="otpSayac"></p>
+      </div>
     </div>
     <p id="authError" class="error-msg"></p>
   </div>
@@ -123,6 +141,7 @@
     <div class="sidebar-item"        id="snav-koy"      onclick="sidebarTabGit('koy')">     <span class="sidebar-icon">🌾</span><span>Köy Bilgileri</span></div>
     <div class="sidebar-item"        id="snav-biz"      onclick="sidebarTabGit('biz')">     <span class="sidebar-icon">🏢</span><span>Firmalar</span></div>
     <div class="sidebar-item"        id="snav-dernek"   onclick="sidebarTabGit('dernek')">  <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span></div>
+    <div class="sidebar-item"        id="snav-dernekyon" onclick="sidebarTabGit('dernekyon')"><span class="sidebar-icon">👥</span><span>Dernek Yönetimi</span></div>
     <div class="sidebar-item"        id="snav-muhtar"   onclick="sidebarTabGit('muhtar')">  <span class="sidebar-icon">👤</span><span>Muhtar Hakkında</span></div>
     <div class="sidebar-item"        id="snav-settings" onclick="sidebarTabGit('settings')"><span class="sidebar-icon">⚙️</span><span>Ayarlar</span></div>
   </nav>
@@ -131,6 +150,21 @@
     <div class="sidebar-version">Sürüm 4.4 · emirler.web.tr</div>
   </div>
 </aside>
+
+
+<!-- AUTH GEREKLİ MODAL -->
+<div id="authGerekliModal" class="modal hidden">
+  <div class="modal-overlay" onclick="authModalKapat()"></div>
+  <div class="modal-content" style="border-radius:24px 24px 0 0;">
+    <div style="padding:32px 24px;text-align:center;">
+      <div style="font-size:52px;margin-bottom:12px;">🔐</div>
+      <h3 style="font-size:18px;font-weight:800;color:#1a1a1a;margin-bottom:8px;">Giriş Yapmanız Gerekiyor</h3>
+      <p style="font-size:14px;color:#666;margin-bottom:24px;line-height:1.6;">Bu özelliği kullanmak için hesabınıza giriş yapmanız veya kayıt olmanız gerekmektedir.</p>
+      <button class="btn btn-primary" onclick="authModalGirisGit()" style="margin-bottom:10px;">🔑 Giriş Yap / Kayıt Ol</button>
+      <button class="btn btn-secondary" onclick="authModalKapat()">Daha Sonra</button>
+    </div>
+  </div>
+</div>
 
 <!-- ANA UYGULAMA -->
 <div id="app" class="hidden">
@@ -351,6 +385,40 @@
     <div id="dernekList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
+  <!-- DERNEK YÖNETİMİ -->
+  <section id="view-dernekyon" class="view hidden">
+    <div class="top-header">
+      <span class="header-title">👥 Dernek Yönetimi</span>
+      <button class="header-action-btn" id="dernekYonEkleBtn" onclick="dernekYonFormToggle()" style="display:none;">+ Üye Ekle</button>
+      <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:8px;"><span></span><span></span><span></span></button>
+    </div>
+    <div id="dernekYonFormDiv" class="ilan-form-panel hidden">
+      <div class="post-panel-inner" style="border-left-color:#1976d2;">
+        <h4 style="margin-bottom:14px;color:#1976d2;">👤 Yönetim Üyesi Ekle</h4>
+        <select id="dernekYonGorev" class="input-field">
+          <option value="baskan">🏆 Dernek Başkanı</option>
+          <option value="baskan_yrd">🥈 Başkan Yardımcısı</option>
+          <option value="yonetim">📋 Yönetim Kurulu Üyesi</option>
+          <option value="denetim">🔍 Denetim Kurulu Üyesi</option>
+          <option value="diger">👤 Diğer</option>
+        </select>
+        <input id="dernekYonAd" placeholder="Ad Soyad *" class="input-field">
+        <input id="dernekYonTel" placeholder="📞 Telefon" class="input-field" type="tel">
+        <input id="dernekYonWa" placeholder="💬 WhatsApp (905XX...)" class="input-field" type="tel">
+        <input id="dernekYonEmail" placeholder="✉️ E-posta" class="input-field" type="email">
+        <textarea id="dernekYonBio" placeholder="Kısa biyografi, not..." class="textarea-field" rows="3"></textarea>
+        <label class="file-label">📸 Fotoğraf
+          <input type="file" id="dernekYonFoto" accept="image/*" onchange="previewFile(this,'dernekYonFotoOnizle')">
+        </label>
+        <div id="dernekYonFotoOnizle" class="media-preview"></div>
+        <button class="btn btn-primary" id="dernekYonKaydetBtn" onclick="dernekYonEkle()">✅ Üyeyi Kaydet</button>
+      </div>
+    </div>
+    <div id="dernekYonList" class="muhtar-sayfa" style="padding-top:8px;">
+      <div class="loading-spinner">⏳ Yükleniyor...</div>
+    </div>
+  </section>
+
   <!-- MUHTAR HAKKINDA -->
   <section id="view-muhtar" class="view hidden">
     <div class="top-header">
@@ -388,6 +456,10 @@
           <input id="muhtarHizmetBaslik" placeholder="Hizmet başlığı *" class="input-field">
           <textarea id="muhtarHizmetAciklama" placeholder="Açıklama..." class="textarea-field" rows="2"></textarea>
           <input id="muhtarHizmetYil" placeholder="Yıl (örn: 2024)" class="input-field" type="number">
+          <label class="file-label">📸 Hizmet Fotoğrafı (isteğe bağlı)
+            <input type="file" id="muhtarHizmetFoto" accept="image/*" onchange="previewFile(this,'muhtarHizmetFotoOnizle')">
+          </label>
+          <div id="muhtarHizmetFotoOnizle" class="media-preview"></div>
           <button class="btn btn-secondary" onclick="muhtarHizmetEkle()">+ Hizmet Ekle</button>
         </div>
       </div>
@@ -628,6 +700,7 @@
   <div class="nav-item"        id="nav-koy"      onclick="tabDegistir('koy')">     <span class="nav-icon">🌾</span><span class="nav-label">Köy</span></div>
   <div class="nav-item"        id="nav-biz"      onclick="tabDegistir('biz')">     <span class="nav-icon">🏢</span><span class="nav-label">Firmalar</span></div>
   <div class="nav-item"        id="nav-dernek"   onclick="showDernek()">           <span class="nav-icon">🤝</span><span class="nav-label">Dernek</span></div>
+  <div class="nav-item"        id="nav-dernekyon" onclick="showDernekYon()">        <span class="nav-icon">👥</span><span class="nav-label">D.Yön.</span></div>
   <div class="nav-item"        id="nav-muhtar"   onclick="showMuhtar()">           <span class="nav-icon">👤</span><span class="nav-label">Muhtar</span></div>
   <div class="nav-item"        id="nav-settings" onclick="tabDegistir('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">Ayarlar</span></div>
 </nav>

@@ -38,6 +38,9 @@
   </div>
 </div>
 
+<!-- app.js UYUMLULUK: loginPage gizli div (app.js bu elementi arıyor) -->
+<div id="loginPage" class="hidden" style="display:none!important;"></div>
+
 <!-- KULLANIM ŞARTLARI — Sadece ilk girişte gösterilir -->
 <div id="termsOverlay" class="overlay-screen">
   <div class="terms-card">
@@ -95,31 +98,14 @@
       <button class="btn btn-primary" onclick="girisYap()">Giriş Yap</button>
     </div>
 
-    <!-- KAYIT FORMU — 2 Adım: Bilgi → SMS OTP -->
+    <!-- KAYIT FORMU -->
     <div id="registerForm" class="hidden">
-      <!-- Adım 1 -->
-      <div id="regStep1">
-        <input id="regName"  type="text"     placeholder="Ad Soyad *"              class="input-field">
-        <input id="regPhone" type="tel"      placeholder="Telefon * (05XX XXX XX XX)" class="input-field">
-        <input id="regEmail" type="email"    placeholder="E-posta *"               class="input-field">
-        <input id="regPass"  type="password" placeholder="Şifre (min 6 karakter) *" class="input-field">
-        <div id="recaptcha-container"></div>
-        <button class="btn btn-primary" onclick="kayitAdim1()">📱 SMS Kodu Gönder</button>
-      </div>
-      <!-- Adım 2 -->
-      <div id="regStep2" class="hidden">
-        <div style="text-align:center;margin-bottom:16px;">
-          <div style="font-size:40px;">📱</div>
-          <p style="font-size:14px;font-weight:700;color:#2d3748;margin:8px 0 4px;" id="otpTelGoster"></p>
-          <p style="font-size:12px;color:#888;">numaranıza SMS kodu gönderdik</p>
-        </div>
-        <input id="otpKod" type="number" placeholder="6 haneli kod"
-               class="input-field"
-               style="text-align:center;font-size:24px;font-weight:900;letter-spacing:10px;">
-        <button class="btn btn-primary" onclick="otpDogrula()">✅ Doğrula ve Kayıt Ol</button>
-        <button class="btn btn-secondary" onclick="otpGeriDon()" style="margin-top:8px;">← Geri</button>
-        <p id="otpSayac" style="font-size:12px;color:#888;text-align:center;margin-top:8px;"></p>
-      </div>
+      <input id="regName"  type="text"     placeholder="Ad Soyad *"               class="input-field">
+      <input id="regPhone" type="tel"      placeholder="Telefon * (05XX XXX XX XX)" class="input-field">
+      <input id="regEmail" type="email"    placeholder="E-posta *"                class="input-field">
+      <input id="regPass"  type="password" placeholder="Şifre (min 6 karakter) *"  class="input-field">
+      <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
+      <button class="btn btn-primary" onclick="kayitOlModal()">✅ Kayıt Ol</button>
     </div>
 
     <p id="authError" class="error-msg"></p>

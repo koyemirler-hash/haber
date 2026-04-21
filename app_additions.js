@@ -18,81 +18,83 @@
     } catch(e) { document.body.classList.add('browser-mode'); }
 })();
 
-/* ─── 2. APP.JS'İN LOGIN EKRANINI DEVRE DIŞI BIRAK ─── */
+/* ─── 2. UYGULAMA BAŞLANGICI ─── */
 /*
-   app.js, termsAccepted yoksa termsOverlay gösteriyor,
-   varsa loginPage gösteriyor, sonra auth bekliiyor.
-   Biz bunu override ederek uygulamayı direkt açıyoruz.
+   SORUN: app.js, loginPage div'ini arıyor ve göstermeye çalışıyor.
+   Bu div artık gizli ama var. app.js onAuthStateChanged'da
+   user yoksa sadece currentUser=null yapar — başka bir şey yapmaz.
+   Biz loginPage'i daima gizli tutarak uygulamayı direkt açıyoruz.
 */
+
 window.addEventListener('DOMContentLoaded', function() {
 
-    /* Terms overlay'i: ilk ziyarette göster, onaylanınca direkt uygulamaya gir */
-    var termsAccepted = localStorage.getItem('termsAccepted');
-    if (termsAccepted) {
-        /* Daha önce kabul edilmiş — direkt uygulamayı göster */
-        document.getElementById('termsOverlay').classList.add('hidden');
-        document.getElementById('loginPage') && document.getElementById('loginPage').classList.add('hidden');
-        uygulamaAc();
+    /* loginPage'i her zaman gizli tut (app.js onu göstermeye çalışır) */
+    var lp = document.getElementById('loginPage');
+    if (lp) { lp.style.cssText = 'display:none!important'; }
+
+    /* Terms daha önce kabul edilmişse direkt aç */
+    if (localStorage.getItem('termsAccepted')) {
+        var to = document.getElementById('termsOverlay');
+        if (to) to.classList.add('hidden');
+        /* Firebase hazır olunca içerikleri yükle */
+        _bekleVeYukle();
     }
-    /* Kabul edilmemiş — terms overlay görünür (orijinal gibi), ama onayVer() override edilmiş */
 
-    /* app.js'in loginPage'i göstermesini engelle */
-    var origLoginPage = document.getElementById('loginPage');
-    if (origLoginPage) origLoginPage.classList.add('hidden');
-
-    /* NavBar — PWA'da göster, browser'da gizle */
+    /* NavBar — PWA'da göster */
     var nb = document.getElementById('navBar');
-    if (nb) {
-        if (document.body.classList.contains('pwa-mode')) {
-            nb.style.display = 'flex';
-        } else {
-            nb.style.display = 'none';
-        }
-    }
+    if (nb) nb.style.display = document.body.classList.contains('pwa-mode') ? 'flex' : 'none';
 
-    /* navBar tıklama → sidebar senkron */
-    if (nb) {
-        nb.addEventListener('click', function(e) {
-            var item = e.target.closest('.nav-item');
-            if (item && item.id) syncSidebar(item.id.replace('nav-', ''));
-        });
-    }
+    /* navBar → sidebar senkron */
+    if (nb) nb.addEventListener('click', function(e) {
+        var item = e.target.closest('.nav-item');
+        if (item && item.id) syncSidebar(item.id.replace('nav-', ''));
+    });
 
-    /* Ticker başlat — 1 saniye sonra */
-    setTimeout(tickerBaslat, 1000);
+    /* Ticker — 2 saniye bekle */
+    setTimeout(tickerBaslat, 2000);
 });
 
-/* app.js onayVer fonksiyonunu override et */
+/* Firebase ve app.js hazır olunca içerikleri yükle */
+function _bekleVeYukle() {
+    /* app.js yüklenmesini bekle (en fazla 3 saniye) */
+    var deneme = 0;
+    var interval = setInterval(function() {
+        deneme++;
+        if (typeof db !== 'undefined' && typeof akisDinle === 'function') {
+            clearInterval(interval);
+            _icerikYukle();
+        } else if (deneme > 30) {
+            clearInterval(interval);
+            console.warn('[Emirler] Firebase veya app.js yüklenemedi');
+        }
+    }, 100);
+}
+
+function _icerikYukle() {
+    /* loginPage'i tekrar gizle (app.js göstermiş olabilir) */
+    var lp = document.getElementById('loginPage');
+    if (lp) lp.style.cssText = 'display:none!important';
+
+    try { if (typeof akisDinle === 'function') akisDinle(); } catch(e) {}
+    try { if (typeof nostaljiDinle === 'function') nostaljiDinle(); } catch(e) {}
+    try { if (typeof isletmeleriYukle === 'function') isletmeleriYukle(); } catch(e) {}
+    try { if (typeof hakkimizdaYukle === 'function') hakkimizdaYukle(); } catch(e) {}
+    try { if (typeof hikayeleriYukle === 'function') hikayeleriYukle(); } catch(e) {}
+    try { if (typeof reklamYukle === 'function') reklamYukle(); } catch(e) {}
+    try { if (typeof floatReklamYukle === 'function') floatReklamYukle(); } catch(e) {}
+}
+
+/* onayVer override — terms kabul edilince direkt aç */
 window.onayVer = function() {
     if (!document.getElementById('termsCheck').checked) {
         alert('Şartları kabul etmelisiniz!');
         return;
     }
     localStorage.setItem('termsAccepted', 'true');
-    document.getElementById('termsOverlay').classList.add('hidden');
-    uygulamaAc();
+    var to = document.getElementById('termsOverlay');
+    if (to) to.classList.add('hidden');
+    _bekleVeYukle();
 };
-
-function uygulamaAc() {
-    /* Uygulamayı doğrudan aç, auth beklemeden */
-    var app = document.getElementById('app');
-    if (app) app.classList.remove('hidden'); /* app.js hidden yaparsa override */
-
-    /* İçerikleri auth olmadan yükle */
-    setTimeout(function() {
-        try { if (typeof akisDinle === 'function') akisDinle(); } catch(e) {}
-        try { if (typeof isletmeleriYukle === 'function') isletmeleriYukle(); } catch(e) {}
-        try { if (typeof nostaljiDinle === 'function') nostaljiDinle(); } catch(e) {}
-        try { if (typeof hakkimizdaYukle === 'function') hakkimizdaYukle(); } catch(e) {}
-        try { if (typeof hikayeleriYukle === 'function') hikayeleriYukle(); } catch(e) {}
-        try { if (typeof reklamYukle === 'function') reklamYukle(); } catch(e) {}
-        try { if (typeof floatReklamYukle === 'function') floatReklamYukle(); } catch(e) {}
-    }, 400);
-}
-
-/* app.js'in auth.onAuthStateChanged'ı yakalar ve loginPage gösterir.
-   Biz app.js'e dokunmadığımız için, app.js user yokken
-   sadece currentUser=null yapar. İçerik zaten yüklü olacak. */
 
 /* ─── 3. SIDEBAR ─── */
 function sidebarToggle() {
@@ -319,12 +321,13 @@ window.addEventListener('load', function() {
     }, 1500);
 });
 
-/* ─── 8. SMS TELEFON DOĞRULAMA ─── */
-var _otpConfirmResult = null;
-var _otpSayacTimer   = null;
-var _kayitData       = {};
-
-function kayitAdim1() {
+/* ─── 8. KAYIT (Basit — SMS olmadan) ─── */
+/*
+   Firebase Phone Auth, Blaze planı gerektirir.
+   Şimdilik e-posta + şifre + telefon (kayıt doğrulaması olmadan).
+   İleride Blaze planına geçilince SMS aktif edilebilir.
+*/
+function kayitOlModal() {
     var name  = ((document.getElementById('regName')  || {}).value || '').trim();
     var phone = ((document.getElementById('regPhone') || {}).value || '').replace(/\s/g, '');
     var email = ((document.getElementById('regEmail') || {}).value || '').trim();
@@ -337,143 +340,41 @@ function kayitAdim1() {
         errEl.textContent = 'Geçerli telefon girin! (05XX XXX XX XX)'; return;
     }
 
-    /* Uluslararası format */
-    var intPhone = phone.startsWith('+90') ? phone : phone.startsWith('0') ? '+90' + phone.slice(1) : '+90' + phone;
+    errEl.textContent = '⏳ Kontrol ediliyor...';
 
-    errEl.textContent = '⏳ Telefon kontrol ediliyor...';
-
+    /* Telefon daha önce kayıtlı mı? */
     db.collection('users').where('phone', '==', phone).get()
     .then(function(snap) {
-        if (!snap.empty) { errEl.textContent = '❌ Bu telefon numarası zaten kayıtlı!'; return; }
-
-        _kayitData = { name: name, phone: phone, email: email, pass: pass, intPhone: intPhone };
-        errEl.textContent = '⏳ SMS kodu gönderiliyor...';
-
-        /* reCAPTCHA */
-        if (!window._recaptchaVerifier) {
-            window._recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                size: 'invisible',
-                callback: function() {}
-            });
-        }
-
-        return firebase.auth().signInWithPhoneNumber(intPhone, window._recaptchaVerifier);
-    })
-    .then(function(confirmResult) {
-        if (!confirmResult) return; /* telefon zaten kayıtlı ise buraya gelmez */
-        _otpConfirmResult = confirmResult;
-        errEl.textContent = '';
-
-        /* Adım 2'ye geç */
-        document.getElementById('regStep1').classList.add('hidden');
-        document.getElementById('regStep2').classList.remove('hidden');
-        var telEl = document.getElementById('otpTelGoster');
-        if (telEl) telEl.textContent = _kayitData.intPhone;
-        otpSayacBaslat(120);
-    })
-    .catch(function(e) {
-        errEl.textContent = '❌ SMS gönderilemedi: ' + (e.message || e.code || '');
-        if (window._recaptchaVerifier) {
-            try { window._recaptchaVerifier.clear(); } catch(ex) {}
-            window._recaptchaVerifier = null;
-        }
-    });
-}
-
-function otpDogrula() {
-    var kod   = ((document.getElementById('otpKod') || {}).value || '').toString().trim();
-    var errEl = document.getElementById('authError');
-    if (!kod || kod.length !== 6) { errEl.textContent = '6 haneli kodu girin!'; return; }
-    if (!_otpConfirmResult) { errEl.textContent = 'Önce SMS kodu isteyin!'; return; }
-
-    errEl.textContent = '⏳ Doğrulanıyor...';
-
-    _otpConfirmResult.confirm(kod)
-    .then(function() {
-        /* Telefon doğrulandı — mevcut phone-auth user'ı sil, email/pass ile kayıt ol */
-        var cur = firebase.auth().currentUser;
-        var sil = cur ? cur.delete() : Promise.resolve();
-        return sil;
-    })
-    .then(function() {
-        return firebase.auth().createUserWithEmailAndPassword(_kayitData.email, _kayitData.pass);
+        if (!snap.empty) { errEl.textContent = '❌ Bu telefon numarası zaten kayıtlı!'; return Promise.reject('telefon_kayitli'); }
+        return firebase.auth().createUserWithEmailAndPassword(email, pass);
     })
     .then(function(res) {
-        var ADMIN_EMAIL_VAL = typeof ADMIN_EMAIL !== 'undefined' ? ADMIN_EMAIL : 'koyemirler@gmail.com';
+        var ADMIN_VAL = typeof ADMIN_EMAIL !== 'undefined' ? ADMIN_EMAIL : 'koyemirler@gmail.com';
         return db.collection('users').doc(res.user.uid).set({
-            name: _kayitData.name,
-            phone: _kayitData.phone,
-            email: _kayitData.email,
-            rol: _kayitData.email === ADMIN_EMAIL_VAL ? 'admin' : 'user',
-            online: true,
-            blocked: false,
-            phoneVerified: true,
+            name: name, phone: phone, email: email,
+            rol: email === ADMIN_VAL ? 'admin' : 'user',
+            online: true, blocked: false,
             lastSeen: firebase.firestore.FieldValue.serverTimestamp()
         });
     })
     .then(function() {
-        if (_otpSayacTimer) clearInterval(_otpSayacTimer);
-        _kayitData = {};
         errEl.textContent = '';
         loginModalKapat();
-        /* Firebase auth state değişince app.js gerisini halleder */
+        /* Firebase auth state değişir, app.js gerisini halleder */
     })
     .catch(function(e) {
+        if (e === 'telefon_kayitli') return;
         var msgs = {
-            'auth/invalid-verification-code': '❌ Kod hatalı! Tekrar deneyin.',
-            'auth/code-expired':              '❌ Kod süresi doldu. Yeni kod isteyin.',
-            'auth/email-already-in-use':      '❌ Bu e-posta zaten kayıtlı!'
+            'auth/email-already-in-use': '❌ Bu e-posta zaten kayıtlı!',
+            'auth/invalid-email':        '❌ Geçersiz e-posta!',
+            'auth/weak-password':        '❌ Şifre çok zayıf!'
         };
-        errEl.textContent = msgs[e.code] || '❌ ' + (e.message || e.code);
+        errEl.textContent = msgs[e.code] || '❌ ' + (e.message || e);
     });
 }
 
-function otpGeriDon() {
-    document.getElementById('regStep2').classList.add('hidden');
-    document.getElementById('regStep1').classList.remove('hidden');
-    document.getElementById('otpKod').value = '';
-    if (_otpSayacTimer) clearInterval(_otpSayacTimer);
-    _otpConfirmResult = null;
-    document.getElementById('authError').textContent = '';
-}
-
-function otpTemizle() {
-    try {
-        var s1 = document.getElementById('regStep1');
-        var s2 = document.getElementById('regStep2');
-        if (s1) s1.classList.remove('hidden');
-        if (s2) s2.classList.add('hidden');
-        var kod = document.getElementById('otpKod'); if (kod) kod.value = '';
-        if (_otpSayacTimer) clearInterval(_otpSayacTimer);
-        _otpConfirmResult = null;
-    } catch(e) {}
-}
-
-function otpSayacBaslat(saniye) {
-    if (_otpSayacTimer) clearInterval(_otpSayacTimer);
-    var kalan = saniye;
-    var el = document.getElementById('otpSayac');
-    function guncelle() {
-        if (!el) return;
-        if (kalan <= 0) {
-            clearInterval(_otpSayacTimer);
-            el.innerHTML = '<span style="color:#e53e3e;">Kod süresi doldu.</span> ' +
-                '<button onclick="otpGeriDon()" style="background:none;border:none;color:#588157;font-weight:700;cursor:pointer;font-size:12px;text-decoration:underline;">Yeni kod iste</button>';
-            return;
-        }
-        var dk = Math.floor(kalan / 60);
-        var sn = kalan % 60;
-        el.textContent = 'Kodun geçerliliği: ' + dk + ':' + (sn < 10 ? '0' : '') + sn;
-        kalan--;
-    }
-    guncelle();
-    _otpSayacTimer = setInterval(guncelle, 1000);
-}
-
-/* app.js kayitOl'u override et (OTP kullan) */
-window.kayitOl = function() {
-    kayitAdim1();
-};
+/* app.js kayitOl'u override — Modal'daki butonu kullan */
+window.kayitOl = function() { kayitOlModal(); };
 
 /* ─── 9. KAYAN TICKER — DÜZELTME ─── */
 /*

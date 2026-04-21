@@ -13,6 +13,9 @@
   <link rel="icon" href="ikon_192.png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="additions.css">
+  <style>
+    /* v4.5: browser modunda alt nav yok, PWA modunda ikonlar */
+  </style>
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>window.OneSignalDeferred = window.OneSignalDeferred || [];</script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -38,26 +41,28 @@
   </div>
 </div>
 
-<!-- KULLANIM ŞARTLARI — Sadece ilk girişte gösterilir -->
+<!-- KULLANIM ŞARTLARI -->
 <div id="termsOverlay" class="overlay-screen">
   <div class="terms-card">
     <div class="terms-logo">🏡</div>
     <h2>Emirler Köyü</h2>
     <p class="terms-sub">Köy Portalına Hoşgeldiniz</p>
-    <div class="terms-box" style="max-height:200px;overflow-y:auto;text-align:left;font-size:12px;line-height:1.7;">
+    <div class="terms-box" style="max-height:220px;overflow-y:auto;text-align:left;font-size:12px;line-height:1.7;">
       <b>KULLANIM ŞARTLARI VE KVKK AYDINLATMA METNİ</b><br><br>
       <b>1. KİŞİSEL VERİLERİN KORUNMASI (KVKK)</b><br>
-      6698 sayılı Kanun uyarınca; adınız, iletişim bilgileriniz ve profil bilgileriniz uygulama kaydı, güvenlik ve hizmet kalitesi amacıyla işlenmektedir. Verileriniz yasal zorunluluklar dışında üçüncü şahıslarla paylaşılmaz.<br><br>
+      6698 sayılı Kanun uyarınca; adınız, iletişim bilgileriniz ve profil bilgileriniz uygulama kaydı, güvenlik ve hizmet kalitesi amacıyla işlenmektedir. Verileriniz yasal zorunluluklar (adli makam talebi vb.) dışında üçüncü şahıslarla paylaşılmaz. Hesabınızı silerek verilerinizin kaldırılmasını talep edebilirsiniz.<br><br>
       <b>2. KULLANICI SORUMLULUKLARI</b><br>
-      Paylaştığınız içeriklerin hukuki sorumluluğu size aittir. Küfür, hakaret, nefret söylemi yasaktır.<br><br>
+      Uygulama içinde paylaştığınız her türlü içeriğin hukuki sorumluluğu doğrudan size aittir. Küfür, hakaret, tehdit, taciz, nefret söylemi ve yasadışı içerik paylaşımı kesinlikle yasaktır.<br><br>
       <b>3. YER SAĞLAYICI BEYANI</b><br>
-      Uygulama yönetimi hukuka aykırı içerikleri kaldırma hakkını saklı tutar.<br><br>
+      Uygulama yönetimi yer sağlayıcı konumundadır; hukuka aykırı içerikleri kaldırma ve hesabı askıya alma hakkını saklı tutar.<br><br>
+      <b>4. KABUL BEYANI</b><br>
+      Uygulamaya kayıt olarak bu şartları kabul etmiş sayılırsınız.<br><br>
       <span style="color:#888;">Güncelleme: 29 Mart 2026</span>
     </div>
     <label class="terms-label">
-      <input type="checkbox" id="termsCheck"> Kullanım Şartlarını okudum, kabul ediyorum.
+      <input type="checkbox" id="termsCheck"> Kullanım Şartlarını ve KVKK Aydınlatma Metni'ni okudum; paylaştığım içeriklerin tüm hukuki sorumluluğunun şahsıma ait olduğunu kabul ediyorum.
     </label>
-    <button class="btn btn-primary" onclick="onayVer()">Uygulamaya Gir →</button>
+    <button class="btn btn-primary" onclick="onayVer()">Uygulamaya Gir</button>
   </div>
 </div>
 
@@ -75,70 +80,29 @@
   </div>
 </div>
 
-<!-- GİRİŞ / KAYIT MODALI — Sidebar'dan açılır, uygulama arkada görünür -->
-<div id="loginModal" class="login-modal hidden">
-  <div class="login-modal-overlay" onclick="loginModalKapat()"></div>
-  <div class="login-modal-kart">
-    <button class="login-modal-kapat-btn" onclick="loginModalKapat()">✕</button>
+<!-- GİRİŞ / KAYIT -->
+<div id="loginPage" class="overlay-screen hidden">
+  <div class="login-card">
     <div class="login-logo">🏡</div>
-    <h2 style="text-align:center;color:#3a5a40;margin-bottom:4px;">Emirler Köyü</h2>
-    <p style="text-align:center;color:#888;font-size:13px;margin-bottom:18px;">Giriş yapın veya kayıt olun</p>
+    <h2>Emirler Köyü</h2>
     <div class="tab-switch">
       <button class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">Giriş Yap</button>
       <button class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">Kayıt Ol</button>
     </div>
-
-    <!-- GİRİŞ FORMU -->
     <div id="loginForm">
       <input id="logEmail" type="email" placeholder="E-posta" class="input-field">
       <input id="logPass" type="password" placeholder="Şifre" class="input-field">
       <button class="btn btn-primary" onclick="girisYap()">Giriş Yap</button>
     </div>
-
-    <!-- KAYIT FORMU — 2 Adım: Bilgi → SMS OTP -->
     <div id="registerForm" class="hidden">
-      <!-- Adım 1 -->
-      <div id="regStep1">
-        <input id="regName"  type="text"     placeholder="Ad Soyad *"              class="input-field">
-        <input id="regPhone" type="tel"      placeholder="Telefon * (05XX XXX XX XX)" class="input-field">
-        <input id="regEmail" type="email"    placeholder="E-posta *"               class="input-field">
-        <input id="regPass"  type="password" placeholder="Şifre (min 6 karakter) *" class="input-field">
-        <div id="recaptcha-container"></div>
-        <button class="btn btn-primary" onclick="kayitAdim1()">📱 SMS Kodu Gönder</button>
-      </div>
-      <!-- Adım 2 -->
-      <div id="regStep2" class="hidden">
-        <div style="text-align:center;margin-bottom:16px;">
-          <div style="font-size:40px;">📱</div>
-          <p style="font-size:14px;font-weight:700;color:#2d3748;margin:8px 0 4px;" id="otpTelGoster"></p>
-          <p style="font-size:12px;color:#888;">numaranıza SMS kodu gönderdik</p>
-        </div>
-        <input id="otpKod" type="number" placeholder="6 haneli kod"
-               class="input-field"
-               style="text-align:center;font-size:24px;font-weight:900;letter-spacing:10px;">
-        <button class="btn btn-primary" onclick="otpDogrula()">✅ Doğrula ve Kayıt Ol</button>
-        <button class="btn btn-secondary" onclick="otpGeriDon()" style="margin-top:8px;">← Geri</button>
-        <p id="otpSayac" style="font-size:12px;color:#888;text-align:center;margin-top:8px;"></p>
-      </div>
+      <input id="regName" type="text" placeholder="Ad Soyad *" class="input-field">
+      <input id="regPhone" type="tel" placeholder="Telefon Numaranız * (05XX...)" class="input-field">
+      <input id="regEmail" type="email" placeholder="E-posta *" class="input-field">
+      <input id="regPass" type="password" placeholder="Şifre (min 6 karakter) *" class="input-field">
+      <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
+      <button class="btn btn-primary" onclick="kayitOl()">Kayıt Ol</button>
     </div>
-
     <p id="authError" class="error-msg"></p>
-  </div>
-</div>
-
-<!-- AUTH GEREKLİ POPUP — Beğeni/Yorum/Sohbet için -->
-<div id="authGerekliModal" class="modal hidden">
-  <div class="modal-overlay" onclick="authModalKapat()"></div>
-  <div class="modal-content" style="border-radius:24px 24px 0 0;">
-    <div style="padding:32px 24px;text-align:center;">
-      <div style="font-size:48px;margin-bottom:12px;">🔐</div>
-      <h3 style="font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:8px;">Giriş Yapmanız Gerekiyor</h3>
-      <p style="font-size:14px;color:#666;margin-bottom:24px;line-height:1.6;" id="authGerekliMesaj">
-        Bu özelliği kullanmak için giriş yapmanız gerekiyor.
-      </p>
-      <button class="btn btn-primary" onclick="authModalGirisGit()">🔑 Giriş Yap / Kayıt Ol</button>
-      <button class="btn btn-secondary" onclick="authModalKapat()" style="margin-top:10px;">Daha Sonra</button>
-    </div>
   </div>
 </div>
 
@@ -149,18 +113,9 @@
 <aside id="sidebarNav">
   <div class="sidebar-header">
     <img src="ikon_192.png" class="sidebar-logo" alt="logo">
-    <div>
-      <div class="sidebar-title">Emirler Köyü</div>
-      <div class="sidebar-sub">emirler.web.tr</div>
-    </div>
+    <div><div class="sidebar-title">Emirler Köyü</div><div class="sidebar-sub">emirler.web.tr</div></div>
     <button class="sidebar-close-btn" onclick="sidebarKapat()">✕</button>
   </div>
-
-  <!-- Giriş yapılmamışsa login butonu, yapılmışsa profil -->
-  <div id="sidebarAuthBlok" class="sidebar-auth-blok">
-    <button class="sidebar-login-btn" onclick="loginModalAc()">🔑 Giriş Yap / Kayıt Ol</button>
-  </div>
-
   <nav class="sidebar-menu">
     <div class="sidebar-item active" id="snav-feed"     onclick="sidebarTabGit('feed')">    <span class="sidebar-icon">🏠</span><span>Akış</span></div>
     <div class="sidebar-item"        id="snav-ilan"     onclick="sidebarTabGit('ilan')">    <span class="sidebar-icon">📋</span><span>İlanlar</span></div>
@@ -169,19 +124,16 @@
     <div class="sidebar-item"        id="snav-biz"      onclick="sidebarTabGit('biz')">     <span class="sidebar-icon">🏢</span><span>Firmalar</span></div>
     <div class="sidebar-item"        id="snav-dernek"   onclick="sidebarTabGit('dernek')">  <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span></div>
     <div class="sidebar-item"        id="snav-muhtar"   onclick="sidebarTabGit('muhtar')">  <span class="sidebar-icon">👤</span><span>Muhtar Hakkında</span></div>
-    <!-- Sohbet: sadece giriş yapılmışsa görünür -->
-    <div class="sidebar-item sidebar-sadece-uye" id="snav-chat" onclick="sidebarTabGit('chat')"><span class="sidebar-icon">💬</span><span>Köy Sohbeti</span></div>
-    <div class="sidebar-item sidebar-sadece-uye" id="snav-settings" onclick="sidebarTabGit('settings')"><span class="sidebar-icon">⚙️</span><span>Ayarlar</span></div>
+    <div class="sidebar-item"        id="snav-settings" onclick="sidebarTabGit('settings')"><span class="sidebar-icon">⚙️</span><span>Ayarlar</span></div>
   </nav>
-
   <div class="sidebar-footer">
     <button class="sidebar-pwa-btn" onclick="pwaYukleSettings()">📲 Uygulamayı İndir</button>
-    <div class="sidebar-version">Sürüm 4.6 · emirler.web.tr</div>
+    <div class="sidebar-version">Sürüm 4.4 · emirler.web.tr</div>
   </div>
 </aside>
 
-<!-- ANA UYGULAMA — Direkt açılır, login beklenmez -->
-<div id="app">
+<!-- ANA UYGULAMA -->
+<div id="app" class="hidden">
 
   <!-- AKIŞ -->
   <section id="view-feed" class="view">
@@ -189,7 +141,7 @@
       <span class="header-title">🏠 Köy Meydanı</span>
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
         <button class="sound-toggle-btn" id="soundToggleBtn" onclick="sesToggle()">🔔</button>
-        <button class="sound-toggle-btn" id="profilAvatarBtn" onclick="profilAvatarTikla()" style="font-size:19px;">👤</button>
+        <button class="sound-toggle-btn" id="profilAvatarBtn" onclick="profilDuzenleAc()" style="font-size:19px;">👤</button>
         <button class="hamburger-btn browser-only" onclick="sidebarToggle()"><span></span><span></span><span></span></button>
       </div>
     </div>
@@ -200,13 +152,15 @@
         <div class="ticker-inner" id="tickerInner">
           <span class="ticker-item hava-item">🌤️ Hava bilgisi yükleniyor...</span>
           <span class="ticker-item namaz-item">🕌 Namaz vakitleri yükleniyor...</span>
+          <span class="ticker-item duyuru-item">📢 Duyurular yükleniyor...</span>
           <span class="ticker-item hava-item">🌤️ Hava bilgisi yükleniyor...</span>
           <span class="ticker-item namaz-item">🕌 Namaz vakitleri yükleniyor...</span>
+          <span class="ticker-item duyuru-item">📢 Duyurular yükleniyor...</span>
         </div>
       </div>
     </div>
     <div class="hikaye-cubugu" id="hikayeCubugu">
-      <div class="hikaye-ekle-btn" onclick="hikayeEkleGirisKontrol()">
+      <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
         <div class="hikaye-ekle-daire">＋</div>
         <span class="hikaye-isim">Hikaye</span>
       </div>
@@ -228,7 +182,7 @@
   <section id="view-ilan" class="view hidden">
     <div class="top-header">
       <span class="header-title">📋 İlan Tahtası</span>
-      <button class="header-action-btn" onclick="ilanFormGirisKontrol()">+ İlan Ver</button>
+      <button class="header-action-btn" onclick="ilanFormToggle()">+ İlan Ver</button>
       <button class="hamburger-btn browser-only" onclick="sidebarToggle()"><span></span><span></span><span></span></button>
     </div>
     <div id="ilanOnaySection" class="pending-section hidden">
@@ -285,25 +239,18 @@
     <div id="nostaljiList" class="post-list"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
   </section>
 
-  <!-- SOHBET — PWA'da görünür, browser modda sadece giriş yapılmışsa -->
+  <!-- SOHBET (Sadece PWA) -->
   <section id="view-chat" class="view hidden">
     <div class="top-header">
       <span class="header-title">💬 Köy Sohbeti</span>
       <button class="header-action-btn" onclick="tabDegistir('ozel')">✉️ Özel</button>
-    </div>
-    <!-- Giriş yapılmamışsa uyarı -->
-    <div id="chatLoginUyari" class="hidden" style="padding:24px;text-align:center;">
-      <div style="font-size:48px;margin-bottom:12px;">💬</div>
-      <p style="font-size:15px;font-weight:700;color:#2d3748;margin-bottom:8px;">Sohbet için giriş yapın</p>
-      <p style="font-size:13px;color:#888;margin-bottom:20px;">Sohbeti görüntüleyebilmek için hesabınıza giriş yapmanız gerekiyor.</p>
-      <button class="btn btn-primary" onclick="loginModalAc()" style="max-width:280px;margin:0 auto;">🔑 Giriş Yap / Kayıt Ol</button>
     </div>
     <div id="chatBox" class="chat-box"><div class="loading-spinner">⏳ Yükleniyor...</div></div>
     <div class="chat-media-preview-bar hidden" id="chatMediaBar">
       <div id="chatMediaPreview"></div>
       <button onclick="chatMediaTemizle()" class="media-clear-btn">✕ Kaldır</button>
     </div>
-    <div class="chat-input-bar" id="chatInputBar">
+    <div class="chat-input-bar">
       <label class="chat-attach">📎<input type="file" id="chatFile" accept="image/*,video/*" onchange="chatMediaSec(this)"></label>
       <input id="msgInput" placeholder="Mesaj yazın..." class="chat-input-field" onkeypress="enterMesaj(event)">
       <button class="chat-send-btn" onclick="mesajGonder()" id="chatSendBtn">➤</button>
@@ -441,15 +388,13 @@
           <input id="muhtarHizmetBaslik" placeholder="Hizmet başlığı *" class="input-field">
           <textarea id="muhtarHizmetAciklama" placeholder="Açıklama..." class="textarea-field" rows="2"></textarea>
           <input id="muhtarHizmetYil" placeholder="Yıl (örn: 2024)" class="input-field" type="number">
-          <label class="file-label">📸 Hizmet Fotoğrafı<input type="file" id="muhtarHizmetFoto" accept="image/*" onchange="previewFile(this,'muhtarHizmetFotoOnizle')"></label>
-          <div id="muhtarHizmetFotoOnizle" class="media-preview"></div>
           <button class="btn btn-secondary" onclick="muhtarHizmetEkle()">+ Hizmet Ekle</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- AYARLAR — Sadece giriş yapılmışsa erişilir -->
+  <!-- AYARLAR -->
   <section id="view-settings" class="view hidden">
     <div class="top-header">
       <span class="header-title">⚙️ Ayarlar</span>
@@ -592,7 +537,7 @@
     </div>
   </section>
 
-  <!-- MODALLER -->
+  <!-- MODALLER — Orijinal ile aynı -->
   <div id="hikayeModal" class="hikaye-modal hidden">
     <div class="hikaye-modal-arka" onclick="hikayeKapat()"></div>
     <div class="hikaye-modal-icerik">
@@ -673,20 +618,29 @@
   </a>
 </div>
 
-<!-- ALT MENÜ — PWA'da görünür, browser'da gizli -->
-<nav class="nav-footer" id="navBar" style="display:none;">
-  <div class="nav-item active" id="nav-feed"     onclick="tabDegistir('feed')">    <span class="nav-icon">🏠</span></div>
-  <div class="nav-item"        id="nav-ilan"     onclick="tabDegistir('ilan')">    <span class="nav-icon">📋</span><span class="nav-badge hidden" id="ilan-badge">0</span></div>
-  <div class="nav-item"        id="nav-nostalji" onclick="tabDegistir('nostalji')"><span class="nav-icon">📸</span><span class="nav-badge hidden" id="nostalji-badge">0</span></div>
-  <div class="nav-item pwa-chat-item" id="nav-chat" onclick="tabDegistir('chat')"><span class="nav-icon">💬</span><span class="nav-badge hidden" id="chat-badge">0</span></div>
-  <div class="nav-item"        id="nav-koy"      onclick="tabDegistir('koy')">     <span class="nav-icon">🌾</span></div>
-  <div class="nav-item"        id="nav-biz"      onclick="tabDegistir('biz')">     <span class="nav-icon">🏢</span></div>
-  <div class="nav-item"        id="nav-dernek"   onclick="showDernek()">           <span class="nav-icon">🤝</span></div>
-  <div class="nav-item"        id="nav-muhtar"   onclick="showMuhtar()">           <span class="nav-icon">👤</span></div>
-  <div class="nav-item"        id="nav-settings" onclick="tabDegistir('settings')"><span class="nav-icon">⚙️</span></div>
+<!-- ALT MENÜ
+     ⚠️ Dernek ve Muhtar: tabDegistir DEĞİL, showDernek/showMuhtar çağırır -->
+<nav class="nav-footer hidden" id="navBar">
+  <div class="nav-item active" id="nav-feed"     onclick="tabDegistir('feed')">    <span class="nav-icon">🏠</span><span class="nav-label">Akış</span></div>
+  <div class="nav-item"        id="nav-ilan"     onclick="tabDegistir('ilan')">    <span class="nav-icon">📋</span><span class="nav-label">İlanlar</span><span class="nav-badge hidden" id="ilan-badge">0</span></div>
+  <div class="nav-item"        id="nav-nostalji" onclick="tabDegistir('nostalji')"><span class="nav-icon">📸</span><span class="nav-label">Nostalji</span><span class="nav-badge hidden" id="nostalji-badge">0</span></div>
+  <div class="nav-item pwa-chat-item" id="nav-chat" onclick="tabDegistir('chat')"><span class="nav-icon">💬</span><span class="nav-label">Sohbet</span><span class="nav-badge hidden" id="chat-badge">0</span></div>
+  <div class="nav-item"        id="nav-koy"      onclick="tabDegistir('koy')">     <span class="nav-icon">🌾</span><span class="nav-label">Köy</span></div>
+  <div class="nav-item"        id="nav-biz"      onclick="tabDegistir('biz')">     <span class="nav-icon">🏢</span><span class="nav-label">Firmalar</span></div>
+  <div class="nav-item"        id="nav-dernek"   onclick="showDernek()">           <span class="nav-icon">🤝</span><span class="nav-label">Dernek</span></div>
+  <div class="nav-item"        id="nav-muhtar"   onclick="showMuhtar()">           <span class="nav-icon">👤</span><span class="nav-label">Muhtar</span></div>
+  <div class="nav-item"        id="nav-settings" onclick="tabDegistir('settings')"><span class="nav-icon">⚙️</span><span class="nav-label">Ayarlar</span></div>
 </nav>
 
 <script src="app.js"></script>
 <script src="app_additions.js"></script>
+<script>
+/* Ticker: feed açılınca ve auth sonrası başlat */
+document.addEventListener("DOMContentLoaded", function() {
+  setTimeout(function() {
+    if (typeof tickerBaslat === "function") tickerBaslat();
+  }, 2000);
+});
+</script>
 </body>
 </html>

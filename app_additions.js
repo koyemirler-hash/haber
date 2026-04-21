@@ -157,7 +157,7 @@ function tickerRender() {
 
     /* Animasyon süresini içerik uzunluğuna göre ayarla */
     var itemCount = items.length * 2;
-    var sureSn = Math.max(20, itemCount * 4); // her item için ~4 saniye
+    var sureSn = Math.max(8, itemCount * 1.8); // her item için ~1.8 saniye
     el.style.animationDuration = sureSn + 's';
 }
 

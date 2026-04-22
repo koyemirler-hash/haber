@@ -256,8 +256,8 @@ async function girisYap() {
     if (!email || !pass) return;
     try { await auth.signInWithEmailAndPassword(email, pass); }
     catch(e) {
-        const m = {"auth/user-not-found":"Bu e-posta ile kayıt bulunamadı!","auth/wrong-password":"Şifre hatalı!","auth/invalid-email":"Geçersiz e-posta!","auth/too-many-requests":"Çok fazla deneme. Lütfen bekleyin."};
-        document.getElementById("authError").textContent = m[e.code] || "Giriş başarısız!";
+        const m = {"auth/user-not-found":"Bu e-posta ile kayıt bulunamadı!","auth/wrong-password":"Şifre hatalı!","auth/invalid-email":"Geçersiz e-posta!","auth/too-many-requests":"Çok fazla deneme. Lütfen bekleyin.","auth/invalid-credential":"E-posta veya şifre hatalı!","auth/invalid-login-credentials":"E-posta veya şifre hatalı!"};
+        document.getElementById("authError").textContent = m[e.code] || ("Giriş başarısız! Kod: " + e.code);
     }
 }
 async function kayitOl() {

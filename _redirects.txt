@@ -1,0 +1,1 @@
+/web    /web_index.html    200

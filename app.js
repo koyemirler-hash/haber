@@ -235,13 +235,13 @@ function resimTamEkran(src) { document.getElementById("imgFullscreenSrc").src = 
 
 if (localStorage.getItem("termsAccepted")) {
     document.getElementById("termsOverlay").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
+    // auth.onAuthStateChanged will handle the rest (guest or logged in)
 }
 function onayVer() {
     if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
     localStorage.setItem("termsAccepted","true");
     document.getElementById("termsOverlay").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
+    // App starts in guest mode; auth.onAuthStateChanged handles full login
 }
 
 function switchAuthTab(tab) {
@@ -260,6 +260,10 @@ async function girisYap() {
         document.getElementById("authError").textContent = m[e.code] || ("Giriş başarısız! Kod: " + e.code);
     }
 }
+let recaptchaVerifier = null;
+let smsConfirmationResult = null;
+let bekleyenKayitBilgileri = null;
+
 async function kayitOl() {
     const name = document.getElementById("regName").value.trim();
     const phone = document.getElementById("regPhone").value.trim().replace(/\s/g,"");
@@ -273,13 +277,87 @@ async function kayitOl() {
     try {
         const telKontrol = await db.collection("users").where("phone","==",phone).get();
         if (!telKontrol.empty) { errEl.textContent = "❌ Bu telefon zaten kayıtlı!"; return; }
-        const res = await auth.createUserWithEmailAndPassword(email, pass);
-        await db.collection("users").doc(res.user.uid).set({ name, phone, email, rol: email === ADMIN_EMAIL ? "admin" : "user", online:true, blocked:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp() });
-        errEl.textContent = "";
+    } catch(e) { errEl.textContent = "❌ Kontrol hatası: " + e.message; return; }
+
+    // Format phone to E.164
+    let formattedPhone = phone.replace(/[^0-9+]/g,"");
+    if (formattedPhone.startsWith("05")) formattedPhone = "+9" + formattedPhone;
+    else if (formattedPhone.startsWith("5")) formattedPhone = "+90" + formattedPhone;
+    else if (!formattedPhone.startsWith("+")) formattedPhone = "+90" + formattedPhone;
+
+    bekleyenKayitBilgileri = { name, phone, email, pass };
+
+    errEl.textContent = "📱 SMS gönderiliyor...";
+    try {
+        if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(ex) {} recaptchaVerifier = null; }
+        recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptchaContainer", {
+            size: "invisible",
+            callback: () => {}
+        });
+        smsConfirmationResult = await auth.signInWithPhoneNumber(formattedPhone, recaptchaVerifier);
+        // Show OTP step
+        document.getElementById("registerForm").classList.add("hidden");
+        document.getElementById("otpStep").classList.remove("hidden");
+        document.getElementById("guestContinueLink").style.display = "none";
+        document.getElementById("otpPhoneDisplay").textContent = formattedPhone;
+        errEl.textContent = "✅ Doğrulama kodu gönderildi!";
     } catch(e) {
-        const m = {"auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!","auth/invalid-email":"❌ Geçersiz e-posta!"};
-        errEl.textContent = m[e.code] || "Kayıt başarısız: " + e.message;
+        const m = {"auth/invalid-phone-number":"❌ Geçersiz telefon numarası! (+90 ile başlamalı)","auth/too-many-requests":"⚠️ Çok fazla deneme. Lütfen bekleyin.","auth/quota-exceeded":"⚠️ SMS kotası doldu, daha sonra deneyin."};
+        errEl.textContent = m[e.code] || "SMS gönderilemedi: " + (e.message||e.code);
+        if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(ex) {} recaptchaVerifier = null; }
     }
+}
+
+async function otpDogrula() {
+    const otp = document.getElementById("otpInput").value.trim();
+    const errEl = document.getElementById("authError");
+    if (!otp || otp.length < 6) { errEl.textContent = "6 haneli kodu eksiksiz girin!"; return; }
+    if (!smsConfirmationResult || !bekleyenKayitBilgileri) { errEl.textContent = "Hata: Lütfen baştan başlayın."; otpGeriDon(); return; }
+
+    const btn = document.getElementById("otpDogrulaBtn");
+    if (btn) { btn.disabled=true; btn.textContent="⏳ Doğrulanıyor..."; }
+    errEl.textContent = "⏳ Doğrulanıyor...";
+
+    try {
+        // Confirm OTP - signs in via phone
+        const result = await smsConfirmationResult.confirm(otp);
+        const phoneUser = result.user;
+
+        // Delete phone-auth user, then create email/password account
+        await phoneUser.delete();
+
+        const { name, phone, email, pass } = bekleyenKayitBilgileri;
+        const res = await auth.createUserWithEmailAndPassword(email, pass);
+        await db.collection("users").doc(res.user.uid).set({
+            name, phone, email,
+            rol: email === ADMIN_EMAIL ? "admin" : "user",
+            online:true, blocked:false,
+            lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        bekleyenKayitBilgileri = null;
+        smsConfirmationResult = null;
+        errEl.textContent = "";
+        // auth.onAuthStateChanged will fire and show the full app
+    } catch(e) {
+        const m = {
+            "auth/invalid-verification-code":"❌ Hatalı doğrulama kodu!",
+            "auth/code-expired":"❌ Kodun süresi doldu! Yeniden deneyin.",
+            "auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!",
+            "auth/invalid-email":"❌ Geçersiz e-posta adresi!"
+        };
+        errEl.textContent = m[e.code] || "❌ Hata: " + (e.message||e.code);
+    }
+    if (btn) { btn.disabled=false; btn.textContent="✅ Doğrula ve Kayıt Ol"; }
+}
+
+function otpGeriDon() {
+    document.getElementById("otpStep").classList.add("hidden");
+    document.getElementById("registerForm").classList.remove("hidden");
+    document.getElementById("guestContinueLink").style.display = "";
+    document.getElementById("otpInput").value = "";
+    document.getElementById("authError").textContent = "";
+    smsConfirmationResult = null;
+    if (recaptchaVerifier) { try { recaptchaVerifier.clear(); } catch(e) {} recaptchaVerifier = null; }
 }
 async function cikisYap() {
     if (currentUser) { try { await db.collection("users").doc(currentUser.uid).update({ online:false }); } catch(e) {} }
@@ -342,7 +420,13 @@ auth.onAuthStateChanged(async user => {
         if (ayricaliklimi()) { nostaljiOnayBekleyenleriDinle(); ilanOnayBekleyenleriDinle(); }
         if (adminMi()) { onlineListesiYukle(); resetTalepleriniDinle(); }
 
-    } else { currentUser = null; userProfile = null; }
+    } else {
+        currentUser = null; userProfile = null;
+        // If terms accepted, show app in guest mode
+        if (localStorage.getItem("termsAccepted")) {
+            guestModeBaslat();
+        }
+    }
 });
 
 function tabDegistir(t) {
@@ -431,7 +515,7 @@ async function akisPaylas() {
 }
 
 async function reaksiyon(postId, emoji, collection) {
-    if (!currentUser) return alert("Lütfen giriş yapın!");
+    if (loginGerekli()) return;
     playLikeSound();
     const ref = db.collection(collection).doc(postId), snap = await ref.get();
     const reactions = { ...(snap.data().reactions||{}) };
@@ -482,7 +566,7 @@ function buildNostaljiCard(pid, p, isPending) {
 }
 
 async function nostaljiPaylas() {
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if (loginGerekli()) return;
     const title=document.getElementById("nostaljiTitle").value.trim(), year=document.getElementById("nostaljiYear").value.trim(), text=document.getElementById("nostaljiText").value.trim(), file=document.getElementById("nostaljiFile").files[0];
     if (!title && !text && !file) return alert("En az bir şey ekleyin!");
     if (kufurKontrol(title+" "+text)) return alert("⚠️ Uygunsuz içerik!");
@@ -515,7 +599,7 @@ async function nostaljiSil(docId) {
 
 const ILAN_KAT = { satilik:"🏷️ Satılık", kiralik:"🔑 Kiralık", araniyor:"🔍 Aranıyor", kayip:"⚠️ Kayıp", diger:"📌 Diğer" };
 
-function ilanFormToggle() { document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
+function ilanFormToggle() { if (loginGerekli()) return; document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
 function ilanFiltre(kat, btn) {
     aktifIlanFiltre = kat;
     document.querySelectorAll(".ilan-filtre-btn").forEach(b => b.classList.remove("active"));
@@ -568,7 +652,7 @@ function ilanFotoOnizle(input) {
 }
 
 async function ilanPaylas() {
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if (loginGerekli()) return;
     const baslik=document.getElementById("ilanBaslik").value.trim(), aciklama=document.getElementById("ilanAciklama").value.trim(), telefon=document.getElementById("ilanTelefon").value.trim(), kategori=document.getElementById("ilanKategori").value;
     const files = Array.from(document.getElementById("ilanFotolar").files).slice(0,5);
     if (!baslik) return alert("Başlık zorunludur!");
@@ -602,6 +686,7 @@ async function ilanSil(id) {
 }
 
 function yorumModalAc(postId, collection) {
+    if (loginGerekli()) return;
     currentPostId=postId; currentCollection=collection||"announcements";
     document.getElementById("commentsModal").classList.remove("hidden"); document.body.style.overflow="hidden";
     if (commentsUnsubscribe) commentsUnsubscribe();
@@ -674,7 +759,7 @@ function enterMesaj(e) { if (e.key==="Enter"&&!e.shiftKey) mesajGonder(); }
 async function mesajGonder() {
     const text=document.getElementById("msgInput").value.trim();
     if (!text&&!chatMediaFile) return;
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if (loginGerekli()) return;
     if (kufurKontrol(text)) return alert("⚠️ Uygunsuz içerik!");
     const btn=document.getElementById("chatSendBtn"); btn.disabled=true;
     try {
@@ -815,7 +900,8 @@ function ozelSohbetKapat() {
 }
 
 async function ozelMesajGonder() {
-    if (!ozelSohbetKisiUid||!currentUser) return;
+    if (!ozelSohbetKisiUid) return;
+    if (loginGerekli()) return;
     const input=document.getElementById("ozelMsgInput");
     const metin=input.value.trim();
     if (!metin && !ozelSohbetMedyaFile) return;
@@ -1021,7 +1107,7 @@ async function numaramiYukle() {
     } catch(e) {}
 }
 async function numaramiPaylas() {
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if (!currentUser) if (loginGerekli()) return;
     const tel=document.getElementById("numaraInput").value.trim(), not=document.getElementById("numaraNotInput").value.trim();
     if (!tel) return alert("Telefon numarası zorunludur!");
     try { await db.collection("rehber").doc(currentUser.uid).set({ ad:userProfile.name, tel, not, uid:currentUser.uid, gorunur:true, time:firebase.firestore.FieldValue.serverTimestamp() }); numaramiYukle(); alert("✅ Numaranız kaydedildi!"); }
@@ -1037,7 +1123,7 @@ async function resetTalepYukle() {
     } catch(e) {}
 }
 async function resetTalepGonder() {
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if (!currentUser) if (loginGerekli()) return;
     try {
         const mevcut=await db.collection("resetTalepleri").where("uid","==",currentUser.uid).where("durum","==","bekliyor").get();
         if (!mevcut.empty) { alert("⏳ Zaten bekleyen bir talebiniz var."); return; }
@@ -1272,7 +1358,7 @@ async function anketDinle() {
 }
 
 async function anketOy(harf) {
-    if (!currentUser) return alert("Oy vermek için giriş yapın!");
+    if (loginGerekli()) return;
     try { await db.collection("settings").doc("anket").update({ [`oylar.${currentUser.uid}`]:harf }); anketDinle(); }
     catch(e) { alert("Hata: " + e.message); }
 }
@@ -1368,7 +1454,7 @@ function settingsProfilGuncelle() {
 }
 
 function profilDuzenleAc() {
-    if (!currentUser) return;
+    if (loginGerekli()) return;
     secilenDurum=userProfile?.durum||"";
     secilenAvatarDosya=null;
     document.getElementById("profilDuzenleModal").classList.remove("hidden");
@@ -1417,7 +1503,7 @@ async function profilKaydet() {
 
 async function hikayeleriYukle() {
     const liste=document.getElementById("hikayeListesi");
-    if (!liste||!currentUser) return;
+    if (!liste) return;
     try {
         const simdi=new Date();
         const snap=await db.collection("stories").orderBy("time","desc").get();
@@ -1436,8 +1522,8 @@ async function hikayeleriYukle() {
             kb[d.uid].list.push({id:doc.id,...d});
         });
         Object.values(kb).forEach(({list,info})=>{
-            const benimMi=info.uid===currentUser?.uid;
-            const gorundu=list.every(h=>h.viewers&&h.viewers[currentUser?.uid]);
+            const benimMi=currentUser ? info.uid===currentUser.uid : false;
+            const gorundu=currentUser ? list.every(h=>h.viewers&&h.viewers[currentUser.uid]) : false;
             const item=document.createElement("div"); item.className="hikaye-item";
             const avHtml=info.avatarUrl?`<img src="${info.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<span style="font-size:20px;font-weight:700;color:#fff;">${(info.senderName||"?")[0].toUpperCase()}</span>`;
             item.innerHTML=`<div class="hikaye-daire ${benimMi?"hikaye-benim":gorundu?"hikaye-goruldu":"hikaye-yeni"}" onclick="hikayeGoruntule('${list[0].id}')">${avHtml}</div><span class="hikaye-isim">${escapeHtml((info.senderName||"?").split(" ")[0])}</span>`;
@@ -1447,6 +1533,7 @@ async function hikayeleriYukle() {
 }
 
 function hikayeEkleAc() {
+    if (loginGerekli()) return;
     document.getElementById("hikayeEkleModal").classList.remove("hidden");
     document.getElementById("hikayeOnizleDiv").innerHTML="";
     document.getElementById("hikayeMetin").value="";
@@ -1497,7 +1584,7 @@ async function hikayeGoruntule(storyId) {
         const viewers=d.viewers||{};
         document.getElementById("hikayeModalIzleyenler").textContent=`👁 ${Object.keys(viewers).length} kişi izledi`;
         document.getElementById("hikayeSilBtn").style.display=(d.uid===currentUser?.uid||adminMi())?"":"none";
-        if (currentUser&&!viewers[currentUser.uid]) db.collection("stories").doc(storyId).update({[`viewers.${currentUser.uid}`]:true}).catch(()=>{});
+        if (currentUser && !viewers[currentUser.uid]) db.collection("stories").doc(storyId).update({[`viewers.${currentUser.uid}`]:true}).catch(()=>{});
         hikayeleriYukle();
     } catch(e) { console.warn("Hikaye görüntüle:", e); }
 }
@@ -1512,4 +1599,119 @@ async function hikayeSil() {
 
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW:", err));
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   MİSAFİR (GUEST) MODU — v5.0
+   Kullanıcı giriş yapmadan içerikleri görüntüleyebilir.
+   Etkileşim (beğeni, yorum, sohbet) için giriş gerekir.
+═══════════════════════════════════════════════════════════ */
+
+function guestModeBaslat() {
+    document.getElementById("loginPage").classList.add("hidden");
+    const appEl = document.getElementById("app");
+    const navBarEl = document.getElementById("navBar");
+    if (appEl) appEl.classList.remove("hidden");
+    if (navBarEl) navBarEl.classList.remove("hidden");
+
+    // Post paneli (duyuru paylaşma) sadece yetkililere
+    const postPanel = document.getElementById("postPanel");
+    if (postPanel) postPanel.classList.add("hidden");
+
+    updateSoundBtn();
+    hakkimizdaYukle();
+    reklamYukle();
+    floatReklamYukle();
+    anketDinle();
+
+    tabDegistir("feed");
+    akisDinle();
+    nostaljiDinle();
+    isletmeleriYukle();
+    hikayeleriYukle();
+    setTimeout(() => anketKatilimKontrol(), 3000);
+}
+
+/** Giriş gerektiren bir işlemi misafir dener → login ekranı gösterir. */
+function loginGerekli() {
+    if (!currentUser) {
+        loginPromptGoster();
+        return true;
+    }
+    return false;
+}
+
+/** Küçük prompt modalı göster */
+function loginPromptGoster() {
+    const m = document.getElementById("loginPromptModal");
+    if (m) m.classList.remove("hidden");
+}
+
+function loginPromptKapat() {
+    const m = document.getElementById("loginPromptModal");
+    if (m) m.classList.add("hidden");
+}
+
+/** Tam login sayfasını aç (tab korumalı overlay) */
+function loginSayfasiAc() {
+    loginPromptKapat();
+    const lp = document.getElementById("loginPage");
+    if (lp) {
+        lp.classList.remove("hidden");
+        lp.style.zIndex = "9999";
+    }
+    // OTP adımını temizle
+    const otpS = document.getElementById("otpStep");
+    const regF = document.getElementById("registerForm");
+    if (otpS) otpS.classList.add("hidden");
+    if (regF) regF.classList.remove("hidden");
+    const gcl = document.getElementById("guestContinueLink");
+    if (gcl) gcl.style.display = "";
+    // Misafir olduğunda dismiss butonu görünsün
+    const db2 = document.getElementById("loginDismissBtn");
+    if (db2) db2.style.display = currentUser ? "none" : "";
+}
+
+/** Login sayfasını kapat (misafir moduna dön) */
+function loginSayfasiKapat() {
+    const lp = document.getElementById("loginPage");
+    if (lp) lp.classList.add("hidden");
+    // Eğer uygulama gizliyse (ilk açılış durumu) göster
+    const appEl = document.getElementById("app");
+    if (appEl && appEl.classList.contains("hidden")) {
+        guestModeBaslat();
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS SEKMESI — Misafir için Giriş Yap butonu
+═══════════════════════════════════════════════════════════ */
+(function patchTabDegistir() {
+    var _orig = window.tabDegistir;
+    if (!_orig) return;
+    window.tabDegistir = function(t) {
+        _orig(t);
+        if (t === "settings" && !currentUser) {
+            guestSettingsGoster();
+        }
+    };
+})();
+
+function guestSettingsGoster() {
+    // settings içeriğine misafir bilgi kartı ekle (daha önce eklenmemişse)
+    const sc = document.querySelector(".settings-content");
+    if (!sc || sc.querySelector(".guest-info-card")) return;
+    const card = document.createElement("div");
+    card.className = "settings-card guest-info-card";
+    card.style.cssText = "background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:16px;padding:18px;text-align:center;margin-bottom:0;";
+    card.innerHTML = \`<div style="font-size:36px;margin-bottom:8px;">👋</div>
+<p style="font-size:15px;font-weight:700;color:#166534;margin:0 0 6px;">Merhaba Misafir!</p>
+<p style="font-size:12px;color:#4ade80;margin:0 0 14px;">Beğeni, yorum, sohbet ve daha fazlası için üye olun.</p>
+<button class="btn btn-primary" onclick="loginSayfasiAc()" style="width:100%;">🚀 Giriş Yap / Kayıt Ol</button>\`;
+    sc.insertBefore(card, sc.firstChild);
+
+    // Çıkış butonunu gizle
+    const exitBtn = sc.querySelector(".btn-danger");
+    if (exitBtn) exitBtn.style.display = "none";
 }

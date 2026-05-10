@@ -233,23 +233,32 @@ async function cloudinaryYukle(file) {
 }
 function resimTamEkran(src) { document.getElementById("imgFullscreenSrc").src = src; document.getElementById("imgFullscreen").classList.remove("hidden"); }
 
-if (localStorage.getItem("termsAccepted")) {
-    document.getElementById("termsOverlay").classList.add("hidden");
-    // auth.onAuthStateChanged akışı yönetir
-}
+// Şartlar ekranı atlanıyor — uygulama direk açılır
+localStorage.setItem("termsAccepted", "true");
+const _termsEl = document.getElementById("termsOverlay");
+if (_termsEl) _termsEl.classList.add("hidden");
+
 function onayVer() {
-    if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
     localStorage.setItem("termsAccepted", "true");
-    document.getElementById("termsOverlay").classList.add("hidden");
-    // auth.onAuthStateChanged akışı yönetir
+    const el = document.getElementById("termsOverlay");
+    if (el) el.classList.add("hidden");
 }
 
 function switchAuthTab(tab) {
-    document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
-    document.getElementById("registerForm").classList.toggle("hidden", tab !== "register");
-    document.getElementById("loginTabBtn").classList.toggle("active", tab === "login");
-    document.getElementById("registerTabBtn").classList.toggle("active", tab === "register");
-    document.getElementById("authError").textContent = "";
+    const lf = document.getElementById('loginForm');
+    const rf = document.getElementById('registerForm');
+    if (tab === 'login') {
+        lf.style.display = ''; lf.classList.remove('hidden');
+        rf.style.display = 'none'; rf.classList.add('hidden');
+        document.getElementById('loginTabBtn').classList.add('active');
+        document.getElementById('registerTabBtn').classList.remove('active');
+    } else {
+        lf.style.display = 'none'; lf.classList.add('hidden');
+        rf.style.display = ''; rf.classList.remove('hidden');
+        document.getElementById('loginTabBtn').classList.remove('active');
+        document.getElementById('registerTabBtn').classList.add('active');
+    }
+    document.getElementById('authError').textContent = '';
 }
 async function girisYap() {
     const email = document.getElementById("logEmail").value.trim(), pass = document.getElementById("logPass").value;
@@ -260,9 +269,6 @@ async function girisYap() {
         document.getElementById("authError").textContent = m[e.code] || ("Giriş başarısız! Kod: " + e.code);
     }
 }
-/* ── Telefon OTP Kayıt ── */
-let _rcVerifier = null, _smsCR = null, _pendingReg = null;
-
 async function kayitOl() {
     const name  = document.getElementById("regName").value.trim();
     const phone = document.getElementById("regPhone").value.trim().replace(/\s/g,"");
@@ -272,94 +278,45 @@ async function kayitOl() {
 
     if (!name || !phone || !email || !pass) { errEl.textContent = "Tüm alanları doldurun!"; return; }
     if (pass.length < 6)                    { errEl.textContent = "Şifre en az 6 karakter!"; return; }
-    if (!/^[0-9+]{10,13}$/.test(phone.replace(/[^0-9+]/g,""))) { errEl.textContent = "Geçerli telefon numarası girin!"; return; }
+    if (!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))) { errEl.textContent = "Geçerli telefon girin (05XX...)"; return; }
 
-    errEl.textContent = "⏳ Kontrol ediliyor...";
+    errEl.textContent = "⏳ Kayıt yapılıyor...";
+    const btn = document.querySelector('#registerForm .btn-primary');
+    if (btn) btn.disabled = true;
 
     try {
+        // Telefon tekrar kontrolü
         const telK = await db.collection("users").where("phone","==",phone).get();
-        if (!telK.empty) { errEl.textContent = "❌ Bu telefon zaten kayıtlı!"; return; }
-    } catch(e) { errEl.textContent = "❌ Kontrol hatası: " + e.message; return; }
+        if (!telK.empty) { errEl.textContent = "❌ Bu telefon zaten kayıtlı!"; if (btn) btn.disabled=false; return; }
 
-    // Telefonu E.164 formatına çevir
-    let tel = phone.replace(/[^0-9+]/g,"");
-    if (tel.startsWith("05")) tel = "+9" + tel;
-    else if (tel.startsWith("5")) tel = "+90" + tel;
-    else if (!tel.startsWith("+"))  tel = "+90" + tel;
-
-    _pendingReg = { name, phone, email, pass };
-    errEl.textContent = "📱 Doğrulama kodu gönderiliyor...";
-
-    try {
-        if (_rcVerifier) { try { _rcVerifier.clear(); } catch(_) {} }
-        _rcVerifier = new firebase.auth.RecaptchaVerifier("recaptchaContainer", {
-            size: "invisible", callback: () => {}
-        });
-        _smsCR = await auth.signInWithPhoneNumber(tel, _rcVerifier);
-
-        // OTP adımını göster
-        document.getElementById("registerForm").classList.add("hidden");
-        document.getElementById("otpStep").classList.remove("hidden");
-        document.getElementById("otpPhoneDisplay").textContent = tel;
-        errEl.textContent = "✅ Kod gönderildi! Telefonunuzu kontrol edin.";
-    } catch(e) {
-        const m = {
-            "auth/invalid-phone-number": "❌ Geçersiz numara! +90 ile başlamalı.",
-            "auth/too-many-requests":    "⚠️ Çok fazla deneme, biraz bekleyin.",
-            "auth/quota-exceeded":       "⚠️ SMS kotası doldu, daha sonra deneyin."
-        };
-        errEl.textContent = m[e.code] || "SMS hatası: " + (e.message || e.code);
-        if (_rcVerifier) { try { _rcVerifier.clear(); } catch(_) {} _rcVerifier = null; }
-    }
-}
-
-async function otpDogrula() {
-    const otp   = document.getElementById("otpInput").value.trim();
-    const errEl = document.getElementById("authError");
-    if (otp.length < 6) { errEl.textContent = "6 haneli kodu eksiksiz girin!"; return; }
-    if (!_smsCR || !_pendingReg) { errEl.textContent = "Hata: Baştan başlayın."; otpGeriDon(); return; }
-
-    const btn = document.getElementById("otpDogrulaBtn");
-    if (btn) { btn.disabled = true; btn.textContent = "⏳ Doğrulanıyor..."; }
-    errEl.textContent = "⏳ Doğrulanıyor...";
-
-    try {
-        // OTP doğrula → geçici telefon kullanıcısı oluşur
-        const result    = await _smsCR.confirm(otp);
-        const phoneUser = result.user;
-
-        // Telefon kullanıcısını sil → e-posta/şifre hesabı aç
-        await phoneUser.delete();
-
-        const { name, phone, email, pass } = _pendingReg;
+        // Hesap oluştur
         const res = await auth.createUserWithEmailAndPassword(email, pass);
+
+        // Firestore'a kaydet
         await db.collection("users").doc(res.user.uid).set({
             name, phone, email,
             rol: email === ADMIN_EMAIL ? "admin" : "user",
             online: true, blocked: false,
             lastSeen: firebase.firestore.FieldValue.serverTimestamp()
         });
-        _pendingReg = null; _smsCR = null;
-        errEl.textContent = "";
-        // auth.onAuthStateChanged tetiklenir, tam uygulama açılır
+
+        // E-posta doğrulama maili gönder
+        try { await res.user.sendEmailVerification(); } catch(_) {}
+
+        errEl.style.color = "#22c55e";
+        errEl.textContent = "✅ Kayıt başarılı! Hoş geldiniz.";
+        // auth.onAuthStateChanged tam uygulamayı açar
+
     } catch(e) {
         const m = {
-            "auth/invalid-verification-code": "❌ Hatalı doğrulama kodu!",
-            "auth/code-expired":              "❌ Kodun süresi doldu, yeniden deneyin.",
-            "auth/email-already-in-use":      "❌ Bu e-posta zaten kayıtlı!"
+            "auth/email-already-in-use": "❌ Bu e-posta zaten kayıtlı!",
+            "auth/invalid-email":        "❌ Geçersiz e-posta adresi!",
+            "auth/weak-password":        "❌ Şifre çok zayıf!"
         };
-        errEl.textContent = m[e.code] || "❌ Hata: " + (e.message || e.code);
+        errEl.style.color = "";
+        errEl.textContent = m[e.code] || "❌ Kayıt hatası: " + (e.message || e.code);
+        if (btn) btn.disabled = false;
     }
-    if (btn) { btn.disabled = false; btn.textContent = "✅ Doğrula ve Kayıt Ol"; }
-}
-
-function otpGeriDon() {
-    document.getElementById("otpStep").classList.add("hidden");
-    document.getElementById("registerForm").classList.remove("hidden");
-    document.getElementById("otpInput").value = "";
-    document.getElementById("authError").textContent = "";
-    _smsCR = null;
-    if (_rcVerifier) { try { _rcVerifier.clear(); } catch(_) {} _rcVerifier = null; }
 }
 
 

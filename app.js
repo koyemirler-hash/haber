@@ -71,9 +71,8 @@ function oneSignalBaslat() {
 }
 
 async function oneSignalBildirimGonder(baslik, mesaj, url) {
-    // Sadece yetkili kullanıcılar bildirim gönderebilir
+    if(!currentUser||!yetkili())return;
     if (!ONESIGNAL_API_KEY) return;
-    if (!currentUser || !yetkili()) return;
     try {
         await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
@@ -225,10 +224,9 @@ function previewFile(input, previewId) {
     preview.innerHTML = file.type.startsWith("video") ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;max-height:180px;"></video>` : `<img src="${url}" style="max-width:100%;border-radius:10px;max-height:180px;object-fit:cover;">`;
 }
 async function cloudinaryYukle(file) {
-    // Güvenlik: sadece izin verilen tipler ve max 20MB
-    const izinliTipler = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","video/mp4","video/quicktime","video/webm"];
-    if (!izinliTipler.includes(file.type)) throw new Error("Bu dosya tipi desteklenmiyor!");
-    if (file.size > 20 * 1024 * 1024) throw new Error("Dosya 20MB'dan büyük olamaz!");
+    var izinli=["image/jpeg","image/png","image/gif","image/webp","video/mp4","video/webm"];
+    if(!izinli.includes(file.type))throw new Error("Desteklenmeyen dosya tipi!");
+    if(file.size>20*1024*1024)throw new Error("Dosya 20MB'dan büyük olamaz!");
     const fd = new FormData();
     fd.append("file", file); fd.append("upload_preset", UPLOAD_PRESET);
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method:"POST", body:fd });
@@ -239,23 +237,29 @@ async function cloudinaryYukle(file) {
 }
 function resimTamEkran(src) { document.getElementById("imgFullscreenSrc").src = src; document.getElementById("imgFullscreen").classList.remove("hidden"); }
 
-if (localStorage.getItem("termsAccepted")) {
-    document.getElementById("termsOverlay").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
-}
+// Şartlar ekranı atlanıyor — uygulama direk açılır
+localStorage.setItem("termsAccepted","true");
+try { document.getElementById("termsOverlay").classList.add("hidden"); } catch(e){}
 function onayVer() {
-    if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
     localStorage.setItem("termsAccepted","true");
-    document.getElementById("termsOverlay").classList.add("hidden");
-    document.getElementById("loginPage").classList.remove("hidden");
+    try { document.getElementById("termsOverlay").classList.add("hidden"); } catch(e){}
 }
 
 function switchAuthTab(tab) {
-    document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
-    document.getElementById("registerForm").classList.toggle("hidden", tab !== "register");
-    document.getElementById("loginTabBtn").classList.toggle("active", tab === "login");
-    document.getElementById("registerTabBtn").classList.toggle("active", tab === "register");
-    document.getElementById("authError").textContent = "";
+    var lf=document.getElementById("loginForm"), rf=document.getElementById("registerForm");
+    var lb=document.getElementById("loginTabBtn"), rb=document.getElementById("registerTabBtn");
+    var ots=document.getElementById("otpStep");
+    if (ots) { ots.style.display="none"; ots.classList.add("hidden"); }
+    if (tab==="login") {
+        lf.style.display=""; lf.classList.remove("hidden");
+        rf.style.display="none"; rf.classList.add("hidden");
+        lb.classList.add("active"); rb.classList.remove("active");
+    } else {
+        lf.style.display="none"; lf.classList.add("hidden");
+        rf.style.display=""; rf.classList.remove("hidden");
+        lb.classList.remove("active"); rb.classList.add("active");
+    }
+    document.getElementById("authError").textContent="";
 }
 async function girisYap() {
     const email = document.getElementById("logEmail").value.trim(), pass = document.getElementById("logPass").value;
@@ -266,27 +270,88 @@ async function girisYap() {
         document.getElementById("authError").textContent = m[e.code] || ("Giriş başarısız! Kod: " + e.code);
     }
 }
-async function kayitOl() {
-    const name = document.getElementById("regName").value.trim();
-    const phone = document.getElementById("regPhone").value.trim().replace(/\s/g,"");
-    const email = document.getElementById("regEmail").value.trim();
-    const pass = document.getElementById("regPass").value;
-    const errEl = document.getElementById("authError");
-    if (!name || !phone || !email || !pass) { errEl.textContent = "Tüm alanları doldurun!"; return; }
-    if (pass.length < 6) { errEl.textContent = "Şifre en az 6 karakter!"; return; }
-    if (!/^[0-9+]{10,13}$/.test(phone.replace(/[^0-9+]/g,""))) { errEl.textContent = "Geçerli telefon numarası girin!"; return; }
-    errEl.textContent = "⏳ Kontrol ediliyor...";
-    try {
-        const telKontrol = await db.collection("users").where("phone","==",phone).get();
-        if (!telKontrol.empty) { errEl.textContent = "❌ Bu telefon zaten kayıtlı!"; return; }
-        const res = await auth.createUserWithEmailAndPassword(email, pass);
-        await db.collection("users").doc(res.user.uid).set({ name, phone, email, rol: email === ADMIN_EMAIL ? "admin" : "user", online:true, blocked:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp() });
-        errEl.textContent = "";
-    } catch(e) {
-        const m = {"auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!","auth/invalid-email":"❌ Geçersiz e-posta!"};
-        errEl.textContent = m[e.code] || "Kayıt başarısız: " + e.message;
+let _rcV=null,_smsC=null,_pReg=null;
+async function kayitOl(){
+    var name=document.getElementById("regName").value.trim();
+    var phone=document.getElementById("regPhone").value.trim().replace(/\s/g,"");
+    var email=document.getElementById("regEmail").value.trim();
+    var pass=document.getElementById("regPass").value;
+    var err=document.getElementById("authError");
+    err.style.color="";
+    if(!name||!phone||!email||!pass){err.textContent="Tüm alanları doldurun!";return;}
+    if(pass.length<6){err.textContent="Şifre en az 6 karakter!";return;}
+    if(!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin (05XX...)";return;}
+    err.textContent="⏳ Kontrol ediliyor...";
+    try{
+        var tk=await db.collection("users").where("phone","==",phone).get();
+        if(!tk.empty){err.textContent="❌ Bu telefon zaten kayıtlı!";return;}
+    }catch(e){err.textContent="❌ Bağlantı hatası: "+e.message;return;}
+    var tel=phone.replace(/[^0-9]/g,"");
+    if(tel.startsWith("0"))tel="+9"+tel; else if(!tel.startsWith("+"))tel="+90"+tel;
+    _pReg={name,phone,email,pass};
+    err.textContent="📱 Doğrulama kodu gönderiliyor...";
+    try{
+        if(_rcV){try{_rcV.clear();}catch(_){}} 
+        _rcV=new firebase.auth.RecaptchaVerifier("recaptchaContainer",{size:"invisible",callback:()=>{}});
+        _smsC=await auth.signInWithPhoneNumber(tel,_rcV);
+        document.getElementById("registerForm").style.display="none";
+        document.getElementById("registerForm").classList.add("hidden");
+        document.getElementById("otpStep").style.display="";
+        document.getElementById("otpStep").classList.remove("hidden");
+        document.getElementById("otpPhoneDisplay").textContent=tel;
+        err.style.color="#22c55e";
+        err.textContent="✅ Kod gönderildi!";
+    }catch(e){
+        var m={"auth/invalid-phone-number":"❌ Geçersiz numara!",
+               "auth/too-many-requests":"⚠️ Çok fazla deneme, bekleyin.",
+               "auth/operation-not-allowed":"⚠️ Firebase Console → Authentication → Phone'u etkinleştirin!"};
+        err.style.color="";
+        err.textContent=m[e.code]||"❌ SMS hatası: "+(e.message||e.code);
+        if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
     }
 }
+async function otpDogrula(){
+    var otp=document.getElementById("otpInput").value.trim();
+    var err=document.getElementById("authError");
+    if(otp.length<6){err.textContent="6 haneli kodu girin!";return;}
+    if(!_smsC||!_pReg){err.textContent="Hata: Baştan başlayın.";otpGeriDon();return;}
+    var btn=document.getElementById("otpDogrulaBtn");
+    if(btn){btn.disabled=true;btn.textContent="⏳ Doğrulanıyor...";}
+    err.textContent="⏳ Doğrulanıyor...";
+    try{
+        var r=await _smsC.confirm(otp);
+        await r.user.delete();
+        var {name,phone,email,pass}=_pReg;
+        var res=await auth.createUserWithEmailAndPassword(email,pass);
+        await db.collection("users").doc(res.user.uid).set({
+            name,phone,email,
+            rol:email===ADMIN_EMAIL?"admin":"user",
+            online:true,blocked:false,
+            lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        _pReg=null;_smsC=null;
+        err.style.color="#22c55e";
+        err.textContent="✅ Kayıt başarılı! Hoş geldiniz 🎉";
+    }catch(e){
+        var m={"auth/invalid-verification-code":"❌ Hatalı kod!",
+               "auth/code-expired":"❌ Kodun süresi doldu!",
+               "auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!"};
+        err.style.color="";
+        err.textContent=m[e.code]||"❌ "+(e.message||e.code);
+        if(btn){btn.disabled=false;btn.textContent="✅ Doğrula ve Kayıt Ol";}
+    }
+}
+function otpGeriDon(){
+    document.getElementById("otpStep").style.display="none";
+    document.getElementById("otpStep").classList.add("hidden");
+    document.getElementById("registerForm").style.display="";
+    document.getElementById("registerForm").classList.remove("hidden");
+    document.getElementById("otpInput").value="";
+    document.getElementById("authError").textContent="";
+    _smsC=null;
+    if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
+}
+
 async function cikisYap() {
     if (currentUser) { try { await db.collection("users").doc(currentUser.uid).update({ online:false }); } catch(e) {} }
     await auth.signOut(); location.reload();
@@ -348,7 +413,10 @@ auth.onAuthStateChanged(async user => {
         if (ayricaliklimi()) { nostaljiOnayBekleyenleriDinle(); ilanOnayBekleyenleriDinle(); }
         if (adminMi()) { onlineListesiYukle(); resetTalepleriniDinle(); }
 
-    } else { currentUser = null; userProfile = null; }
+    } else {
+        currentUser = null; userProfile = null;
+        if (localStorage.getItem("termsAccepted")) { _guestModeAc(); }
+    }
 });
 
 function tabDegistir(t) {
@@ -437,7 +505,7 @@ async function akisPaylas() {
 }
 
 async function reaksiyon(postId, emoji, collection) {
-    if (!currentUser) return alert("Lütfen giriş yapın!");
+    if(loginGerekli())return;
     playLikeSound();
     const ref = db.collection(collection).doc(postId), snap = await ref.get();
     const reactions = { ...(snap.data().reactions||{}) };
@@ -488,7 +556,7 @@ function buildNostaljiCard(pid, p, isPending) {
 }
 
 async function nostaljiPaylas() {
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if(loginGerekli())return;
     const title=document.getElementById("nostaljiTitle").value.trim(), year=document.getElementById("nostaljiYear").value.trim(), text=document.getElementById("nostaljiText").value.trim(), file=document.getElementById("nostaljiFile").files[0];
     if (!title && !text && !file) return alert("En az bir şey ekleyin!");
     if (kufurKontrol(title+" "+text)) return alert("⚠️ Uygunsuz içerik!");
@@ -521,7 +589,7 @@ async function nostaljiSil(docId) {
 
 const ILAN_KAT = { satilik:"🏷️ Satılık", kiralik:"🔑 Kiralık", araniyor:"🔍 Aranıyor", kayip:"⚠️ Kayıp", diger:"📌 Diğer" };
 
-function ilanFormToggle() { document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
+function ilanFormToggle() { if(loginGerekli())return; document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
 function ilanFiltre(kat, btn) {
     aktifIlanFiltre = kat;
     document.querySelectorAll(".ilan-filtre-btn").forEach(b => b.classList.remove("active"));
@@ -574,7 +642,7 @@ function ilanFotoOnizle(input) {
 }
 
 async function ilanPaylas() {
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if(loginGerekli())return;
     const baslik=document.getElementById("ilanBaslik").value.trim(), aciklama=document.getElementById("ilanAciklama").value.trim(), telefon=document.getElementById("ilanTelefon").value.trim(), kategori=document.getElementById("ilanKategori").value;
     const files = Array.from(document.getElementById("ilanFotolar").files).slice(0,5);
     if (!baslik) return alert("Başlık zorunludur!");
@@ -608,6 +676,7 @@ async function ilanSil(id) {
 }
 
 function yorumModalAc(postId, collection) {
+    if(loginGerekli())return;
     currentPostId=postId; currentCollection=collection||"announcements";
     document.getElementById("commentsModal").classList.remove("hidden"); document.body.style.overflow="hidden";
     if (commentsUnsubscribe) commentsUnsubscribe();
@@ -679,8 +748,8 @@ function mesajlariDinle() {
 function enterMesaj(e) { if (e.key==="Enter"&&!e.shiftKey) mesajGonder(); }
 async function mesajGonder() {
     const text=document.getElementById("msgInput").value.trim();
-    if (!text&&!chatMediaFile) return;
-    if (!currentUser) return alert("Giriş yapmalısınız!");
+    if(!text&&!chatMediaFile)return;
+    if(loginGerekli())return;
     if (kufurKontrol(text)) return alert("⚠️ Uygunsuz içerik!");
     const btn=document.getElementById("chatSendBtn"); btn.disabled=true;
     try {
@@ -688,7 +757,7 @@ async function mesajGonder() {
         if (chatMediaFile) { const r=await cloudinaryYukle(chatMediaFile); mediaUrl=r.url; mediaType=r.type; chatMediaTemizle(); }
         await db.collection("chat").add({ text:text||"", mediaUrl, mediaType, user:userProfile.name, uid:currentUser.uid, time:firebase.firestore.FieldValue.serverTimestamp() });
         document.getElementById("msgInput").value="";
-        // Bildirim: sadece duyurular için, chat spam önleme
+        // Bildirim sadece duyurular için
         const box=document.getElementById("chatBox"); setTimeout(()=>box.scrollTop=box.scrollHeight,300);
     } catch(e) { alert("⚠️ Mesaj gönderilemedi: " + e.message); }
     btn.disabled=false;
@@ -821,7 +890,8 @@ function ozelSohbetKapat() {
 }
 
 async function ozelMesajGonder() {
-    if (!ozelSohbetKisiUid||!currentUser) return;
+    if(!ozelSohbetKisiUid)return;
+    if(loginGerekli())return;
     const input=document.getElementById("ozelMsgInput");
     const metin=input.value.trim();
     if (!metin && !ozelSohbetMedyaFile) return;
@@ -1278,7 +1348,7 @@ async function anketDinle() {
 }
 
 async function anketOy(harf) {
-    if (!currentUser) return alert("Oy vermek için giriş yapın!");
+    if(loginGerekli())return;
     try { await db.collection("settings").doc("anket").update({ [`oylar.${currentUser.uid}`]:harf }); anketDinle(); }
     catch(e) { alert("Hata: " + e.message); }
 }
@@ -1374,7 +1444,7 @@ function settingsProfilGuncelle() {
 }
 
 function profilDuzenleAc() {
-    if (!currentUser) return;
+    if(loginGerekli())return;
     secilenDurum=userProfile?.durum||"";
     secilenAvatarDosya=null;
     document.getElementById("profilDuzenleModal").classList.remove("hidden");
@@ -1423,7 +1493,7 @@ async function profilKaydet() {
 
 async function hikayeleriYukle() {
     const liste=document.getElementById("hikayeListesi");
-    if (!liste||!currentUser) return;
+    if (!liste) return;
     try {
         const simdi=new Date();
         const snap=await db.collection("stories").orderBy("time","desc").get();
@@ -1442,8 +1512,8 @@ async function hikayeleriYukle() {
             kb[d.uid].list.push({id:doc.id,...d});
         });
         Object.values(kb).forEach(({list,info})=>{
-            const benimMi=info.uid===currentUser?.uid;
-            const gorundu=list.every(h=>h.viewers&&h.viewers[currentUser?.uid]);
+            const benimMi=currentUser?info.uid===currentUser.uid:false;
+            const gorundu=currentUser?list.every(h=>h.viewers&&h.viewers[currentUser.uid]):false;
             const item=document.createElement("div"); item.className="hikaye-item";
             const avHtml=info.avatarUrl?`<img src="${info.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<span style="font-size:20px;font-weight:700;color:#fff;">${(info.senderName||"?")[0].toUpperCase()}</span>`;
             item.innerHTML=`<div class="hikaye-daire ${benimMi?"hikaye-benim":gorundu?"hikaye-goruldu":"hikaye-yeni"}" onclick="hikayeGoruntule('${list[0].id}')">${avHtml}</div><span class="hikaye-isim">${escapeHtml((info.senderName||"?").split(" ")[0])}</span>`;
@@ -1453,6 +1523,7 @@ async function hikayeleriYukle() {
 }
 
 function hikayeEkleAc() {
+    if(loginGerekli())return;
     document.getElementById("hikayeEkleModal").classList.remove("hidden");
     document.getElementById("hikayeOnizleDiv").innerHTML="";
     document.getElementById("hikayeMetin").value="";
@@ -1518,4 +1589,106 @@ async function hikayeSil() {
 
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW:", err));
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   MİSAFİR MODU — Herkes görür, üye etkileşim kurar
+══════════════════════════════════════════════════════════ */
+
+function _guestModeAc() {
+    try {
+        var lp=document.getElementById("loginPage");
+        var ap=document.getElementById("app");
+        var nb=document.getElementById("navBar");
+        if(lp) lp.classList.add("hidden");
+        if(ap) ap.classList.remove("hidden");
+        if(nb) nb.classList.remove("hidden");
+        ["postPanel","nostaljiPendingSection","ilanOnaySection","adminPanel"].forEach(function(id){
+            var el=document.getElementById(id);
+            if(el) el.classList.add("hidden");
+        });
+        updateSoundBtn();
+        hakkimizdaYukle();
+        reklamYukle();
+        floatReklamYukle();
+        anketDinle();
+        hikayeleriYukle();
+        mesajlariDinle();
+        tabDegistir("feed");
+        akisDinle();
+        nostaljiDinle();
+        isletmeleriYukle();
+        setTimeout(sidebarPwaPanelGuncelle, 500);
+    } catch(e) { console.error("_guestModeAc hata:", e); }
+}
+
+function loginGerekli() {
+    if (!currentUser) { _loginModalAc(); return true; }
+    return false;
+}
+
+function _loginModalAc() {
+    var otpS=document.getElementById("otpStep");
+    var regF=document.getElementById("registerForm");
+    var lf=document.getElementById("loginForm");
+    if(otpS){otpS.style.display="none";otpS.classList.add("hidden");}
+    if(regF){regF.style.display="none";regF.classList.add("hidden");}
+    if(lf){lf.style.display="";lf.classList.remove("hidden");}
+    var lb=document.getElementById("loginTabBtn");
+    var rb=document.getElementById("registerTabBtn");
+    if(lb){lb.classList.add("active");}
+    if(rb){rb.classList.remove("active");}
+    var db2=document.getElementById("loginDismissBtn");
+    if(db2) db2.style.display="";
+    var gl=document.getElementById("guestLink");
+    if(gl) gl.style.display="";
+    var lp=document.getElementById("loginPage");
+    if(lp) lp.classList.remove("hidden");
+}
+
+function loginSayfasiKapat() {
+    var lp=document.getElementById("loginPage");
+    if(lp) lp.classList.add("hidden");
+    var gl=document.getElementById("guestLink");
+    if(gl) gl.style.display="none";
+}
+
+function sidebarPwaPanelGuncelle() {
+    try {
+        if(!document.body.classList.contains("pwa-mode")) return;
+        var pwaUser=document.getElementById("sidebarPwaUser");
+        var pwaFooter=document.getElementById("sidebarPwaFooter");
+        var pwaName=document.getElementById("sidebarPwaName");
+        var pwaRole=document.getElementById("sidebarPwaRole");
+        var pwaAvatar=document.getElementById("sidebarPwaAvatar");
+        var loginBtn=document.getElementById("sidebarPwaLoginBtn");
+        var exitBtn=document.getElementById("sidebarPwaExitBtn");
+        var bellBtn=document.getElementById("sidebarPwaBell");
+        if(!pwaUser) return;
+        if(pwaUser) pwaUser.style.display="flex";
+        if(pwaFooter) pwaFooter.style.display="flex";
+        if(currentUser && userProfile) {
+            if(pwaName) pwaName.textContent=userProfile.name||"Kullanıcı";
+            var rolMap={admin:"👑 Admin",muhtar:"🏛️ Muhtar",yardimci:"🤝 Yardımcı",user:"👤 Üye"};
+            if(pwaRole) pwaRole.textContent=rolMap[userProfile.rol]||"👤 Üye";
+            if(pwaAvatar) {
+                if(userProfile.photoURL){
+                    pwaAvatar.innerHTML='<img src="'+userProfile.photoURL+'" alt="profil" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                } else {
+                    pwaAvatar.textContent=(userProfile.name||"K")[0].toUpperCase();
+                }
+            }
+            if(loginBtn) loginBtn.style.display="none";
+            if(exitBtn) exitBtn.style.display="";
+        } else {
+            if(pwaAvatar) pwaAvatar.textContent="👤";
+            if(pwaName) pwaName.textContent="Misafir";
+            if(pwaRole) pwaRole.textContent="Giriş yapmadınız";
+            if(loginBtn) loginBtn.style.display="";
+            if(exitBtn) exitBtn.style.display="none";
+        }
+        var sesAcik=localStorage.getItem("soundEnabled")!=="false";
+        if(bellBtn) bellBtn.textContent=sesAcik?"🔔":"🔕";
+    } catch(e) { console.error("sidebarPwaPanelGuncelle:", e); }
 }

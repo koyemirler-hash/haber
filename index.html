@@ -83,7 +83,7 @@
 <!-- GİRİŞ / KAYIT -->
 <div id="loginPage" class="overlay-screen hidden">
   <div class="login-card" style="position:relative;">
-    <button id="loginDismissBtn" onclick="loginSayfasiKapat()" style="display:none;position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;color:#aaa;cursor:pointer;line-height:1;padding:2px 6px;">✕</button>
+    <button id="loginDismissBtn" onclick="loginSayfasiKapat()" style="display:none;position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;color:#aaa;cursor:pointer;">✕</button>
     <div class="login-logo">🏡</div>
     <h2>Emirler Köyü</h2>
     <div class="tab-switch">
@@ -103,30 +103,17 @@
       <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
       <button class="btn btn-primary" onclick="kayitOl()">Kayıt Ol</button>
     </div>
-    <!-- OTP DOĞRULAMA ADIMI -->
     <div id="otpStep" class="hidden" style="display:none;text-align:center;padding:4px 0 8px;">
       <div style="font-size:40px;margin-bottom:8px;">📱</div>
       <p style="font-weight:700;color:#2d3748;margin:0 0 4px;font-size:15px;">Telefon Doğrulama</p>
-      <p style="font-size:12px;color:#888;margin:0 0 14px;">
-        <span id="otpPhoneDisplay" style="font-weight:700;color:#588157;"></span><br>
-        numarasına 6 haneli kod gönderildi
-      </p>
-      <input id="otpInput" type="tel" inputmode="numeric" maxlength="6"
-             placeholder="● ● ● ● ● ●" class="input-field"
-             style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700;">
-      <button id="otpDogrulaBtn" class="btn btn-primary" onclick="otpDogrula()">
-        ✅ Doğrula ve Kayıt Ol
-      </button>
-      <button onclick="otpGeriDon()"
-              style="display:block;width:100%;margin-top:8px;background:#f1f5f9;
-                     color:#555;border:none;padding:12px;border-radius:12px;
-                     cursor:pointer;font-size:13px;font-weight:600;">
-        ← Geri Dön
-      </button>
+      <p style="font-size:12px;color:#888;margin:0 0 14px;"><span id="otpPhoneDisplay" style="font-weight:700;color:#588157;"></span><br>numarasına 6 haneli kod gönderildi</p>
+      <input id="otpInput" type="tel" inputmode="numeric" maxlength="6" placeholder="● ● ● ● ● ●" class="input-field" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700;">
+      <button id="otpDogrulaBtn" class="btn btn-primary" onclick="otpDogrula()">✅ Doğrula ve Kayıt Ol</button>
+      <button onclick="otpGeriDon()" style="display:block;width:100%;margin-top:8px;background:#f1f5f9;color:#555;border:none;padding:12px;border-radius:12px;cursor:pointer;font-size:13px;">← Geri Dön</button>
     </div>
     <div id="recaptchaContainer"></div>
     <p id="authError" class="error-msg"></p>
-    <p id="guestLink" style="text-align:center;margin:10px 0 0;font-size:12px;color:#bbb;display:none;">
+    <p id="guestLink" style="display:none;text-align:center;margin:8px 0 0;font-size:12px;">
       <a href="#" onclick="loginSayfasiKapat();return false;" style="color:#aaa;text-decoration:underline;">Misafir olarak devam et</a>
     </p>
   </div>
@@ -142,6 +129,14 @@
     <div><div class="sidebar-title">Emirler Köyü</div><div class="sidebar-sub">emirler.web.tr</div></div>
     <button class="sidebar-close-btn" onclick="sidebarKapat()">✕</button>
   </div>
+  <div class="sidebar-pwa-user" id="sidebarPwaUser" style="display:none;">
+    <div class="sidebar-pwa-avatar" id="sidebarPwaAvatar" onclick="sidebarKapat();profilDuzenleAc();">👤</div>
+    <div class="sidebar-pwa-info">
+      <div class="sidebar-pwa-name" id="sidebarPwaName">Misafir</div>
+      <div class="sidebar-pwa-role" id="sidebarPwaRole">Giriş yapmadınız</div>
+    </div>
+    <button class="sidebar-pwa-bell" id="sidebarPwaBell" onclick="sesToggle()">🔔</button>
+  </div>
   <nav class="sidebar-menu">
     <div class="sidebar-item active" id="snav-feed"     onclick="sidebarTabGit('feed')">    <span class="sidebar-icon">🏠</span><span>Akış</span></div>
     <div class="sidebar-item"        id="snav-ilan"     onclick="sidebarTabGit('ilan')">    <span class="sidebar-icon">📋</span><span>İlanlar</span></div>
@@ -155,6 +150,10 @@
   <div class="sidebar-footer">
     <button class="sidebar-pwa-btn" onclick="pwaYukleSettings()">📲 Uygulamayı İndir</button>
     <div class="sidebar-version">Sürüm 4.4 · emirler.web.tr</div>
+  </div>
+  <div class="sidebar-pwa-footer" id="sidebarPwaFooter" style="display:none;">
+    <button class="sidebar-pwa-login-btn" id="sidebarPwaLoginBtn" onclick="sidebarKapat();_loginModalAc();">🚀 Giriş Yap / Kayıt Ol</button>
+    <button class="sidebar-pwa-exit-btn" id="sidebarPwaExitBtn" onclick="sidebarKapat();cikisYap();" style="display:none;">🚪 Çıkış Yap</button>
   </div>
 </aside>
 

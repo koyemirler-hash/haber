@@ -24,7 +24,7 @@ function sidebarToggle() {
         if (nav.classList.contains('sidebar-open')) { sidebarKapat(); }
         else {
             nav.classList.add('sidebar-open');
-            if(typeof sidebarPwaPanelGuncelle==='function')setTimeout(sidebarPwaPanelGuncelle,100);
+            if(typeof sidebarPwaPanelGuncelle==='function')setTimeout(sidebarPwaPanelGuncelle,150);
             if(ov) ov.classList.add('visible');
             document.body.style.overflow='hidden';
         }

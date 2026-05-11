@@ -224,9 +224,9 @@ function previewFile(input, previewId) {
     preview.innerHTML = file.type.startsWith("video") ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;max-height:180px;"></video>` : `<img src="${url}" style="max-width:100%;border-radius:10px;max-height:180px;object-fit:cover;">`;
 }
 async function cloudinaryYukle(file) {
-    var izinli=["image/jpeg","image/png","image/gif","image/webp","video/mp4","video/webm"];
-    if(!izinli.includes(file.type))throw new Error("Desteklenmeyen dosya tipi!");
-    if(file.size>20*1024*1024)throw new Error("Dosya 20MB'dan büyük olamaz!");
+    var iz=["image/jpeg","image/png","image/gif","image/webp","video/mp4","video/webm"];
+    if(!iz.includes(file.type))throw new Error("Desteklenmeyen dosya tipi!");
+    if(file.size>20*1024*1024)throw new Error("Maks 20MB!");
     const fd = new FormData();
     fd.append("file", file); fd.append("upload_preset", UPLOAD_PRESET);
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method:"POST", body:fd });
@@ -237,27 +237,27 @@ async function cloudinaryYukle(file) {
 }
 function resimTamEkran(src) { document.getElementById("imgFullscreenSrc").src = src; document.getElementById("imgFullscreen").classList.remove("hidden"); }
 
-// Şartlar ekranı atlanıyor — uygulama direk açılır
 localStorage.setItem("termsAccepted","true");
-try { document.getElementById("termsOverlay").classList.add("hidden"); } catch(e){}
+try{document.getElementById("termsOverlay").classList.add("hidden");}catch(e){}
 function onayVer() {
     localStorage.setItem("termsAccepted","true");
-    try { document.getElementById("termsOverlay").classList.add("hidden"); } catch(e){}
+    try{document.getElementById("termsOverlay").classList.add("hidden");}catch(e){}
 }
 
 function switchAuthTab(tab) {
-    var lf=document.getElementById("loginForm"), rf=document.getElementById("registerForm");
-    var lb=document.getElementById("loginTabBtn"), rb=document.getElementById("registerTabBtn");
+    var lf=document.getElementById("loginForm"),rf=document.getElementById("registerForm");
     var ots=document.getElementById("otpStep");
-    if (ots) { ots.style.display="none"; ots.classList.add("hidden"); }
-    if (tab==="login") {
-        lf.style.display=""; lf.classList.remove("hidden");
-        rf.style.display="none"; rf.classList.add("hidden");
-        lb.classList.add("active"); rb.classList.remove("active");
+    if(ots){ots.style.display="none";ots.classList.add("hidden");}
+    if(tab==="login"){
+        lf.style.display="";lf.classList.remove("hidden");
+        rf.style.display="none";rf.classList.add("hidden");
+        document.getElementById("loginTabBtn").classList.add("active");
+        document.getElementById("registerTabBtn").classList.remove("active");
     } else {
-        lf.style.display="none"; lf.classList.add("hidden");
-        rf.style.display=""; rf.classList.remove("hidden");
-        lb.classList.remove("active"); rb.classList.add("active");
+        lf.style.display="none";lf.classList.add("hidden");
+        rf.style.display="";rf.classList.remove("hidden");
+        document.getElementById("loginTabBtn").classList.remove("active");
+        document.getElementById("registerTabBtn").classList.add("active");
     }
     document.getElementById("authError").textContent="";
 }
@@ -280,76 +280,70 @@ async function kayitOl(){
     err.style.color="";
     if(!name||!phone||!email||!pass){err.textContent="Tüm alanları doldurun!";return;}
     if(pass.length<6){err.textContent="Şifre en az 6 karakter!";return;}
-    if(!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin (05XX...)";return;}
+    if(!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin (05XX ile başlamalı)";return;}
     err.textContent="⏳ Kontrol ediliyor...";
     try{
         var tk=await db.collection("users").where("phone","==",phone).get();
         if(!tk.empty){err.textContent="❌ Bu telefon zaten kayıtlı!";return;}
-    }catch(e){err.textContent="❌ Bağlantı hatası: "+e.message;return;}
+    }catch(e){err.textContent="❌ Hata: "+e.message;return;}
     var tel=phone.replace(/[^0-9]/g,"");
-    if(tel.startsWith("0"))tel="+9"+tel; else if(!tel.startsWith("+"))tel="+90"+tel;
+    if(tel.startsWith("0"))tel="+9"+tel;
+    else if(!tel.startsWith("+"))tel="+90"+tel;
     _pReg={name,phone,email,pass};
     err.textContent="📱 Doğrulama kodu gönderiliyor...";
     try{
-        if(_rcV){try{_rcV.clear();}catch(_){}} 
+        if(_rcV){try{_rcV.clear();}catch(_){}}
         _rcV=new firebase.auth.RecaptchaVerifier("recaptchaContainer",{size:"invisible",callback:()=>{}});
         _smsC=await auth.signInWithPhoneNumber(tel,_rcV);
         document.getElementById("registerForm").style.display="none";
         document.getElementById("registerForm").classList.add("hidden");
-        document.getElementById("otpStep").style.display="";
-        document.getElementById("otpStep").classList.remove("hidden");
+        var ots=document.getElementById("otpStep");
+        if(ots){ots.style.display="";ots.classList.remove("hidden");}
         document.getElementById("otpPhoneDisplay").textContent=tel;
         err.style.color="#22c55e";
-        err.textContent="✅ Kod gönderildi!";
+        err.textContent="✅ Doğrulama kodu gönderildi!";
     }catch(e){
-        var m={"auth/invalid-phone-number":"❌ Geçersiz numara!",
-               "auth/too-many-requests":"⚠️ Çok fazla deneme, bekleyin.",
-               "auth/operation-not-allowed":"⚠️ Firebase Console → Authentication → Phone'u etkinleştirin!"};
-        err.style.color="";
-        err.textContent=m[e.code]||"❌ SMS hatası: "+(e.message||e.code);
+        var m={"auth/invalid-phone-number":"❌ Geçersiz telefon numarası!",
+               "auth/too-many-requests":"⚠️ Çok fazla deneme. Lütfen bekleyin.",
+               "auth/operation-not-allowed":"⚠️ Firebase Console → Authentication → Phone numarasını etkinleştirin!"};
+        err.style.color="";err.textContent=m[e.code]||"❌ SMS hatası: "+(e.message||e.code);
         if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
     }
 }
 async function otpDogrula(){
     var otp=document.getElementById("otpInput").value.trim();
     var err=document.getElementById("authError");
-    if(otp.length<6){err.textContent="6 haneli kodu girin!";return;}
-    if(!_smsC||!_pReg){err.textContent="Hata: Baştan başlayın.";otpGeriDon();return;}
+    if(otp.length<6){err.textContent="6 haneli kodu eksiksiz girin!";return;}
+    if(!_smsC||!_pReg){err.textContent="Hata: Lütfen baştan başlayın.";otpGeriDon();return;}
     var btn=document.getElementById("otpDogrulaBtn");
     if(btn){btn.disabled=true;btn.textContent="⏳ Doğrulanıyor...";}
-    err.textContent="⏳ Doğrulanıyor...";
+    err.style.color="";err.textContent="⏳ Doğrulanıyor...";
     try{
         var r=await _smsC.confirm(otp);
         await r.user.delete();
         var {name,phone,email,pass}=_pReg;
         var res=await auth.createUserWithEmailAndPassword(email,pass);
-        await db.collection("users").doc(res.user.uid).set({
-            name,phone,email,
-            rol:email===ADMIN_EMAIL?"admin":"user",
-            online:true,blocked:false,
-            lastSeen:firebase.firestore.FieldValue.serverTimestamp()
-        });
+        await db.collection("users").doc(res.user.uid).set({name,phone,email,
+            rol:email===ADMIN_EMAIL?"admin":"user",online:true,blocked:false,
+            lastSeen:firebase.firestore.FieldValue.serverTimestamp()});
         _pReg=null;_smsC=null;
-        err.style.color="#22c55e";
-        err.textContent="✅ Kayıt başarılı! Hoş geldiniz 🎉";
+        err.style.color="#22c55e";err.textContent="✅ Kayıt başarılı! Hoş geldiniz 🎉";
     }catch(e){
-        var m={"auth/invalid-verification-code":"❌ Hatalı kod!",
-               "auth/code-expired":"❌ Kodun süresi doldu!",
+        var m={"auth/invalid-verification-code":"❌ Hatalı doğrulama kodu!",
+               "auth/code-expired":"❌ Kodun süresi doldu, yeniden deneyin.",
                "auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!"};
-        err.style.color="";
-        err.textContent=m[e.code]||"❌ "+(e.message||e.code);
+        err.style.color="";err.textContent=m[e.code]||"❌ Hata: "+(e.message||e.code);
         if(btn){btn.disabled=false;btn.textContent="✅ Doğrula ve Kayıt Ol";}
     }
 }
 function otpGeriDon(){
-    document.getElementById("otpStep").style.display="none";
-    document.getElementById("otpStep").classList.add("hidden");
-    document.getElementById("registerForm").style.display="";
-    document.getElementById("registerForm").classList.remove("hidden");
+    var ots=document.getElementById("otpStep");
+    if(ots){ots.style.display="none";ots.classList.add("hidden");}
+    var rf=document.getElementById("registerForm");
+    if(rf){rf.style.display="";rf.classList.remove("hidden");}
     document.getElementById("otpInput").value="";
     document.getElementById("authError").textContent="";
-    _smsC=null;
-    if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
+    _smsC=null;if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
 }
 
 async function cikisYap() {
@@ -415,7 +409,7 @@ auth.onAuthStateChanged(async user => {
 
     } else {
         currentUser = null; userProfile = null;
-        if (localStorage.getItem("termsAccepted")) { _guestModeAc(); }
+        _guestModeAc();
     }
 });
 
@@ -750,6 +744,7 @@ async function mesajGonder() {
     const text=document.getElementById("msgInput").value.trim();
     if(!text&&!chatMediaFile)return;
     if(loginGerekli())return;
+    var _n=Date.now();if(window._sm&&_n-window._sm<3000)return;window._sm=_n;
     if (kufurKontrol(text)) return alert("⚠️ Uygunsuz içerik!");
     const btn=document.getElementById("chatSendBtn"); btn.disabled=true;
     try {
@@ -757,7 +752,7 @@ async function mesajGonder() {
         if (chatMediaFile) { const r=await cloudinaryYukle(chatMediaFile); mediaUrl=r.url; mediaType=r.type; chatMediaTemizle(); }
         await db.collection("chat").add({ text:text||"", mediaUrl, mediaType, user:userProfile.name, uid:currentUser.uid, time:firebase.firestore.FieldValue.serverTimestamp() });
         document.getElementById("msgInput").value="";
-        // Bildirim sadece duyurular için
+        // chat bildirimi kapalı
         const box=document.getElementById("chatBox"); setTimeout(()=>box.scrollTop=box.scrollHeight,300);
     } catch(e) { alert("⚠️ Mesaj gönderilemedi: " + e.message); }
     btn.disabled=false;
@@ -1493,7 +1488,7 @@ async function profilKaydet() {
 
 async function hikayeleriYukle() {
     const liste=document.getElementById("hikayeListesi");
-    if (!liste) return;
+    if(!liste)return;
     try {
         const simdi=new Date();
         const snap=await db.collection("stories").orderBy("time","desc").get();
@@ -1593,20 +1588,18 @@ if ("serviceWorker" in navigator) {
 
 
 /* ══════════════════════════════════════════════════════════
-   MİSAFİR MODU — Herkes görür, üye etkileşim kurar
+   MİSAFİR MODU & YARDIMCI FONKSİYONLAR
 ══════════════════════════════════════════════════════════ */
-
-function _guestModeAc() {
-    try {
+function _guestModeAc(){
+    try{
         var lp=document.getElementById("loginPage");
         var ap=document.getElementById("app");
         var nb=document.getElementById("navBar");
-        if(lp) lp.classList.add("hidden");
-        if(ap) ap.classList.remove("hidden");
-        if(nb) nb.classList.remove("hidden");
+        if(lp)lp.classList.add("hidden");
+        if(ap)ap.classList.remove("hidden");
+        if(nb)nb.classList.remove("hidden");
         ["postPanel","nostaljiPendingSection","ilanOnaySection","adminPanel"].forEach(function(id){
-            var el=document.getElementById(id);
-            if(el) el.classList.add("hidden");
+            var el=document.getElementById(id);if(el)el.classList.add("hidden");
         });
         updateSoundBtn();
         hakkimizdaYukle();
@@ -1619,76 +1612,73 @@ function _guestModeAc() {
         akisDinle();
         nostaljiDinle();
         isletmeleriYukle();
-        setTimeout(sidebarPwaPanelGuncelle, 500);
-    } catch(e) { console.error("_guestModeAc hata:", e); }
+        setTimeout(sidebarPwaPanelGuncelle,800);
+    }catch(e){console.error("_guestModeAc:",e);}
 }
 
-function loginGerekli() {
-    if (!currentUser) { _loginModalAc(); return true; }
+function loginGerekli(){
+    if(!currentUser){_loginModalAc();return true;}
     return false;
 }
 
-function _loginModalAc() {
-    var otpS=document.getElementById("otpStep");
-    var regF=document.getElementById("registerForm");
-    var lf=document.getElementById("loginForm");
-    if(otpS){otpS.style.display="none";otpS.classList.add("hidden");}
-    if(regF){regF.style.display="none";regF.classList.add("hidden");}
-    if(lf){lf.style.display="";lf.classList.remove("hidden");}
-    var lb=document.getElementById("loginTabBtn");
-    var rb=document.getElementById("registerTabBtn");
-    if(lb){lb.classList.add("active");}
-    if(rb){rb.classList.remove("active");}
-    var db2=document.getElementById("loginDismissBtn");
-    if(db2) db2.style.display="";
-    var gl=document.getElementById("guestLink");
-    if(gl) gl.style.display="";
-    var lp=document.getElementById("loginPage");
-    if(lp) lp.classList.remove("hidden");
+function _loginModalAc(){
+    try{
+        // OTP ve register formunu sıfırla, login formunu göster
+        var ots=document.getElementById("otpStep");
+        var rf=document.getElementById("registerForm");
+        var lf=document.getElementById("loginForm");
+        if(ots){ots.style.display="none";ots.classList.add("hidden");}
+        if(rf){rf.style.display="none";rf.classList.add("hidden");}
+        if(lf){lf.style.display="";lf.classList.remove("hidden");}
+        var lb=document.getElementById("loginTabBtn");
+        var rb=document.getElementById("registerTabBtn");
+        if(lb)lb.classList.add("active");
+        if(rb)rb.classList.remove("active");
+        // Dismiss ve misafir linkini göster
+        var db2=document.getElementById("loginDismissBtn");
+        if(db2)db2.style.display="";
+        var gl=document.getElementById("guestLink");
+        if(gl)gl.style.display="";
+        var lp=document.getElementById("loginPage");
+        if(lp)lp.classList.remove("hidden");
+    }catch(e){console.error("_loginModalAc:",e);}
 }
 
-function loginSayfasiKapat() {
+function loginSayfasiKapat(){
     var lp=document.getElementById("loginPage");
-    if(lp) lp.classList.add("hidden");
+    if(lp)lp.classList.add("hidden");
     var gl=document.getElementById("guestLink");
-    if(gl) gl.style.display="none";
+    if(gl)gl.style.display="none";
 }
 
-function sidebarPwaPanelGuncelle() {
-    try {
-        if(!document.body.classList.contains("pwa-mode")) return;
-        var pwaUser=document.getElementById("sidebarPwaUser");
-        var pwaFooter=document.getElementById("sidebarPwaFooter");
-        var pwaName=document.getElementById("sidebarPwaName");
-        var pwaRole=document.getElementById("sidebarPwaRole");
-        var pwaAvatar=document.getElementById("sidebarPwaAvatar");
-        var loginBtn=document.getElementById("sidebarPwaLoginBtn");
-        var exitBtn=document.getElementById("sidebarPwaExitBtn");
-        var bellBtn=document.getElementById("sidebarPwaBell");
-        if(!pwaUser) return;
-        if(pwaUser) pwaUser.style.display="flex";
-        if(pwaFooter) pwaFooter.style.display="flex";
-        if(currentUser && userProfile) {
-            if(pwaName) pwaName.textContent=userProfile.name||"Kullanıcı";
-            var rolMap={admin:"👑 Admin",muhtar:"🏛️ Muhtar",yardimci:"🤝 Yardımcı",user:"👤 Üye"};
-            if(pwaRole) pwaRole.textContent=rolMap[userProfile.rol]||"👤 Üye";
-            if(pwaAvatar) {
-                if(userProfile.photoURL){
-                    pwaAvatar.innerHTML='<img src="'+userProfile.photoURL+'" alt="profil" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
-                } else {
-                    pwaAvatar.textContent=(userProfile.name||"K")[0].toUpperCase();
-                }
+function sidebarPwaPanelGuncelle(){
+    try{
+        if(!document.body.classList.contains("pwa-mode"))return;
+        var pu=document.getElementById("sidebarPwaUser");
+        var pf=document.getElementById("sidebarPwaFooter");
+        var pn=document.getElementById("sidebarPwaName");
+        var pr=document.getElementById("sidebarPwaRole");
+        var pa=document.getElementById("sidebarPwaAvatar");
+        var lb=document.getElementById("sidebarPwaLoginBtn");
+        var eb=document.getElementById("sidebarPwaExitBtn");
+        var bb=document.getElementById("sidebarPwaBell");
+        if(!pu)return;
+        pu.style.display="flex";if(pf)pf.style.display="flex";
+        if(currentUser&&userProfile){
+            if(pn)pn.textContent=userProfile.name||"Kullanıcı";
+            var rm={admin:"👑 Admin",muhtar:"🏛️ Muhtar",yardimci:"🤝 Yardımcı",user:"👤 Üye"};
+            if(pr)pr.textContent=rm[userProfile.rol]||"👤 Üye";
+            if(pa){
+                if(userProfile.photoURL)pa.innerHTML='<img src="'+userProfile.photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                else pa.textContent=(userProfile.name||"K")[0].toUpperCase();
             }
-            if(loginBtn) loginBtn.style.display="none";
-            if(exitBtn) exitBtn.style.display="";
-        } else {
-            if(pwaAvatar) pwaAvatar.textContent="👤";
-            if(pwaName) pwaName.textContent="Misafir";
-            if(pwaRole) pwaRole.textContent="Giriş yapmadınız";
-            if(loginBtn) loginBtn.style.display="";
-            if(exitBtn) exitBtn.style.display="none";
+            if(lb)lb.style.display="none";if(eb)eb.style.display="";
+        }else{
+            if(pa)pa.textContent="👤";
+            if(pn)pn.textContent="Misafir";
+            if(pr)pr.textContent="Giriş yapmadınız";
+            if(lb)lb.style.display="";if(eb)eb.style.display="none";
         }
-        var sesAcik=localStorage.getItem("soundEnabled")!=="false";
-        if(bellBtn) bellBtn.textContent=sesAcik?"🔔":"🔕";
-    } catch(e) { console.error("sidebarPwaPanelGuncelle:", e); }
+        if(bb)bb.textContent=localStorage.getItem("soundEnabled")!=="false"?"🔔":"🔕";
+    }catch(e){console.error("sidebarPwaPanelGuncelle:",e);}
 }

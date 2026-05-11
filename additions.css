@@ -290,3 +290,84 @@ body.pwa-mode { padding-bottom: 54px !important; }
     align-items: center;
     justify-content: center;
 }
+
+/* ════════════════════════════════════════════════════════
+   PWA SİDEBAR — Profil & Bildirim Paneli
+   ════════════════════════════════════════════════════════ */
+
+/* PWA modunda header ikonlarını (🔔 👤) gizle */
+body.pwa-mode #soundToggleBtn,
+body.pwa-mode #profilAvatarBtn { display: none !important; }
+
+/* PWA kullanıcı panelini göster */
+body.pwa-mode .sidebar-pwa-user,
+body.pwa-mode .sidebar-pwa-footer { display: flex !important; }
+
+/* Kullanıcı paneli */
+.sidebar-pwa-user {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #3a5a40, #588157);
+  margin: 0 0 6px 0;
+}
+.sidebar-pwa-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; cursor: pointer;
+  border: 2px solid rgba(255,255,255,0.4);
+  flex-shrink: 0;
+  color: white;
+  font-weight: 700;
+  overflow: hidden;
+}
+.sidebar-pwa-avatar img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.sidebar-pwa-info { flex: 1; min-width: 0; }
+.sidebar-pwa-name {
+  font-size: 14px; font-weight: 700;
+  color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar-pwa-role {
+  font-size: 11px; color: rgba(255,255,255,0.7); margin-top: 2px;
+}
+.sidebar-pwa-bell {
+  background: rgba(255,255,255,0.15);
+  border: none; border-radius: 50%;
+  width: 36px; height: 36px;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+.sidebar-pwa-bell:hover { background: rgba(255,255,255,0.3); }
+
+/* Alt footer */
+.sidebar-pwa-footer {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px 20px;
+  margin-top: auto;
+  border-top: 1px solid #e8f0e8;
+}
+.sidebar-pwa-login-btn {
+  background: linear-gradient(135deg, #3a5a40, #588157);
+  color: white; border: none;
+  padding: 12px; border-radius: 12px;
+  font-size: 14px; font-weight: 700;
+  cursor: pointer; width: 100%;
+}
+.sidebar-pwa-exit-btn {
+  background: #fee2e2; color: #dc2626;
+  border: none; padding: 10px;
+  border-radius: 12px; font-size: 13px;
+  font-weight: 600; cursor: pointer; width: 100%;
+}
+
+/* Sidebar flex column için */
+body.pwa-mode aside#sidebarNav { display: flex !important; flex-direction: column; }
+body.pwa-mode aside#sidebarNav .sidebar-menu { flex: 1; overflow-y: auto; }

@@ -1,6 +1,37 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+  <!-- ═══ GÜVENLİK META TAGLARI ═══ -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval'
+      https://www.gstatic.com
+      https://*.firebaseapp.com
+      https://*.googleapis.com
+      https://cdn.onesignal.com
+      https://onesignal.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com data:;
+    img-src 'self' data: blob: https: http:;
+    media-src 'self' blob: https:;
+    connect-src 'self'
+      https://*.firebaseio.com wss://*.firebaseio.com
+      https://*.googleapis.com
+      https://fcm.googleapis.com
+      https://onesignal.com
+      https://cdn.onesignal.com
+      https://api.openweathermap.org
+      https://api.collectapi.com;
+    frame-src 'self' https://*.firebaseapp.com;
+    worker-src 'self' blob:;
+    manifest-src 'self';
+  ">
+  <!-- Sitenin iframe içinde açılmasını engelle -->
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <!-- MIME sniffing engelle -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <!-- Referrer bilgisini sınırla -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Emirler Köyü Portalı</title>
@@ -142,6 +173,15 @@
     <div><div class="sidebar-title">Emirler Köyü</div><div class="sidebar-sub">emirler.web.tr</div></div>
     <button class="sidebar-close-btn" onclick="sidebarKapat()">✕</button>
   </div>
+  <!-- PWA: Profil & Bildirim kutusu — sadece PWA'da görünür -->
+  <div class="sidebar-pwa-user" id="sidebarPwaUser" style="display:none;">
+    <div class="sidebar-pwa-avatar" id="sidebarPwaAvatar" onclick="sidebarKapat();profilDuzenleAc();">👤</div>
+    <div class="sidebar-pwa-info">
+      <div class="sidebar-pwa-name" id="sidebarPwaName">Misafir</div>
+      <div class="sidebar-pwa-role" id="sidebarPwaRole">Giriş yapmadınız</div>
+    </div>
+    <button class="sidebar-pwa-bell" id="sidebarPwaBell" onclick="sesToggle()" title="Ses">🔔</button>
+  </div>
   <nav class="sidebar-menu">
     <div class="sidebar-item active" id="snav-feed"     onclick="sidebarTabGit('feed')">    <span class="sidebar-icon">🏠</span><span>Akış</span></div>
     <div class="sidebar-item"        id="snav-ilan"     onclick="sidebarTabGit('ilan')">    <span class="sidebar-icon">📋</span><span>İlanlar</span></div>
@@ -155,6 +195,11 @@
   <div class="sidebar-footer">
     <button class="sidebar-pwa-btn" onclick="pwaYukleSettings()">📲 Uygulamayı İndir</button>
     <div class="sidebar-version">Sürüm 4.4 · emirler.web.tr</div>
+  </div>
+  <!-- PWA: Alt butonlar -->
+  <div class="sidebar-pwa-footer" id="sidebarPwaFooter" style="display:none;">
+    <button class="sidebar-pwa-login-btn" id="sidebarPwaLoginBtn" onclick="sidebarKapat();loginSayfasiKapat?loginSayfasiKapat():null;_loginModalAc();">🚀 Giriş Yap / Kayıt Ol</button>
+    <button class="sidebar-pwa-exit-btn" id="sidebarPwaExitBtn" onclick="sidebarKapat();cikisYap();" style="display:none;">🚪 Çıkış Yap</button>
   </div>
 </aside>
 

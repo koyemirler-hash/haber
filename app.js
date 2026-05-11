@@ -71,7 +71,9 @@ function oneSignalBaslat() {
 }
 
 async function oneSignalBildirimGonder(baslik, mesaj, url) {
+    // Sadece yetkili kullanıcılar bildirim gönderebilir
     if (!ONESIGNAL_API_KEY) return;
+    if (!currentUser || !yetkili()) return;
     try {
         await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
@@ -153,6 +155,7 @@ function playApproveSound() {
     } catch(e) {}
 }
 function sesToggle() {
+    setTimeout(sidebarPwaPanelGuncelle, 100);
     soundEnabled = !soundEnabled;
     localStorage.setItem("soundEnabled", soundEnabled ? "true" : "false");
     updateSoundBtn();
@@ -223,6 +226,10 @@ function previewFile(input, previewId) {
     preview.innerHTML = file.type.startsWith("video") ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;max-height:180px;"></video>` : `<img src="${url}" style="max-width:100%;border-radius:10px;max-height:180px;object-fit:cover;">`;
 }
 async function cloudinaryYukle(file) {
+    // Güvenlik: sadece izin verilen tipler ve max 20MB
+    const izinliTipler = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","video/mp4","video/quicktime","video/webm"];
+    if (!izinliTipler.includes(file.type)) throw new Error("Bu dosya tipi desteklenmiyor!");
+    if (file.size > 20 * 1024 * 1024) throw new Error("Dosya 20MB'dan büyük olamaz!");
     const fd = new FormData();
     fd.append("file", file); fd.append("upload_preset", UPLOAD_PRESET);
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method:"POST", body:fd });
@@ -233,32 +240,23 @@ async function cloudinaryYukle(file) {
 }
 function resimTamEkran(src) { document.getElementById("imgFullscreenSrc").src = src; document.getElementById("imgFullscreen").classList.remove("hidden"); }
 
-// Şartlar ekranı atlanıyor — uygulama direk açılır
-localStorage.setItem("termsAccepted", "true");
-const _termsEl = document.getElementById("termsOverlay");
-if (_termsEl) _termsEl.classList.add("hidden");
-
+if (localStorage.getItem("termsAccepted")) {
+    document.getElementById("termsOverlay").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
+}
 function onayVer() {
-    localStorage.setItem("termsAccepted", "true");
-    const el = document.getElementById("termsOverlay");
-    if (el) el.classList.add("hidden");
+    if (!document.getElementById("termsCheck").checked) { alert("Şartları kabul etmelisiniz!"); return; }
+    localStorage.setItem("termsAccepted","true");
+    document.getElementById("termsOverlay").classList.add("hidden");
+    document.getElementById("loginPage").classList.remove("hidden");
 }
 
 function switchAuthTab(tab) {
-    const lf = document.getElementById('loginForm');
-    const rf = document.getElementById('registerForm');
-    if (tab === 'login') {
-        lf.style.display = ''; lf.classList.remove('hidden');
-        rf.style.display = 'none'; rf.classList.add('hidden');
-        document.getElementById('loginTabBtn').classList.add('active');
-        document.getElementById('registerTabBtn').classList.remove('active');
-    } else {
-        lf.style.display = 'none'; lf.classList.add('hidden');
-        rf.style.display = ''; rf.classList.remove('hidden');
-        document.getElementById('loginTabBtn').classList.remove('active');
-        document.getElementById('registerTabBtn').classList.add('active');
-    }
-    document.getElementById('authError').textContent = '';
+    document.getElementById("loginForm").classList.toggle("hidden", tab !== "login");
+    document.getElementById("registerForm").classList.toggle("hidden", tab !== "register");
+    document.getElementById("loginTabBtn").classList.toggle("active", tab === "login");
+    document.getElementById("registerTabBtn").classList.toggle("active", tab === "register");
+    document.getElementById("authError").textContent = "";
 }
 async function girisYap() {
     const email = document.getElementById("logEmail").value.trim(), pass = document.getElementById("logPass").value;
@@ -270,56 +268,26 @@ async function girisYap() {
     }
 }
 async function kayitOl() {
-    const name  = document.getElementById("regName").value.trim();
+    const name = document.getElementById("regName").value.trim();
     const phone = document.getElementById("regPhone").value.trim().replace(/\s/g,"");
     const email = document.getElementById("regEmail").value.trim();
-    const pass  = document.getElementById("regPass").value;
+    const pass = document.getElementById("regPass").value;
     const errEl = document.getElementById("authError");
-
     if (!name || !phone || !email || !pass) { errEl.textContent = "Tüm alanları doldurun!"; return; }
-    if (pass.length < 6)                    { errEl.textContent = "Şifre en az 6 karakter!"; return; }
-    if (!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))) { errEl.textContent = "Geçerli telefon girin (05XX...)"; return; }
-
-    errEl.textContent = "⏳ Kayıt yapılıyor...";
-    const btn = document.querySelector('#registerForm .btn-primary');
-    if (btn) btn.disabled = true;
-
+    if (pass.length < 6) { errEl.textContent = "Şifre en az 6 karakter!"; return; }
+    if (!/^[0-9+]{10,13}$/.test(phone.replace(/[^0-9+]/g,""))) { errEl.textContent = "Geçerli telefon numarası girin!"; return; }
+    errEl.textContent = "⏳ Kontrol ediliyor...";
     try {
-        // Telefon tekrar kontrolü
-        const telK = await db.collection("users").where("phone","==",phone).get();
-        if (!telK.empty) { errEl.textContent = "❌ Bu telefon zaten kayıtlı!"; if (btn) btn.disabled=false; return; }
-
-        // Hesap oluştur
+        const telKontrol = await db.collection("users").where("phone","==",phone).get();
+        if (!telKontrol.empty) { errEl.textContent = "❌ Bu telefon zaten kayıtlı!"; return; }
         const res = await auth.createUserWithEmailAndPassword(email, pass);
-
-        // Firestore'a kaydet
-        await db.collection("users").doc(res.user.uid).set({
-            name, phone, email,
-            rol: email === ADMIN_EMAIL ? "admin" : "user",
-            online: true, blocked: false,
-            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        // E-posta doğrulama maili gönder
-        try { await res.user.sendEmailVerification(); } catch(_) {}
-
-        errEl.style.color = "#22c55e";
-        errEl.textContent = "✅ Kayıt başarılı! Hoş geldiniz.";
-        // auth.onAuthStateChanged tam uygulamayı açar
-
+        await db.collection("users").doc(res.user.uid).set({ name, phone, email, rol: email === ADMIN_EMAIL ? "admin" : "user", online:true, blocked:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp() });
+        errEl.textContent = "";
     } catch(e) {
-        const m = {
-            "auth/email-already-in-use": "❌ Bu e-posta zaten kayıtlı!",
-            "auth/invalid-email":        "❌ Geçersiz e-posta adresi!",
-            "auth/weak-password":        "❌ Şifre çok zayıf!"
-        };
-        errEl.style.color = "";
-        errEl.textContent = m[e.code] || "❌ Kayıt hatası: " + (e.message || e.code);
-        if (btn) btn.disabled = false;
+        const m = {"auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!","auth/invalid-email":"❌ Geçersiz e-posta!"};
+        errEl.textContent = m[e.code] || "Kayıt başarısız: " + e.message;
     }
 }
-
-
 async function cikisYap() {
     if (currentUser) { try { await db.collection("users").doc(currentUser.uid).update({ online:false }); } catch(e) {} }
     await auth.signOut(); location.reload();
@@ -381,14 +349,7 @@ auth.onAuthStateChanged(async user => {
         if (ayricaliklimi()) { nostaljiOnayBekleyenleriDinle(); ilanOnayBekleyenleriDinle(); }
         if (adminMi()) { onlineListesiYukle(); resetTalepleriniDinle(); }
 
-    } else {
-        currentUser = null;
-        userProfile = null;
-        // Şartlar kabul edildiyse misafir modunda aç
-        if (localStorage.getItem("termsAccepted")) {
-            _guestModeAc();
-        }
-    }
+    } else { currentUser = null; userProfile = null; }
 });
 
 function tabDegistir(t) {
@@ -477,7 +438,7 @@ async function akisPaylas() {
 }
 
 async function reaksiyon(postId, emoji, collection) {
-    if (loginGerekli()) return;
+    if (!currentUser) return alert("Lütfen giriş yapın!");
     playLikeSound();
     const ref = db.collection(collection).doc(postId), snap = await ref.get();
     const reactions = { ...(snap.data().reactions||{}) };
@@ -528,7 +489,7 @@ function buildNostaljiCard(pid, p, isPending) {
 }
 
 async function nostaljiPaylas() {
-    if (loginGerekli()) return;
+    if (!currentUser) return alert("Giriş yapmalısınız!");
     const title=document.getElementById("nostaljiTitle").value.trim(), year=document.getElementById("nostaljiYear").value.trim(), text=document.getElementById("nostaljiText").value.trim(), file=document.getElementById("nostaljiFile").files[0];
     if (!title && !text && !file) return alert("En az bir şey ekleyin!");
     if (kufurKontrol(title+" "+text)) return alert("⚠️ Uygunsuz içerik!");
@@ -561,7 +522,7 @@ async function nostaljiSil(docId) {
 
 const ILAN_KAT = { satilik:"🏷️ Satılık", kiralik:"🔑 Kiralık", araniyor:"🔍 Aranıyor", kayip:"⚠️ Kayıp", diger:"📌 Diğer" };
 
-function ilanFormToggle() { if (loginGerekli()) return; document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
+function ilanFormToggle() { document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
 function ilanFiltre(kat, btn) {
     aktifIlanFiltre = kat;
     document.querySelectorAll(".ilan-filtre-btn").forEach(b => b.classList.remove("active"));
@@ -614,7 +575,7 @@ function ilanFotoOnizle(input) {
 }
 
 async function ilanPaylas() {
-    if (loginGerekli()) return;
+    if (!currentUser) return alert("Giriş yapmalısınız!");
     const baslik=document.getElementById("ilanBaslik").value.trim(), aciklama=document.getElementById("ilanAciklama").value.trim(), telefon=document.getElementById("ilanTelefon").value.trim(), kategori=document.getElementById("ilanKategori").value;
     const files = Array.from(document.getElementById("ilanFotolar").files).slice(0,5);
     if (!baslik) return alert("Başlık zorunludur!");
@@ -648,7 +609,6 @@ async function ilanSil(id) {
 }
 
 function yorumModalAc(postId, collection) {
-    if (loginGerekli()) return;
     currentPostId=postId; currentCollection=collection||"announcements";
     document.getElementById("commentsModal").classList.remove("hidden"); document.body.style.overflow="hidden";
     if (commentsUnsubscribe) commentsUnsubscribe();
@@ -721,7 +681,7 @@ function enterMesaj(e) { if (e.key==="Enter"&&!e.shiftKey) mesajGonder(); }
 async function mesajGonder() {
     const text=document.getElementById("msgInput").value.trim();
     if (!text&&!chatMediaFile) return;
-    if (loginGerekli()) return;
+    if (!currentUser) return alert("Giriş yapmalısınız!");
     if (kufurKontrol(text)) return alert("⚠️ Uygunsuz içerik!");
     const btn=document.getElementById("chatSendBtn"); btn.disabled=true;
     try {
@@ -729,7 +689,7 @@ async function mesajGonder() {
         if (chatMediaFile) { const r=await cloudinaryYukle(chatMediaFile); mediaUrl=r.url; mediaType=r.type; chatMediaTemizle(); }
         await db.collection("chat").add({ text:text||"", mediaUrl, mediaType, user:userProfile.name, uid:currentUser.uid, time:firebase.firestore.FieldValue.serverTimestamp() });
         document.getElementById("msgInput").value="";
-        oneSignalBildirimGonder("💬 " + userProfile.name, text||"📷 Medya paylaştı", "https://koyemirler-hash.github.io/haber");
+        // Bildirim: sadece duyurular için, chat spam önleme
         const box=document.getElementById("chatBox"); setTimeout(()=>box.scrollTop=box.scrollHeight,300);
     } catch(e) { alert("⚠️ Mesaj gönderilemedi: " + e.message); }
     btn.disabled=false;
@@ -862,8 +822,7 @@ function ozelSohbetKapat() {
 }
 
 async function ozelMesajGonder() {
-    if (!ozelSohbetKisiUid) return;
-    if (loginGerekli()) return;
+    if (!ozelSohbetKisiUid||!currentUser) return;
     const input=document.getElementById("ozelMsgInput");
     const metin=input.value.trim();
     if (!metin && !ozelSohbetMedyaFile) return;
@@ -1069,7 +1028,7 @@ async function numaramiYukle() {
     } catch(e) {}
 }
 async function numaramiPaylas() {
-    if (!currentUser) if (loginGerekli()) return;
+    if (!currentUser) return alert("Giriş yapmalısınız!");
     const tel=document.getElementById("numaraInput").value.trim(), not=document.getElementById("numaraNotInput").value.trim();
     if (!tel) return alert("Telefon numarası zorunludur!");
     try { await db.collection("rehber").doc(currentUser.uid).set({ ad:userProfile.name, tel, not, uid:currentUser.uid, gorunur:true, time:firebase.firestore.FieldValue.serverTimestamp() }); numaramiYukle(); alert("✅ Numaranız kaydedildi!"); }
@@ -1085,7 +1044,7 @@ async function resetTalepYukle() {
     } catch(e) {}
 }
 async function resetTalepGonder() {
-    if (!currentUser) if (loginGerekli()) return;
+    if (!currentUser) return alert("Giriş yapmalısınız!");
     try {
         const mevcut=await db.collection("resetTalepleri").where("uid","==",currentUser.uid).where("durum","==","bekliyor").get();
         if (!mevcut.empty) { alert("⏳ Zaten bekleyen bir talebiniz var."); return; }
@@ -1320,7 +1279,7 @@ async function anketDinle() {
 }
 
 async function anketOy(harf) {
-    if (loginGerekli()) return;
+    if (!currentUser) return alert("Oy vermek için giriş yapın!");
     try { await db.collection("settings").doc("anket").update({ [`oylar.${currentUser.uid}`]:harf }); anketDinle(); }
     catch(e) { alert("Hata: " + e.message); }
 }
@@ -1416,7 +1375,7 @@ function settingsProfilGuncelle() {
 }
 
 function profilDuzenleAc() {
-    if (loginGerekli()) return;
+    if (!currentUser) return;
     secilenDurum=userProfile?.durum||"";
     secilenAvatarDosya=null;
     document.getElementById("profilDuzenleModal").classList.remove("hidden");
@@ -1465,7 +1424,7 @@ async function profilKaydet() {
 
 async function hikayeleriYukle() {
     const liste=document.getElementById("hikayeListesi");
-    if (!liste) return;
+    if (!liste||!currentUser) return;
     try {
         const simdi=new Date();
         const snap=await db.collection("stories").orderBy("time","desc").get();
@@ -1484,8 +1443,8 @@ async function hikayeleriYukle() {
             kb[d.uid].list.push({id:doc.id,...d});
         });
         Object.values(kb).forEach(({list,info})=>{
-            const benimMi=currentUser ? info.uid===currentUser.uid : false;
-            const gorundu=currentUser ? list.every(h=>h.viewers&&h.viewers[currentUser.uid]) : false;
+            const benimMi=info.uid===currentUser?.uid;
+            const gorundu=list.every(h=>h.viewers&&h.viewers[currentUser?.uid]);
             const item=document.createElement("div"); item.className="hikaye-item";
             const avHtml=info.avatarUrl?`<img src="${info.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:`<span style="font-size:20px;font-weight:700;color:#fff;">${(info.senderName||"?")[0].toUpperCase()}</span>`;
             item.innerHTML=`<div class="hikaye-daire ${benimMi?"hikaye-benim":gorundu?"hikaye-goruldu":"hikaye-yeni"}" onclick="hikayeGoruntule('${list[0].id}')">${avHtml}</div><span class="hikaye-isim">${escapeHtml((info.senderName||"?").split(" ")[0])}</span>`;
@@ -1495,7 +1454,6 @@ async function hikayeleriYukle() {
 }
 
 function hikayeEkleAc() {
-    if (loginGerekli()) return;
     document.getElementById("hikayeEkleModal").classList.remove("hidden");
     document.getElementById("hikayeOnizleDiv").innerHTML="";
     document.getElementById("hikayeMetin").value="";
@@ -1561,78 +1519,4 @@ async function hikayeSil() {
 
 if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW:", err));
-}
-
-
-/* ════════════════════════════════════════════════════════
-   MİSAFİR MODU  –  Herkes görür, üye etkileşim kurar
-   ════════════════════════════════════════════════════════ */
-
-/** Tüm public içerikleri yükler, login sayfasını kapatır */
-function _guestModeAc() {
-    document.getElementById("loginPage").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    document.getElementById("navBar").classList.remove("hidden");
-
-    // Yönetici panellerini gizle
-    ["postPanel","nostaljiPendingSection","ilanOnaySection","adminPanel"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add("hidden");
-    });
-
-    // Profil butonunu misafir ikonuna çevir
-    const avBtn = document.getElementById("profilAvatarBtn");
-    if (avBtn) { avBtn.textContent = "👤"; avBtn.title = "Giriş Yap"; }
-
-    updateSoundBtn();
-    hakkimizdaYukle();
-    reklamYukle();
-    floatReklamYukle();
-    anketDinle();
-    hikayeleriYukle();
-    mesajlariDinle(); // misafir de sohbeti okuyabilir
-    tabDegistir("feed");
-    akisDinle();
-    nostaljiDinle();
-    isletmeleriYukle();
-}
-
-/**
- * Giriş gerektiren işlev çağrıldığında çağrılır.
- * @returns {boolean} true = kullanıcı misafir (işlemi durdur)
- */
-function loginGerekli() {
-    if (!currentUser) {
-        _loginModalAc();
-        return true;
-    }
-    return false;
-}
-
-/** Login sayfasını modal gibi aç */
-function _loginModalAc() {
-    // OTP adımını sıfırla
-    const otpS = document.getElementById("otpStep");
-    const regF = document.getElementById("registerForm");
-    if (otpS) otpS.classList.add("hidden");
-    if (regF) regF.classList.remove("hidden");
-    const otpIn = document.getElementById("otpInput");
-    if (otpIn) otpIn.value = "";
-    const errEl = document.getElementById("authError");
-    if (errEl) errEl.textContent = "";
-
-    // Dismiss butonunu göster (misafir modu)
-    const dismissBtn = document.getElementById("loginDismissBtn");
-    if (dismissBtn) dismissBtn.style.display = "";
-    const gl = document.getElementById("guestLink");
-    if (gl) gl.style.display = "";
-
-    document.getElementById("loginPage").classList.remove("hidden");
-}
-
-/** Dismiss butonu — login ekranını kapatır, misafir olarak devam */
-function loginSayfasiKapat() {
-    document.getElementById("loginPage").classList.add("hidden");
-    const gl = document.getElementById("guestLink");
-    if (gl) gl.style.display = "none";
 }

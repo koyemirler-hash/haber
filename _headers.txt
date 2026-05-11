@@ -1,0 +1,25 @@
+# ════════════════════════════════════════════════════════
+#  Netlify Güvenlik Başlıkları — emirler.web.tr
+# ════════════════════════════════════════════════════════
+
+/*
+  # Sitenin başka sitelerde iframe içinde açılmasını engelle
+  X-Frame-Options: DENY
+
+  # Tarayıcının MIME türünü yanlış tahmin etmesini engelle
+  X-Content-Type-Options: nosniff
+
+  # Eski tarayıcılar için XSS koruması
+  X-XSS-Protection: 1; mode=block
+
+  # Referer bilgisini sınırla
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Konum, mikrofon, kamera erişimini engelle (izin verilmediği sürece)
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
+
+  # HTTPS zorla (1 yıl)
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+  # İçerik Güvenlik Politikası (CSP)
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://*.firebaseapp.com https://*.googleapis.com https://cdn.onesignal.com https://onesignal.com https://cdnjs.cloudflare.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https: http:; media-src 'self' blob: https: http:; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com https://fcm.googleapis.com https://onesignal.com https://cdn.onesignal.com https://api.openweathermap.org https://api.collectapi.com; frame-src 'self' https://*.firebaseapp.com https://emirler-c5638.firebaseapp.com; worker-src 'self' blob: https://cdn.onesignal.com; manifest-src 'self';

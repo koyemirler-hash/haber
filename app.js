@@ -155,7 +155,6 @@ function playApproveSound() {
     } catch(e) {}
 }
 function sesToggle() {
-    setTimeout(sidebarPwaPanelGuncelle, 100);
     soundEnabled = !soundEnabled;
     localStorage.setItem("soundEnabled", soundEnabled ? "true" : "false");
     updateSoundBtn();

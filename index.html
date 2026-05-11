@@ -103,6 +103,28 @@
       <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
       <button class="btn btn-primary" onclick="kayitOl()">Kayıt Ol</button>
     </div>
+    <!-- OTP DOĞRULAMA ADIMI -->
+    <div id="otpStep" class="hidden" style="display:none;text-align:center;padding:4px 0 8px;">
+      <div style="font-size:40px;margin-bottom:8px;">📱</div>
+      <p style="font-weight:700;color:#2d3748;margin:0 0 4px;font-size:15px;">Telefon Doğrulama</p>
+      <p style="font-size:12px;color:#888;margin:0 0 14px;">
+        <span id="otpPhoneDisplay" style="font-weight:700;color:#588157;"></span><br>
+        numarasına 6 haneli kod gönderildi
+      </p>
+      <input id="otpInput" type="tel" inputmode="numeric" maxlength="6"
+             placeholder="● ● ● ● ● ●" class="input-field"
+             style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700;">
+      <button id="otpDogrulaBtn" class="btn btn-primary" onclick="otpDogrula()">
+        ✅ Doğrula ve Kayıt Ol
+      </button>
+      <button onclick="otpGeriDon()"
+              style="display:block;width:100%;margin-top:8px;background:#f1f5f9;
+                     color:#555;border:none;padding:12px;border-radius:12px;
+                     cursor:pointer;font-size:13px;font-weight:600;">
+        ← Geri Dön
+      </button>
+    </div>
+    <div id="recaptchaContainer"></div>
     <p id="authError" class="error-msg"></p>
     <p id="guestLink" style="text-align:center;margin:10px 0 0;font-size:12px;color:#bbb;display:none;">
       <a href="#" onclick="loginSayfasiKapat();return false;" style="color:#aaa;text-decoration:underline;">Misafir olarak devam et</a>
@@ -124,7 +146,6 @@
     <div class="sidebar-item active" id="snav-feed"     onclick="sidebarTabGit('feed')">    <span class="sidebar-icon">🏠</span><span>Akış</span></div>
     <div class="sidebar-item"        id="snav-ilan"     onclick="sidebarTabGit('ilan')">    <span class="sidebar-icon">📋</span><span>İlanlar</span></div>
     <div class="sidebar-item"        id="snav-nostalji" onclick="sidebarTabGit('nostalji')"><span class="sidebar-icon">📸</span><span>Nostalji</span></div>
-    <div class="sidebar-item"        id="snav-chat"     onclick="sidebarTabGit('chat')">    <span class="sidebar-icon">💬</span><span>Sohbet</span></div>
     <div class="sidebar-item"        id="snav-koy"      onclick="sidebarTabGit('koy')">     <span class="sidebar-icon">🌾</span><span>Köy Bilgileri</span></div>
     <div class="sidebar-item"        id="snav-biz"      onclick="sidebarTabGit('biz')">     <span class="sidebar-icon">🏢</span><span>Firmalar</span></div>
     <div class="sidebar-item"        id="snav-dernek"   onclick="sidebarTabGit('dernek')">  <span class="sidebar-icon">🤝</span><span>Dernek Çalışmaları</span></div>

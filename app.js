@@ -71,7 +71,9 @@ function oneSignalBaslat() {
 }
 
 async function oneSignalBildirimGonder(baslik, mesaj, url) {
+    // Sadece yetkili kullanıcılar bildirim gönderebilir
     if (!ONESIGNAL_API_KEY) return;
+    if (!currentUser || !yetkili()) return;
     try {
         await fetch("https://onesignal.com/api/v1/notifications", {
             method: "POST",
@@ -223,6 +225,10 @@ function previewFile(input, previewId) {
     preview.innerHTML = file.type.startsWith("video") ? `<video src="${url}" controls style="max-width:100%;border-radius:10px;max-height:180px;"></video>` : `<img src="${url}" style="max-width:100%;border-radius:10px;max-height:180px;object-fit:cover;">`;
 }
 async function cloudinaryYukle(file) {
+    // Güvenlik: sadece izin verilen tipler ve max 20MB
+    const izinliTipler = ["image/jpeg","image/jpg","image/png","image/gif","image/webp","video/mp4","video/quicktime","video/webm"];
+    if (!izinliTipler.includes(file.type)) throw new Error("Bu dosya tipi desteklenmiyor!");
+    if (file.size > 20 * 1024 * 1024) throw new Error("Dosya 20MB'dan büyük olamaz!");
     const fd = new FormData();
     fd.append("file", file); fd.append("upload_preset", UPLOAD_PRESET);
     const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, { method:"POST", body:fd });
@@ -682,7 +688,7 @@ async function mesajGonder() {
         if (chatMediaFile) { const r=await cloudinaryYukle(chatMediaFile); mediaUrl=r.url; mediaType=r.type; chatMediaTemizle(); }
         await db.collection("chat").add({ text:text||"", mediaUrl, mediaType, user:userProfile.name, uid:currentUser.uid, time:firebase.firestore.FieldValue.serverTimestamp() });
         document.getElementById("msgInput").value="";
-        oneSignalBildirimGonder("💬 " + userProfile.name, text||"📷 Medya paylaştı", "https://koyemirler-hash.github.io/haber");
+        // Bildirim: sadece duyurular için, chat spam önleme
         const box=document.getElementById("chatBox"); setTimeout(()=>box.scrollTop=box.scrollHeight,300);
     } catch(e) { alert("⚠️ Mesaj gönderilemedi: " + e.message); }
     btn.disabled=false;

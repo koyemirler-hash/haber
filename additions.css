@@ -45,8 +45,15 @@
 
 /* ─── BROWSER / PWA ONLY ─── */
 .browser-only { display:none !important; }
-body.browser-mode .browser-only { display:flex !important; }
-body.browser-mode .pwa-chat-item { display:none !important; }
+body.browser-mode .browser-only    { display:flex  !important; }
+body.browser-mode .pwa-chat-item   { display:none  !important; }
+
+/* Web'de Ayarlar ve Sohbet gizli — sadece PWA'da görünür */
+body.browser-mode #snav-settings   { display:none  !important; }
+body.browser-mode #snav-chat       { display:none  !important; }
+
+/* PWA'da hamburger (yan menü) butonu görünsün */
+body.pwa-mode .hamburger-btn       { display:flex  !important; }
 
 /* ════════════════════════════════════════════════════════
    KAYAN HABER BANDI (Ticker)

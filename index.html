@@ -269,6 +269,7 @@
   <!-- SOHBET (Sadece PWA) -->
   <section id="view-chat" class="view hidden">
     <div class="top-header">
+      <button class="hamburger-btn" onclick="sidebarToggle()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#fff;padding:4px 8px;line-height:1;">☰</button>
       <span class="header-title">💬 Köy Sohbeti</span>
       <button class="header-action-btn" onclick="tabDegistir('ozel')">✉️ Özel</button>
     </div>
@@ -286,7 +287,10 @@
 
   <!-- ÖZEL MESAJ -->
   <section id="view-ozel" class="view hidden">
-    <div class="top-header"><span class="header-title">✉️ Köylüler</span></div>
+    <div class="top-header">
+      <button class="hamburger-btn" onclick="sidebarToggle()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#fff;padding:4px 8px;line-height:1;">☰</button>
+      <span class="header-title">✉️ Köylüler</span>
+    </div>
     <div class="ozel-profil-bar">
       <label class="ozel-toggle-label">
         <input type="checkbox" id="profilGorunurToggle" onchange="profilGorunurlukDegistir()">

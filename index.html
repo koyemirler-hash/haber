@@ -245,13 +245,14 @@
   <section id="view-nostalji" class="view hidden">
     <div class="top-header">
       <span class="header-title">📸 Nostalji</span>
-      <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:auto;"><span></span><span></span><span></span></button>
+      <button class="header-action-btn" onclick="nostaljiFormToggle()">+ Anı Paylaş</button>
+      <button class="hamburger-btn browser-only" onclick="sidebarToggle()" style="margin-left:8px;"><span></span><span></span><span></span></button>
     </div>
     <div id="nostaljiPendingSection" class="pending-section hidden">
       <div class="pending-header"><span>⏳ Onay Bekleyen Gönderiler</span><span class="pending-count-badge" id="pendingCountText">0</span></div>
       <div id="nostaljiPendingList" class="post-list" style="padding-top:6px;"></div>
     </div>
-    <div class="post-panel">
+    <div id="nostaljiFormDiv" class="ilan-form-panel hidden">
       <div class="post-panel-inner nostalji-form">
         <div class="nostalji-form-title">📸 Anı Paylaş</div>
         <input id="nostaljiTitle" placeholder="Başlık..." class="input-field">

@@ -562,6 +562,7 @@ async function nostaljiPaylas() {
         await db.collection("nostalgia").add({ sender:userProfile.name, senderUid:currentUser.uid, senderRole:userProfile.rol||userProfile.role||"user", title, year, text, mediaUrl, mediaType, reactions:{}, commentCount:0, status:isPrivileged?"published":"pending", time:firebase.firestore.FieldValue.serverTimestamp() });
         ["nostaljiTitle","nostaljiYear","nostaljiText"].forEach(id => document.getElementById(id).value="");
         document.getElementById("nostaljiFile").value=""; document.getElementById("nostaljiPreview").innerHTML="";
+    var fd=document.getElementById("nostaljiFormDiv");if(fd)fd.classList.add("hidden");
         if (isPrivileged) { playApproveSound(); alert("✅ Anı yayınlandı!"); }
         else alert("✅ Anınız gönderildi! Onay sonrası yayınlanacak.");
     } catch(e) { alert("⚠️ Gönderilemedi: " + e.message); }
@@ -584,6 +585,7 @@ async function nostaljiSil(docId) {
 const ILAN_KAT = { satilik:"🏷️ Satılık", kiralik:"🔑 Kiralık", araniyor:"🔍 Aranıyor", kayip:"⚠️ Kayıp", diger:"📌 Diğer" };
 
 function ilanFormToggle() { if(loginGerekli())return; document.getElementById("ilanFormDiv").classList.toggle("hidden"); }
+function nostaljiFormToggle() { if(loginGerekli())return; document.getElementById("nostaljiFormDiv").classList.toggle("hidden"); }
 function ilanFiltre(kat, btn) {
     aktifIlanFiltre = kat;
     document.querySelectorAll(".ilan-filtre-btn").forEach(b => b.classList.remove("active"));

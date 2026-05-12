@@ -426,7 +426,7 @@ function tabDegistir(t) {
     if (t === "ilan" && !ilanlarDinleBasladi) { ilanlarDinleBasladi = true; ilanlarDinle(); }
     if (t === "koy") { havaDurumuYukle(); namazYukle(); tarimDinle(); asiYukle(); hastalikYukle(); }
     if (t === "settings") anketDinle();
-    if (t === "ozel") { koyluListesiYukle(); }
+    if (t === "ozel") { if(loginGerekli())return; koyluListesiYukle(); }
     if (t === "feed") hikayeleriYukle();
 }
 
@@ -781,6 +781,7 @@ async function profilGorunurlukDegistir() {
 }
 
 function koyluListesiYukle() {
+    if(!currentUser){_loginModalAc();return;}
     const el=document.getElementById("koyluListesi"); if (!el) return;
 
     db.collection("users").orderBy("lastSeen","desc").onSnapshot(snap => {
@@ -810,6 +811,7 @@ let ozelSohbetUnsubscribe = null;
 let ozelSohbetMedyaFile = null;
 
 function ozelSohbetAc(kisiUid, kisiAd) {
+    if(!currentUser){_loginModalAc();return;}
     ozelSohbetKisiUid=kisiUid;
     document.getElementById("koyluListesi").classList.add("hidden");
     document.getElementById("ozelSohbet").classList.remove("hidden");

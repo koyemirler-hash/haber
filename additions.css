@@ -45,14 +45,27 @@
 
 /* ─── BROWSER / PWA ONLY ─── */
 .browser-only { display:none !important; }
-body.browser-mode .browser-only   { display:flex !important; }
-body.browser-mode .pwa-chat-item  { display:none !important; }
-body.browser-mode #snav-settings  { display:none !important; }
-body.pwa-mode .hamburger-btn      { display:flex !important; }
+body.browser-mode .browser-only   { display:flex  !important; }
+body.browser-mode .pwa-chat-item  { display:none  !important; }
+
+/* Web'de sidebar'dan gizlenenler */
+body.browser-mode #snav-settings  { display:none  !important; }
+body.browser-mode #snav-chat      { display:none  !important; }
+body.browser-mode #snav-ozel      { display:none  !important; }
+
+/* PWA'da alt menü tamamen gizli — her şey yan menüde */
+body.pwa-mode #navBar             { display:none  !important; }
+
+/* PWA'da hamburger görünür */
+body.pwa-mode .hamburger-btn      { display:flex  !important; }
+
+/* PWA'da header ikonlar yan menüye taşındı */
 body.pwa-mode #soundToggleBtn,
-body.pwa-mode #profilAvatarBtn    { display:none !important; }
+body.pwa-mode #profilAvatarBtn    { display:none  !important; }
+
+/* PWA Sidebar kullanıcı paneli */
 body.pwa-mode .sidebar-pwa-user,
-body.pwa-mode .sidebar-pwa-footer { display:flex !important; }
+body.pwa-mode .sidebar-pwa-footer { display:flex  !important; }
 
 /* ════════════════════════════════════════════════════════
    KAYAN HABER BANDI (Ticker)
@@ -302,3 +315,6 @@ body.pwa-mode { padding-bottom: 54px !important; }
 .sidebar-pwa-exit-btn{background:#fee2e2;color:#dc2626;border:none;padding:10px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;width:100%;}
 body.pwa-mode #sidebarNav{display:flex!important;flex-direction:column;}
 body.pwa-mode #sidebarNav .sidebar-menu{flex:1;overflow-y:auto;}
+
+/* PWA alt menü yok, padding sıfır */
+body.pwa-mode { padding-bottom: 0 !important; }

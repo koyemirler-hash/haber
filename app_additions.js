@@ -68,6 +68,7 @@ function sidebarTabGit(t) {
     setTimeout(function() {
         if (t==='dernek') { showDernek(); return; }
         if (t==='muhtar') { showMuhtar(); return; }
+        if (t==='ozel')   { try { tabDegistir('ozel'); } catch(e) {} syncSidebar('ozel'); return; }
         try { tabDegistir(t); } catch(e) {}
         syncSidebar(t);
     }, 180);

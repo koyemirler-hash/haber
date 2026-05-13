@@ -270,7 +270,6 @@ async function girisYap() {
         document.getElementById("authError").textContent = m[e.code] || ("Giriş başarısız! Kod: " + e.code);
     }
 }
-let _rcV=null,_smsC=null,_pReg=null;
 async function kayitOl(){
     var name=document.getElementById("regName").value.trim();
     var phone=document.getElementById("regPhone").value.trim().replace(/\s/g,"");
@@ -278,72 +277,108 @@ async function kayitOl(){
     var pass=document.getElementById("regPass").value;
     var err=document.getElementById("authError");
     err.style.color="";
-    if(!name||!phone||!email||!pass){err.textContent="Tüm alanları doldurun!";return;}
+    if(!name||!email||!pass){err.textContent="Ad, e-posta ve şifre zorunludur!";return;}
     if(pass.length<6){err.textContent="Şifre en az 6 karakter!";return;}
-    if(!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin (05XX ile başlamalı)";return;}
-    err.textContent="⏳ Kontrol ediliyor...";
+    if(phone&&!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin (05XX...) veya boş bırakın";return;}
+    err.textContent="⏳ Kayıt yapılıyor...";
     try{
-        var tk=await db.collection("users").where("phone","==",phone).get();
-        if(!tk.empty){err.textContent="❌ Bu telefon zaten kayıtlı!";return;}
-    }catch(e){err.textContent="❌ Hata: "+e.message;return;}
-    var tel=phone.replace(/[^0-9]/g,"");
-    if(tel.startsWith("0"))tel="+9"+tel;
-    else if(!tel.startsWith("+"))tel="+90"+tel;
-    _pReg={name,phone,email,pass};
-    err.textContent="📱 Doğrulama kodu gönderiliyor...";
-    try{
-        if(_rcV){try{_rcV.clear();}catch(_){}}
-        _rcV=new firebase.auth.RecaptchaVerifier("recaptchaContainer",{size:"invisible",callback:()=>{}});
-        _smsC=await auth.signInWithPhoneNumber(tel,_rcV);
-        document.getElementById("registerForm").style.display="none";
-        document.getElementById("registerForm").classList.add("hidden");
-        var ots=document.getElementById("otpStep");
-        if(ots){ots.style.display="";ots.classList.remove("hidden");}
-        document.getElementById("otpPhoneDisplay").textContent=tel;
-        err.style.color="#22c55e";
-        err.textContent="✅ Doğrulama kodu gönderildi!";
-    }catch(e){
-        var m={"auth/invalid-phone-number":"❌ Geçersiz telefon numarası!",
-               "auth/too-many-requests":"⚠️ Çok fazla deneme. Lütfen bekleyin.",
-               "auth/operation-not-allowed":"⚠️ Firebase Console → Authentication → Phone numarasını etkinleştirin!"};
-        err.style.color="";err.textContent=m[e.code]||"❌ SMS hatası: "+(e.message||e.code);
-        if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
-    }
-}
-async function otpDogrula(){
-    var otp=document.getElementById("otpInput").value.trim();
-    var err=document.getElementById("authError");
-    if(otp.length<6){err.textContent="6 haneli kodu eksiksiz girin!";return;}
-    if(!_smsC||!_pReg){err.textContent="Hata: Lütfen baştan başlayın.";otpGeriDon();return;}
-    var btn=document.getElementById("otpDogrulaBtn");
-    if(btn){btn.disabled=true;btn.textContent="⏳ Doğrulanıyor...";}
-    err.style.color="";err.textContent="⏳ Doğrulanıyor...";
-    try{
-        var r=await _smsC.confirm(otp);
-        await r.user.delete();
-        var {name,phone,email,pass}=_pReg;
+        if(phone){
+            var tk=await db.collection("users").where("phone","==",phone).get();
+            if(!tk.empty){err.textContent="❌ Bu telefon zaten kayıtlı!";return;}
+        }
         var res=await auth.createUserWithEmailAndPassword(email,pass);
-        await db.collection("users").doc(res.user.uid).set({name,phone,email,
-            rol:email===ADMIN_EMAIL?"admin":"user",online:true,blocked:false,
-            lastSeen:firebase.firestore.FieldValue.serverTimestamp()});
-        _pReg=null;_smsC=null;
+        await db.collection("users").doc(res.user.uid).set({
+            name,phone:phone||"",email,
+            rol:email===ADMIN_EMAIL?"admin":"user",
+            online:true,blocked:false,
+            lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+        });
         err.style.color="#22c55e";err.textContent="✅ Kayıt başarılı! Hoş geldiniz 🎉";
     }catch(e){
-        var m={"auth/invalid-verification-code":"❌ Hatalı doğrulama kodu!",
-               "auth/code-expired":"❌ Kodun süresi doldu, yeniden deneyin.",
-               "auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!"};
-        err.style.color="";err.textContent=m[e.code]||"❌ Hata: "+(e.message||e.code);
-        if(btn){btn.disabled=false;btn.textContent="✅ Doğrula ve Kayıt Ol";}
+        var m={"auth/email-already-in-use":"❌ Bu e-posta zaten kayıtlı!","auth/invalid-email":"❌ Geçersiz e-posta!"};
+        err.style.color="";err.textContent=m[e.code]||"❌ Kayıt hatası: "+(e.message||e.code);
     }
 }
-function otpGeriDon(){
-    var ots=document.getElementById("otpStep");
-    if(ots){ots.style.display="none";ots.classList.add("hidden");}
-    var rf=document.getElementById("registerForm");
-    if(rf){rf.style.display="";rf.classList.remove("hidden");}
-    document.getElementById("otpInput").value="";
+
+/* ── Google ile Giriş / Kayıt ── */
+async function googleIleKayit(){
+    var err=document.getElementById("authError");
+    err.style.color="";err.textContent="⏳ Google ile bağlanılıyor...";
+    try{
+        var provider=new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({prompt:"select_account"});
+        var result=await auth.signInWithPopup(provider);
+        var user=result.user;
+        var doc=await db.collection("users").doc(user.uid).get();
+        if(!doc.exists){
+            // Yeni kullanıcı — profil tamamlama adımı
+            var adInput=document.getElementById("googleAdSoyad");
+            if(adInput&&user.displayName) adInput.value=user.displayName;
+            document.getElementById("loginForm").style.display="none";
+            document.getElementById("registerForm").style.display="none";
+            var gpa=document.getElementById("googleProfilAdim");
+            if(gpa){gpa.style.display="";gpa.classList.remove("hidden");}
+            var db2=document.getElementById("loginDismissBtn");
+            if(db2)db2.style.display="none";
+            err.textContent="";
+        }
+        // Mevcut kullanıcı: auth.onAuthStateChanged akışı devam eder
+    }catch(e){
+        var m={"auth/popup-closed-by-user":"İptal edildi.",
+               "auth/popup-blocked":"Popup engellendi! Tarayıcı ayarlarından popup'a izin verin.",
+               "auth/cancelled-popup-request":""};
+        err.style.color="";err.textContent=m[e.code]||(e.code==="auth/cancelled-popup-request"?"":"❌ Google giriş hatası: "+(e.message||e.code));
+    }
+}
+
+async function googleProfilKaydet(){
+    var user=auth.currentUser;
+    if(!user)return;
+    var name=document.getElementById("googleAdSoyad").value.trim();
+    var phone=document.getElementById("googleTelefon").value.trim().replace(/\s/g,"");
+    var err=document.getElementById("authError");
+    err.style.color="";
+    if(!name){err.textContent="Ad Soyad zorunludur!";return;}
+    if(phone&&!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin veya boş bırakın";return;}
+    err.textContent="⏳ Kaydediliyor...";
+    try{
+        if(phone){
+            var tk=await db.collection("users").where("phone","==",phone).get();
+            if(!tk.empty){err.textContent="❌ Bu telefon zaten kayıtlı!";return;}
+        }
+        await db.collection("users").doc(user.uid).set({
+            name,phone:phone||"",email:user.email||"",
+            photoURL:user.photoURL||"",
+            rol:user.email===ADMIN_EMAIL?"admin":"user",
+            online:true,blocked:false,
+            lastSeen:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        err.style.color="#22c55e";err.textContent="✅ Hoş geldiniz!";
+        var gpa=document.getElementById("googleProfilAdim");
+        if(gpa){gpa.style.display="none";gpa.classList.add("hidden");}
+    }catch(e){
+        err.style.color="";err.textContent="❌ Kaydedilemedi: "+(e.message||e.code);
+    }
+}
+
+function googleProfilIptal(){
+    // Google kullanıcısını sil ve çıkış yap
+    var user=auth.currentUser;
+    if(user) user.delete().catch(()=>{});
+    auth.signOut();
+    var gpa=document.getElementById("googleProfilAdim");
+    if(gpa){gpa.style.display="none";gpa.classList.add("hidden");}
+    var lf=document.getElementById("loginForm");
+    if(lf){lf.style.display="";lf.classList.remove("hidden");}
+    var db2=document.getElementById("loginDismissBtn");
+    if(db2)db2.style.display="";
     document.getElementById("authError").textContent="";
-    _smsC=null;if(_rcV){try{_rcV.clear();}catch(_){}_rcV=null;}
+}
+
+function otpDogrula(){document.getElementById("authError").textContent="SMS doğrulaması kaldırıldı. Google ile kayıt olun.";}
+function otpGeriDon(){
+    var ots=document.getElementById("otpStep");if(ots){ots.style.display="none";ots.classList.add("hidden");}
+    var rf=document.getElementById("registerForm");if(rf){rf.style.display="";rf.classList.remove("hidden");}
 }
 
 async function cikisYap() {
@@ -357,7 +392,14 @@ auth.onAuthStateChanged(async user => {
         const docRef = db.collection("users").doc(user.uid);
         let docSnap = await docRef.get();
         if (!docSnap.exists) {
-            await docRef.set({ name:user.displayName||user.email.split("@")[0], email:user.email, rol:user.email===ADMIN_EMAIL?"admin":"user", online:true, blocked:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp() });
+            // Google kullanıcısı profil tamamlama adımındaysa bekle
+            var gpa=document.getElementById("googleProfilAdim");
+            if(gpa && gpa.style.display!=="none") {
+                // googleProfilKaydet() tamamlanınca tekrar tetiklenecek
+                return;
+            }
+            // E-posta ile kayıt — temel profil oluştur
+            await docRef.set({ name:user.displayName||user.email.split("@")[0], email:user.email, phone:"", rol:user.email===ADMIN_EMAIL?"admin":"user", online:true, blocked:false, lastSeen:firebase.firestore.FieldValue.serverTimestamp() });
             docSnap = await docRef.get();
         } else { await docRef.update({ online:true, lastSeen:firebase.firestore.FieldValue.serverTimestamp() }); }
         userProfile = docSnap.data();

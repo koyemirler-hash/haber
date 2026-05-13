@@ -425,3 +425,28 @@ video.chat-media { background: #000; }
 .durum-secici { display:flex;flex-wrap:wrap;gap:8px; }
 .durum-btn { background:#f5f5f5;border:2px solid #e0e0e0;border-radius:20px;padding:7px 14px;font-size:13px;cursor:pointer;transition:all 0.2s; }
 .durum-btn-secili { background:#e8f5e9;border-color:var(--green);color:var(--green-dark);font-weight:700; }
+
+/* ── Google Ana Giriş Butonu ── */
+.btn-google-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  background: #fff;
+  color: #3c4043;
+  border: 2px solid #dadce0;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 4px;
+}
+.btn-google-main:hover, .btn-google-main:active {
+  background: #f8f9fa;
+  border-color: #4285f4;
+  box-shadow: 0 2px 8px rgba(66,133,244,0.2);
+}

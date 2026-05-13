@@ -262,13 +262,8 @@ function switchAuthTab(tab) {
     document.getElementById("authError").textContent="";
 }
 async function girisYap() {
-    const email = document.getElementById("logEmail").value.trim(), pass = document.getElementById("logPass").value;
-    if (!email || !pass) return;
-    try { await auth.signInWithEmailAndPassword(email, pass); }
-    catch(e) {
-        const m = {"auth/user-not-found":"Bu e-posta ile kayıt bulunamadı!","auth/wrong-password":"Şifre hatalı!","auth/invalid-email":"Geçersiz e-posta!","auth/too-many-requests":"Çok fazla deneme. Lütfen bekleyin.","auth/invalid-credential":"E-posta veya şifre hatalı!","auth/invalid-login-credentials":"E-posta veya şifre hatalı!"};
-        document.getElementById("authError").textContent = m[e.code] || ("Giriş başarısız! Kod: " + e.code);
-    }
+    // Artık sadece Google ile giriş
+    googleIleKayit();
 }
 async function kayitOl(){
     var name=document.getElementById("regName").value.trim();
@@ -309,18 +304,24 @@ async function googleIleKayit(){
         provider.setCustomParameters({prompt:"select_account"});
         var result=await auth.signInWithPopup(provider);
         var user=result.user;
-        var doc=await db.collection("users").doc(user.uid).get();
-        if(!doc.exists){
-            // Yeni kullanıcı — profil tamamlama adımı
+        var userDoc=await db.collection("users").doc(user.uid).get();
+        if(!userDoc.exists){
+            // YENİ KULLANICI — profil tamamlama adımı göster
             var adInput=document.getElementById("googleAdSoyad");
-            if(adInput&&user.displayName) adInput.value=user.displayName;
-            document.getElementById("loginForm").style.display="none";
-            document.getElementById("registerForm").style.display="none";
+            if(adInput) adInput.value=user.displayName||"";
+            ["loginForm","registerForm"].forEach(function(id){
+                var el=document.getElementById(id);
+                if(el){el.style.display="none";el.classList.add("hidden");}
+            });
             var gpa=document.getElementById("googleProfilAdim");
             if(gpa){gpa.style.display="";gpa.classList.remove("hidden");}
             var db2=document.getElementById("loginDismissBtn");
             if(db2)db2.style.display="none";
             err.textContent="";
+        } else {
+            // MEVCUT KULLANICI — doğrudan giriş, auth state devam eder
+            err.style.color="#22c55e";
+            err.textContent="✅ Giriş yapıldı!";
         }
         // Mevcut kullanıcı: auth.onAuthStateChanged akışı devam eder
     }catch(e){
@@ -339,6 +340,13 @@ async function googleProfilKaydet(){
     var err=document.getElementById("authError");
     err.style.color="";
     if(!name){err.textContent="Ad Soyad zorunludur!";return;}
+    // Aynı Gmail ile başka kayıt var mı?
+    var emailKontrol=await db.collection("users").where("email","==",user.email).get();
+    if(!emailKontrol.empty){
+        // Kendi dokümanı dışında başka kayıt varsa reddet
+        var baska=emailKontrol.docs.find(function(d){return d.id!==user.uid;});
+        if(baska){err.textContent="❌ Bu Gmail zaten başka bir hesapta kayıtlı!";return;}
+    }
     if(phone&&!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin veya boş bırakın";return;}
     err.textContent="⏳ Kaydediliyor...";
     try{
@@ -385,6 +393,9 @@ async function cikisYap() {
     if (currentUser) { try { await db.collection("users").doc(currentUser.uid).update({ online:false }); } catch(e) {} }
     await auth.signOut(); location.reload();
 }
+
+// Oturum kalıcı olsun — çıkış yapana kadar açık kalsın
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
 
 auth.onAuthStateChanged(async user => {
     if (user) {

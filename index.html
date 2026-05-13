@@ -101,53 +101,70 @@
 <div id="loginPage" class="overlay-screen hidden">
   <div class="login-card" style="position:relative;">
     <button id="loginDismissBtn" onclick="loginSayfasiKapat()" style="display:none;position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;color:#aaa;cursor:pointer;z-index:1;">✕</button>
+
     <div class="login-logo">🏡</div>
     <h2>Emirler Köyü</h2>
+    <p style="font-size:13px;color:#888;margin:-8px 0 20px;text-align:center;">Köy Portalına Hoş Geldiniz</p>
+
     <div class="tab-switch">
-      <button class="tab-btn active" id="loginTabBtn" onclick="switchAuthTab('login')">Giriş Yap</button>
-      <button class="tab-btn" id="registerTabBtn" onclick="switchAuthTab('register')">Kayıt Ol</button>
+      <button class="tab-btn active" id="loginTabBtn"    onclick="switchAuthTab('login')">Giriş Yap</button>
+      <button class="tab-btn"        id="registerTabBtn" onclick="switchAuthTab('register')">Kayıt Ol</button>
     </div>
+
+    <!-- GİRİŞ FORMU -->
     <div id="loginForm">
-      <input id="logEmail" type="email" placeholder="E-posta" class="input-field">
-      <input id="logPass" type="password" placeholder="Şifre" class="input-field">
-      <button class="btn btn-primary" onclick="girisYap()">Giriş Yap</button>
-      <div style="text-align:center;color:#ccc;font-size:12px;margin:10px 0 4px;display:flex;align-items:center;gap:8px;">
-        <hr style="flex:1;border:none;border-top:1px solid #eee;">
-        <span>veya</span>
-        <hr style="flex:1;border:none;border-top:1px solid #eee;">
-      </div>
-      <button class="btn btn-google" onclick="googleIleKayit()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#444;border:1.5px solid #ddd;padding:12px;border-radius:14px;font-size:14px;font-weight:600;width:100%;cursor:pointer;">
-        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.5 2.7 13.5l7.8 6C12.4 13.2 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.5 37.4 46.5 31.4 46.5 24.5z"/><path fill="#FBBC05" d="M10.5 28.5A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A23.8 23.8 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.2 0-11.5-4.2-13.4-9.8l-8 6.2C6.6 42.5 14.6 48 24 48z"/></svg>
+      <p style="font-size:13px;color:#666;text-align:center;margin:16px 0 20px;line-height:1.6;">
+        Google hesabınızla güvenli şekilde<br>giriş yapın.
+      </p>
+      <button class="btn-google-main" onclick="googleIleKayit()">
+        <svg width="22" height="22" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.5 2.7 13.5l7.8 6C12.4 13.2 17.8 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.5 37.4 46.5 31.4 46.5 24.5z"/>
+          <path fill="#FBBC05" d="M10.5 28.5A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A23.8 23.8 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8-6z"/>
+          <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.2 0-11.5-4.2-13.4-9.8l-8 6.2C6.6 42.5 14.6 48 24 48z"/>
+        </svg>
         Google ile Giriş Yap
       </button>
+      <p style="font-size:11px;color:#bbb;text-align:center;margin-top:12px;">
+        Çıkış yapana kadar oturumunuz açık kalır
+      </p>
     </div>
+
+    <!-- KAYIT FORMU -->
     <div id="registerForm" class="hidden" style="display:none;">
-      <input id="regName" type="text" placeholder="Ad Soyad *" class="input-field">
-      <input id="regPhone" type="tel" placeholder="Telefon Numaranız * (05XX...)" class="input-field">
-      <input id="regEmail" type="email" placeholder="E-posta *" class="input-field">
-      <input id="regPass" type="password" placeholder="Şifre (min 6 karakter) *" class="input-field">
-      <p style="font-size:11px;color:#888;margin:-4px 0 10px;text-align:center;">Aynı numara iki farklı hesapta kullanılamaz</p>
-      <button class="btn btn-primary" onclick="kayitOl()">Kayıt Ol</button>
+      <p style="font-size:13px;color:#666;text-align:center;margin:16px 0 20px;line-height:1.6;">
+        Google hesabınızla kayıt olun.<br>Adınızı ve isteğe bağlı telefon<br>numaranızı girerek devam edin.
+      </p>
+      <button class="btn-google-main" onclick="googleIleKayit()">
+        <svg width="22" height="22" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.6 0 6.6 5.5 2.7 13.5l7.8 6C12.4 13.2 17.8 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.5 37.4 46.5 31.4 46.5 24.5z"/>
+          <path fill="#FBBC05" d="M10.5 28.5A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A23.8 23.8 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8-6z"/>
+          <path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.2 0-11.5-4.2-13.4-9.8l-8 6.2C6.6 42.5 14.6 48 24 48z"/>
+        </svg>
+        Google ile Kayıt Ol
+      </button>
+      <p style="font-size:11px;color:#bbb;text-align:center;margin-top:12px;">
+        Aynı Gmail ile birden fazla hesap açılamaz
+      </p>
     </div>
-    <!-- Google Profil Tamamlama Adımı -->
+
+    <!-- GOOGLE PROFİL TAMAMLAMA -->
     <div id="googleProfilAdim" class="hidden" style="display:none;text-align:center;padding:4px 0 8px;">
       <div style="font-size:40px;margin-bottom:8px;">👋</div>
       <p style="font-weight:700;color:#2d3748;margin:0 0 4px;font-size:15px;">Profilinizi Tamamlayın</p>
-      <p style="font-size:12px;color:#888;margin:0 0 14px;">Google hesabıyla kayıt oldunuz. Adınızı girin:</p>
+      <p style="font-size:12px;color:#888;margin:0 0 14px;">Adınızı girin. Telefon opsiyoneldir.</p>
       <input id="googleAdSoyad" placeholder="Ad Soyad *" class="input-field" style="text-align:center;">
       <input id="googleTelefon" placeholder="Telefon (opsiyonel, 05XX...)" class="input-field" type="tel">
+      <p style="font-size:11px;color:#aaa;margin:4px 0 10px;">Aynı telefon iki farklı hesapta kullanılamaz</p>
       <button class="btn btn-primary" onclick="googleProfilKaydet()">✅ Devam Et</button>
       <button onclick="googleProfilIptal()" style="display:block;width:100%;margin-top:8px;background:#f1f5f9;color:#555;border:none;padding:12px;border-radius:12px;cursor:pointer;font-size:13px;">← İptal</button>
     </div>
-    <div id="otpStep" class="hidden" style="display:none;text-align:center;padding:4px 0 8px;">
-      <div style="font-size:40px;margin-bottom:8px;">📱</div>
-      <p style="font-weight:700;color:#2d3748;margin:0 0 4px;font-size:15px;">Telefon Doğrulama</p>
-      <p style="font-size:12px;color:#888;margin:0 0 14px;"><span id="otpPhoneDisplay" style="font-weight:700;color:#588157;"></span><br>numarasına 6 haneli kod gönderildi</p>
-      <input id="otpInput" type="tel" inputmode="numeric" maxlength="6" placeholder="● ● ● ● ● ●" class="input-field" style="text-align:center;font-size:22px;letter-spacing:6px;font-weight:700;">
-      <button id="otpDogrulaBtn" class="btn btn-primary" onclick="otpDogrula()">✅ Doğrula ve Kayıt Ol</button>
-      <button onclick="otpGeriDon()" style="display:block;width:100%;margin-top:8px;background:#f1f5f9;color:#555;border:none;padding:12px;border-radius:12px;cursor:pointer;font-size:13px;">← Geri Dön</button>
-    </div>
+
+    <!-- OTP (artık kullanılmıyor, eski uyumluluğu için boş) -->
+    <div id="otpStep" class="hidden" style="display:none;"></div>
     <div id="recaptchaContainer"></div>
+
     <p id="authError" class="error-msg"></p>
     <p id="guestLink" style="display:none;text-align:center;margin:8px 0 0;font-size:12px;">
       <a href="#" onclick="loginSayfasiKapat();return false;" style="color:#aaa;text-decoration:underline;">Misafir olarak devam et</a>

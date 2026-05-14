@@ -1,6 +1,6 @@
 // Emirler Köyü PWA - Service Worker v11
 const CACHE_NAME = "emirler-v19";
-const STATIC_ASSETS = ["./index.html","./style.css","./app.js","./manifest.json","./ikon_192.png","./karekod.png"];
+const STATIC_ASSETS = ["./index.html","./style.css","./additions.css","./app.js","./app_additions.js","./manifest.json","./ikon_192.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(STATIC_ASSETS)).catch(()=>{})); self.skipWaiting(); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))); self.clients.claim(); });
 self.addEventListener("fetch", e => {

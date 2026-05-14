@@ -244,23 +244,7 @@ function onayVer() {
     try{document.getElementById("termsOverlay").classList.add("hidden");}catch(e){}
 }
 
-function switchAuthTab(tab) {
-    var lf=document.getElementById("loginForm"),rf=document.getElementById("registerForm");
-    var ots=document.getElementById("otpStep");
-    if(ots){ots.style.display="none";ots.classList.add("hidden");}
-    if(tab==="login"){
-        lf.style.display="";lf.classList.remove("hidden");
-        rf.style.display="none";rf.classList.add("hidden");
-        document.getElementById("loginTabBtn").classList.add("active");
-        document.getElementById("registerTabBtn").classList.remove("active");
-    } else {
-        lf.style.display="none";lf.classList.add("hidden");
-        rf.style.display="";rf.classList.remove("hidden");
-        document.getElementById("loginTabBtn").classList.remove("active");
-        document.getElementById("registerTabBtn").classList.add("active");
-    }
-    document.getElementById("authError").textContent="";
-}
+function switchAuthTab(tab) { try { /* tab sistemi kaldırıldı */ } catch(e){} }
 async function girisYap() {
     // Artık sadece Google ile giriş
     googleIleKayit();
@@ -298,7 +282,9 @@ async function kayitOl(){
 /* ── Google ile Giriş / Kayıt ── */
 async function googleIleKayit(){
     var err=document.getElementById("authError");
-    err.style.color="";err.textContent="⏳ Google ile bağlanılıyor...";
+    if(err){err.style.color="";err.textContent="⏳ Bağlanılıyor...";}
+    var btn=document.getElementById("googleGirisBtn");
+    if(btn){btn.disabled=true;btn.style.opacity="0.7";}
     try{
         var provider=new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({prompt:"select_account"});
@@ -306,22 +292,26 @@ async function googleIleKayit(){
         var user=result.user;
         var userDoc=await db.collection("users").doc(user.uid).get();
         if(!userDoc.exists){
-            // YENİ KULLANICI — profil tamamlama adımı göster
+            // YENİ KULLANICI — tam ekran kayıt formu
+            // Login sayfasını kapat
+            var lp=document.getElementById("loginPage");
+            if(lp)lp.classList.add("hidden");
+            // Google bilgilerini form'a doldur
             var adInput=document.getElementById("googleAdSoyad");
-            if(adInput) adInput.value=user.displayName||"";
-            ["loginForm","registerForm"].forEach(function(id){
-                var el=document.getElementById(id);
-                if(el){el.style.display="none";el.classList.add("hidden");}
-            });
-            var gpa=document.getElementById("googleProfilAdim");
-            if(gpa){gpa.style.display="";gpa.classList.remove("hidden");}
-            var db2=document.getElementById("loginDismissBtn");
-            if(db2)db2.style.display="none";
-            err.textContent="";
+            if(adInput)adInput.value=user.displayName||"";
+            var fotoEl=document.getElementById("kayitGoogleFoto");
+            if(fotoEl)fotoEl.src=user.photoURL||"";
+            var adEl=document.getElementById("kayitGoogleAd");
+            if(adEl)adEl.textContent=user.displayName||user.email;
+            var emailEl=document.getElementById("kayitGoogleEmail");
+            if(emailEl)emailEl.textContent=user.email||"";
+            // Tam ekran overlay'i göster
+            var ov=document.getElementById("kayitOverlay");
+            if(ov){ov.style.display="flex";ov.classList.remove("hidden");}
+            if(err)err.textContent="";
         } else {
-            // MEVCUT KULLANICI — doğrudan giriş, auth state devam eder
-            err.style.color="#22c55e";
-            err.textContent="✅ Giriş yapıldı!";
+            // MEVCUT KULLANICI — auth state devam eder
+            if(err){err.style.color="#22c55e";err.textContent="✅ Giriş yapıldı!";}
         }
         // Mevcut kullanıcı: auth.onAuthStateChanged akışı devam eder
     }catch(e){
@@ -329,6 +319,9 @@ async function googleIleKayit(){
                "auth/popup-blocked":"Popup engellendi! Tarayıcı ayarlarından popup'a izin verin.",
                "auth/cancelled-popup-request":""};
         err.style.color="";err.textContent=m[e.code]||(e.code==="auth/cancelled-popup-request"?"":"❌ Google giriş hatası: "+(e.message||e.code));
+    } finally {
+        var btn2=document.getElementById("googleGirisBtn");
+        if(btn2){btn2.disabled=false;btn2.style.opacity="";}
     }
 }
 
@@ -339,7 +332,12 @@ async function googleProfilKaydet(){
     var phone=document.getElementById("googleTelefon").value.trim().replace(/\s/g,"");
     var err=document.getElementById("authError");
     err.style.color="";
-    if(!name){err.textContent="Ad Soyad zorunludur!";return;}
+    var ke=document.getElementById("kayitError");
+    if(!name){
+        if(ke)ke.textContent="Ad Soyad zorunludur!";
+        if(err)err.textContent="Ad Soyad zorunludur!";
+        return;
+    }
     // Aynı Gmail ile başka kayıt var mı?
     var emailKontrol=await db.collection("users").where("email","==",user.email).get();
     if(!emailKontrol.empty){
@@ -347,7 +345,12 @@ async function googleProfilKaydet(){
         var baska=emailKontrol.docs.find(function(d){return d.id!==user.uid;});
         if(baska){err.textContent="❌ Bu Gmail zaten başka bir hesapta kayıtlı!";return;}
     }
-    if(phone&&!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){err.textContent="Geçerli telefon girin veya boş bırakın";return;}
+    if(phone&&!/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g,""))){
+        var ke2=document.getElementById("kayitError");
+        if(ke2)ke2.textContent="Geçerli telefon girin (05XX...) veya boş bırakın";
+        if(err)err.textContent="Geçerli telefon girin (05XX...) veya boş bırakın";
+        return;
+    }
     err.textContent="⏳ Kaydediliyor...";
     try{
         if(phone){
@@ -362,24 +365,21 @@ async function googleProfilKaydet(){
             lastSeen:firebase.firestore.FieldValue.serverTimestamp()
         });
         err.style.color="#22c55e";err.textContent="✅ Hoş geldiniz!";
-        var gpa=document.getElementById("googleProfilAdim");
-        if(gpa){gpa.style.display="none";gpa.classList.add("hidden");}
+        var ov=document.getElementById("kayitOverlay");
+        if(ov){ov.style.display="none";ov.classList.add("hidden");}
+        var ke3=document.getElementById("kayitError");
+        if(ke3)ke3.textContent="";
     }catch(e){
         err.style.color="";err.textContent="❌ Kaydedilemedi: "+(e.message||e.code);
     }
 }
 
 function googleProfilIptal(){
-    // Google kullanıcısını sil ve çıkış yap
     var user=auth.currentUser;
     if(user) user.delete().catch(()=>{});
     auth.signOut();
-    var gpa=document.getElementById("googleProfilAdim");
-    if(gpa){gpa.style.display="none";gpa.classList.add("hidden");}
-    var lf=document.getElementById("loginForm");
-    if(lf){lf.style.display="";lf.classList.remove("hidden");}
-    var db2=document.getElementById("loginDismissBtn");
-    if(db2)db2.style.display="";
+    var ov=document.getElementById("kayitOverlay");
+    if(ov){ov.style.display="none";ov.classList.add("hidden");}
     document.getElementById("authError").textContent="";
 }
 

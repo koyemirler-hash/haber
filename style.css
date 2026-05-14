@@ -450,3 +450,7 @@ video.chat-media { background: #000; }
   border-color: #4285f4;
   box-shadow: 0 2px 8px rgba(66,133,244,0.2);
 }
+
+/* Kayıt Overlay */
+#kayitOverlay { overflow-y: auto; }
+#kayitOverlay .input-field { margin-bottom: 10px; }

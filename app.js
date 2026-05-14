@@ -1640,7 +1640,14 @@ async function hikayeSil() {
 }
 
 if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch(err => console.warn("SW:", err));
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js", {scope: "/"})
+            .then(reg => {
+                console.log("SW kayıtlı:", reg.scope);
+                reg.update(); // Her yüklemede güncelle
+            })
+            .catch(err => console.warn("SW hatası:", err));
+    });
 }
 
 

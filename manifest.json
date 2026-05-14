@@ -2,8 +2,8 @@
   "name": "Emirler Köyü Portalı",
   "short_name": "Emirler",
   "description": "Emirler Köyü resmi uygulaması",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#588157",
   "theme_color": "#588157",
@@ -18,15 +18,26 @@
       "src": "ikon_192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "ikon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "ikon_512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "ikon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
-  "screenshots": [],
-  "related_applications": []
+  "id": "/"
 }

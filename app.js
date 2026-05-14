@@ -27,11 +27,22 @@ let floatReklamKapatildi = false, ozelSohbetKisiUid = null, anketCountdownInterv
 let secilenDurum = "", secilenAvatarDosya = null, aktifHikayeId = null;
 
 window.addEventListener("beforeinstallprompt", e => {
-    e.preventDefault(); deferredInstallPrompt = e;
-    document.getElementById("pwaInstallBanner").classList.remove("hidden");
-    document.body.classList.add("pwa-banner-acik");
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    window._pwaPrompt = e;
+    const b = document.getElementById("pwaInstallBanner");
+    if (b) { b.classList.remove("hidden"); document.body.classList.add("pwa-banner-acik"); }
     const sb = document.getElementById("settingsInstallBtn");
     if (sb) sb.style.display = "";
+});
+
+// Sayfa yüklenince _pwaPrompt'u kontrol et (erken event yakalanmış olabilir)
+window.addEventListener("load", function() {
+    if (window._pwaPrompt) {
+        deferredInstallPrompt = window._pwaPrompt;
+        const b = document.getElementById("pwaInstallBanner");
+        if (b) b.classList.remove("hidden");
+    }
 });
 window.addEventListener("appinstalled", () => {
     document.getElementById("pwaInstallBanner").classList.add("hidden");
@@ -39,6 +50,7 @@ window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null;
 });
 function pwaYukle() {
+    if (!deferredInstallPrompt && window._pwaPrompt) deferredInstallPrompt = window._pwaPrompt;
     if (!deferredInstallPrompt) { alert("📱 Tarayıcı menüsü → 'Ana Ekrana Ekle'"); return; }
     deferredInstallPrompt.prompt();
     deferredInstallPrompt.userChoice.then(r => {

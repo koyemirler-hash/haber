@@ -18,6 +18,28 @@
     </div><!DOCTYPE html>
 <html lang="tr">
 <head>
+<script>
+/* PWA install prompt — app.js yüklenmeden ÖNCE yakala */
+window._pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window._pwaPrompt = e;
+    console.log('PWA install prompt yakalandı');
+    // Banner'ı göster (app.js yüklenmemiş olabilir, gecikmeyle dene)
+    setTimeout(function(){
+        var b = document.getElementById('pwaInstallBanner');
+        if (b) { b.classList.remove('hidden'); }
+        var sb = document.getElementById('settingsInstallBtn');
+        if (sb) { sb.style.display = ''; }
+    }, 1000);
+});
+window.addEventListener('appinstalled', function() {
+    window._pwaPrompt = null;
+    var b = document.getElementById('pwaInstallBanner');
+    if (b) { b.classList.add('hidden'); }
+    console.log('PWA yüklendi!');
+});
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Emirler Köyü Portalı</title>

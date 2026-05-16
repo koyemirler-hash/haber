@@ -73,51 +73,66 @@ body.pwa-mode .sidebar-pwa-footer { display:flex  !important; }
 ════════════════════════════════════════════════════════ */
 .ticker-band {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   background: linear-gradient(135deg, #1e2d20 0%, #2d4a30 100%);
   border-bottom: 2px solid rgba(88,129,87,0.5);
-  overflow: hidden;
-  height: 42px;
   flex-shrink: 0;
   position: relative;
 }
+
+/* Üst satır: hava + canli label + kayan yazı */
+.ticker-row-top {
+  display: flex;
+  align-items: center;
+  height: 38px;
+  overflow: hidden;
+}
+
+/* Küçük hava widget */
+.ticker-hava {
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 0 10px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255,255,255,0.1);
+  min-width: 80px;
+}
+
+/* CANLI etiketi */
 .ticker-label {
   flex-shrink: 0;
   background: #588157;
   color: #fff;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  padding: 0 12px;
+  padding: 0 10px;
   height: 100%;
   display: flex;
   align-items: center;
   letter-spacing: 0.5px;
   white-space: nowrap;
   text-transform: uppercase;
-  z-index: 2;
 }
-.ticker-label::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0; bottom: 0;
-  width: 80px;
-  background: linear-gradient(90deg, #2d4a30, transparent);
-  pointer-events: none;
-}
+
 .ticker-track {
   flex: 1;
   overflow: hidden;
   position: relative;
   height: 100%;
 }
+
 .ticker-inner {
   display: flex;
   align-items: center;
-  gap: 0;
   height: 100%;
   white-space: nowrap;
-  animation: tickerScroll 10s linear infinite;
+  animation: tickerScroll 30s linear infinite;
   will-change: transform;
 }
 .ticker-inner:hover { animation-play-state: paused; }
@@ -127,23 +142,61 @@ body.pwa-mode .sidebar-pwa-footer { display:flex  !important; }
   100% { transform: translateX(-50%); }
 }
 
+/* Kayan yazı öğeleri */
 .ticker-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 20px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.88);
+  color: #e8f4e8;
+  font-size: 12px;
   font-weight: 500;
-  border-right: 1px solid rgba(255,255,255,0.12);
-  height: 100%;
+  padding: 0 16px;
   white-space: nowrap;
-  cursor: default;
 }
-.ticker-item.namaz-item { color: #d1b3ff; }
-.ticker-item.hava-item  { color: #a8d8f0; font-weight: 700; }
-.ticker-item.duyuru-item { color: #ffd180; }
-.ticker-item.aktif-vakit { color: #90ee90; font-weight: 800; }
+.ticker-item b { color: #fff; font-weight: 700; margin: 0 2px; }
+.ticker-sep { color: rgba(255,255,255,0.3); padding: 0 8px; font-size: 10px; }
+.doviz-item  { color: #fde68a; }
+.altin-item  { color: #fcd34d; }
+.tarim-item  { color: #86efac; }
+.borsa-item  { color: #93c5fd; }
+.akaryakit-item { color: #fdba74; }
+.duyuru-item { color: #c4b5fd; }
+
+/* Namaz vakitleri bar - alt satır */
+.ticker-namaz-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.3);
+  height: 26px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  gap: 0;
+  padding: 0 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.ticker-namaz-bar::-webkit-scrollbar { display: none; }
+
+.namaz-vakit {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.65);
+  padding: 0 6px;
+  white-space: nowrap;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+.namaz-vakit.namaz-aktif {
+  color: #fde68a;
+  font-weight: 800;
+  background: rgba(253,230,138,0.12);
+}
+.namaz-ad   { font-weight: 600; }
+.namaz-saat { font-weight: 700; font-size: 11px; }
+.namaz-sep  { color: rgba(255,255,255,0.15); padding: 0 2px; font-size: 9px; }
+
 
 /* Soldan sağa gradient fade */
 .ticker-band::before {

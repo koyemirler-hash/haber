@@ -186,18 +186,20 @@
     </div>
     <!-- KAYAN HABER BANDI -->
     <div class="ticker-band" id="tickerBand">
-      <div class="ticker-label">📡 CANLI</div>
-      <div class="ticker-track">
-        <div class="ticker-inner" id="tickerInner">
-          <span class="ticker-item hava-item">🌤️ Hava bilgisi yükleniyor...</span>
-          <span class="ticker-item namaz-item">🕌 Namaz vakitleri yükleniyor...</span>
-          <span class="ticker-item duyuru-item">📢 Duyurular yükleniyor...</span>
-          <span class="ticker-item hava-item">🌤️ Hava bilgisi yükleniyor...</span>
-          <span class="ticker-item namaz-item">🕌 Namaz vakitleri yükleniyor...</span>
-          <span class="ticker-item duyuru-item">📢 Duyurular yükleniyor...</span>
+      <!-- Satır 1: Hava + CANLI + Kayan yazı -->
+      <div class="ticker-row-top">
+        <div class="ticker-hava" id="tickerHavaKucuk">🌡️ --°C</div>
+        <div class="ticker-label">📡 CANLI</div>
+        <div class="ticker-track">
+          <div class="ticker-inner" id="tickerInner">
+            <span class="ticker-item">⏳ Veriler yükleniyor...</span>
+          </div>
         </div>
       </div>
+      <!-- Satır 2: Namaz vakitleri bar -->
+      <div class="ticker-namaz-bar" id="tickerNamazBar"></div>
     </div>
+    
     <div class="hikaye-cubugu" id="hikayeCubugu">
       <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
         <div class="hikaye-ekle-daire">＋</div>

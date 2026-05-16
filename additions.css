@@ -132,7 +132,7 @@ body.pwa-mode .sidebar-pwa-footer { display:flex  !important; }
   align-items: center;
   height: 100%;
   white-space: nowrap;
-  animation: tickerScroll 30s linear infinite;
+  animation: tickerScroll 12s linear infinite;
   will-change: transform;
 }
 .ticker-inner:hover { animation-play-state: paused; }

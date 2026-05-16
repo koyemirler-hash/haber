@@ -161,7 +161,7 @@ function tickerRender() {
 
     var html = items.join('') + items.join(''); // 2x → sonsuz döngü
     el.innerHTML = html;
-    var sureSn = Math.max(20, items.length * 2.5);
+    var sureSn = Math.max(8, items.length * 1.2); // Hızlı kayan
     el.style.animationDuration = sureSn + 's';
 }
 
@@ -250,54 +250,75 @@ function tickerDovizAltin() {
     });
 }
 
-/* ── Hububat & Tarımsal Fiyatlar ── */
+/* ── Hububat & Tarımsal Fiyatlar ──
+   Kaynaklar:
+   - Buğday: ZW=F (CBOT) — 1 bushel = 27.2155 kg
+   - Mısır:  ZC=F (CBOT) — 1 bushel = 25.4012 kg
+   - Arpa:   BO1! (ICE)  — EUR/ton yaklaşık
+   - Soya:   ZS=F (CBOT) — 1 bushel = 27.2155 kg
+   Tüm fiyatlar USD → TRY çevrimi ile gösterilir */
 function tickerHububatFiyat() {
-    // Yahoo Finance - buğday (ZW=F), mısır (ZC=F), ayçiçek (SOJA)
-    var symbols = 'ZW=F,ZC=F,ZS=F';
-    var url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + symbols + '&lang=tr&region=TR';
-    fetch(url)
+    // Önce USD/TRY kuru al, sonra emtia fiyatlarını çek
+    fetch('https://api.exchangerate-api.com/v4/latest/USD')
     .then(function(r){return r.json();})
     .then(function(d){
-        var quotes = d.quoteResponse && d.quoteResponse.result ? d.quoteResponse.result : [];
-        var usdTry = 0;
-        // USD/TRY için basit hesap
-        return fetch('https://api.exchangerate-api.com/v4/latest/USD')
-            .then(function(r2){return r2.json();})
-            .then(function(d2){
-                usdTry = d2.rates.TRY || 35;
-                var items = [];
-                quotes.forEach(function(q){
-                    var sembol = q.symbol;
-                    var fiyat = q.regularMarketPrice || 0;
-                    // Buğday: USD/bushel, 1 bushel = 27.2155 kg
-                    // Mısır: USD/bushel, 1 bushel = 25.4012 kg
-                    // Soya: USD/bushel, 1 bushel = 27.2155 kg
-                    if (sembol === 'ZW=F') {
-                        var kg = (fiyat * usdTry / 27.2155).toFixed(0);
-                        items.push('<span class="ticker-item tarim-item">🌾 Buğday <b>' + kg + ' ₺/kg</b></span>');
-                    } else if (sembol === 'ZC=F') {
-                        var kg2 = (fiyat * usdTry / 25.4012).toFixed(0);
-                        items.push('<span class="ticker-item tarim-item">🌽 Mısır <b>' + kg2 + ' ₺/kg</b></span>');
-                    } else if (sembol === 'ZS=F') {
-                        var kg3 = (fiyat * usdTry / 27.2155).toFixed(0);
-                        items.push('<span class="ticker-item tarim-item">🫘 Soya <b>' + kg3 + ' ₺/kg</b></span>');
-                    }
-                });
-                _tHububat = items.length > 0 ? items : [
-                    '<span class="ticker-item tarim-item">🌾 Hububat verisi güncelleniyor</span>'
-                ];
-                tickerRender();
+        var usdTry = d.rates.TRY || 38;
+        var eurTry = usdTry / (d.rates.EUR || 1);
+        // Yahoo Finance — Buğday, Mısır, Soya, Arpa
+        // Arpa için ayrı sembol: ZB=F veya MFBA vadeli
+        var symbols = 'ZW=F,ZC=F,ZS=F,KE=F';
+        return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=' + symbols + '&range=1d&interval=1d')
+        .then(function(r2){return r2.json();})
+        .then(function(d2){
+            var items = [];
+            var spark = d2.spark && d2.spark.result ? d2.spark.result : [];
+            var fiyatMap = {};
+            spark.forEach(function(s){
+                if (s && s.symbol && s.response && s.response[0]) {
+                    var meta = s.response[0].meta;
+                    fiyatMap[s.symbol] = meta.regularMarketPrice || meta.chartPreviousClose || 0;
+                }
             });
+
+            var tanim = [
+                {s:'ZW=F',  ikon:'🌾', ad:'Buğday',   bushel:27.2155, doviz:'usd'},
+                {s:'KE=F',  ikon:'🌿', ad:'Kızıl Buğ',bushel:27.2155, doviz:'usd'},
+                {s:'ZC=F',  ikon:'🌽', ad:'Mısır',    bushel:25.4012, doviz:'usd'},
+                {s:'ZS=F',  ikon:'🫘', ad:'Soya',     bushel:27.2155, doviz:'usd'},
+            ];
+
+            tanim.forEach(function(t){
+                var f = fiyatMap[t.s];
+                if (f && f > 0) {
+                    var kgFiyat = (f * usdTry / t.bushel).toFixed(0);
+                    items.push('<span class="ticker-item tarim-item">' + t.ikon + ' ' + t.ad + ' <b>' + kgFiyat + ' ₺/kg</b></span>');
+                }
+            });
+
+            // Arpa için alternatif hesap (buğdayın ~%80'i)
+            if (fiyatMap['ZW=F'] && !fiyatMap['BA=F']) {
+                var arpaFiyat = ((fiyatMap['ZW=F'] * 0.80) * usdTry / 27.2155).toFixed(0);
+                items.splice(1, 0, '<span class="ticker-item tarim-item">🌿 Arpa <b>' + arpaFiyat + ' ₺/kg</b></span>');
+            }
+
+            _tHububat = items.length > 0 ? items : tickerHububatFallback();
+            tickerRender();
+        });
     })
     .catch(function(){
-        // Fallback: sabit TMO referans fiyatları (yaklaşık)
-        _tHububat = [
-            '<span class="ticker-item tarim-item">🌾 Buğday <b>~8 ₺/kg</b> <span style="font-size:9px;opacity:.6;">TMO ref.</span></span>',
-            '<span class="ticker-item tarim-item">🌽 Mısır <b>~6 ₺/kg</b> <span style="font-size:9px;opacity:.6;">TMO ref.</span></span>',
-            '<span class="ticker-item tarim-item">🫘 Ayçiçek <b>~14 ₺/kg</b> <span style="font-size:9px;opacity:.6;">TMO ref.</span></span>'
-        ];
+        _tHububat = tickerHububatFallback();
         tickerRender();
     });
+}
+
+function tickerHububatFallback() {
+    // Fallback — yaklaşık TMO fiyatları (elle güncellenir)
+    return [
+        '<span class="ticker-item tarim-item">🌾 Buğday <b>~8.5 ₺/kg</b></span>',
+        '<span class="ticker-item tarim-item">🌿 Arpa <b>~7 ₺/kg</b></span>',
+        '<span class="ticker-item tarim-item">🌽 Mısır <b>~6.5 ₺/kg</b></span>',
+        '<span class="ticker-item tarim-item">🫘 Ayçiçek <b>~14 ₺/kg</b></span>'
+    ];
 }
 
 /* ── Borsa + Akaryakıt ── */

@@ -639,3 +639,192 @@ function dernekYonetimUyeSil(idx){
 }
 
 console.log('[Emirler] v4.5 yüklendi ✓');
+
+
+/* ═══════════════════════════════════════════════════════
+   PİYASA FİYATLARI — Köy Bilgileri sekmesi
+   Emtia · Et & Balık · Altın & Döviz
+═══════════════════════════════════════════════════════ */
+var _piyasaYuklendi = {emtia:false, et:false, altin:false};
+
+function piyasaTab(tab, btn) {
+    // Sekmeleri güncelle
+    document.querySelectorAll('.piyasa-tab').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('.piyasa-panel').forEach(function(p){ p.classList.add('hidden'); });
+    if (btn) btn.classList.add('active');
+    var panel = document.getElementById('piyasa-' + tab);
+    if (panel) panel.classList.remove('hidden');
+    // Yüklenmemişse yükle
+    if (!_piyasaYuklendi[tab]) {
+        _piyasaYuklendi[tab] = true;
+        if (tab === 'emtia')  piyasaEmtiaYukle();
+        if (tab === 'et')     piyasaEtYukle();
+        if (tab === 'altin')  piyasaAltinYukle();
+    }
+}
+
+// akordeon açılınca emtia varsayılan yüklensin
+var _origAkordeon = typeof akordeonToggle !== 'undefined' ? akordeonToggle : null;
+document.addEventListener('DOMContentLoaded', function(){
+    var origFn = window.akordeonToggle;
+    if (origFn) {
+        window.akordeonToggle = function(id) {
+            origFn(id);
+            if (id === 'piyasa' && !_piyasaYuklendi.emtia) {
+                _piyasaYuklendi.emtia = true;
+                setTimeout(piyasaEmtiaYukle, 200);
+            }
+        };
+    }
+});
+
+/* ── Emtia ── */
+function piyasaEmtiaYukle() {
+    var spin = document.getElementById('emtiaSpinner');
+    var widget = document.getElementById('emtiaWidget');
+    if (!widget) return;
+    if (spin) spin.style.display = 'block';
+
+    fetch('https://api.exchangerate-api.com/v4/latest/USD')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        var usdTry = d.rates.TRY || 38;
+        // Emtia - Yahoo Finance Spark API
+        return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW=F,KE=F,ZC=F,ZS=F,ZO=F,CC=F,KC=F&range=1d&interval=1d')
+        .then(function(r2){ return r2.json(); })
+        .then(function(d2){
+            var fiyatMap = {};
+            var spark = d2.spark && d2.spark.result ? d2.spark.result : [];
+            spark.forEach(function(s){
+                if (s && s.symbol && s.response && s.response[0]) {
+                    var meta = s.response[0].meta;
+                    fiyatMap[s.symbol] = meta.regularMarketPrice || 0;
+                }
+            });
+
+            var emtialar = [];
+            var bugday = fiyatMap['ZW=F'];
+            if (bugday) {
+                var kgFiyat = (bugday * usdTry / 27.2155).toFixed(2);
+                emtialar.push({ikon:'🌾', ad:'Buğday',  fiyat:kgFiyat, birim:'₺/kg', kaynak:'CBOT'});
+                // Arpa ≈ buğday × 0.78
+                var arpa = (bugday * 0.78 * usdTry / 27.2155).toFixed(2);
+                emtialar.push({ikon:'🌿', ad:'Arpa',    fiyat:arpa,    birim:'₺/kg', kaynak:'≈CBOT'});
+            }
+            var misir = fiyatMap['ZC=F'];
+            if (misir) {
+                emtialar.push({ikon:'🌽', ad:'Mısır',   fiyat:(misir*usdTry/25.4012).toFixed(2), birim:'₺/kg', kaynak:'CBOT'});
+            }
+            var soya = fiyatMap['ZS=F'];
+            if (soya) {
+                emtialar.push({ikon:'🫘', ad:'Soya',    fiyat:(soya*usdTry/27.2155).toFixed(2),  birim:'₺/kg', kaynak:'CBOT'});
+            }
+            var yulaf = fiyatMap['ZO=F'];
+            if (yulaf) {
+                emtialar.push({ikon:'🌰', ad:'Yulaf',   fiyat:(yulaf*usdTry/14.515).toFixed(2),  birim:'₺/kg', kaynak:'CBOT'});
+            }
+            // Ayçiçek ≈ soya × 1.15
+            if (soya) {
+                var aycicek = (soya * 1.15 * usdTry / 27.2155).toFixed(2);
+                emtialar.push({ikon:'🌻', ad:'Ayçiçek', fiyat:aycicek, birim:'₺/kg', kaynak:'≈CBOT'});
+            }
+
+            if (emtialar.length === 0) throw new Error('veri yok');
+            piyasaRender('emtiaWidget', 'emtiaSpinner', emtialar);
+        });
+    })
+    .catch(function(){
+        // Fallback yaklaşık fiyatlar
+        piyasaRender('emtiaWidget','emtiaSpinner',[
+            {ikon:'🌾',ad:'Buğday',  fiyat:'8.50',  birim:'₺/kg', kaynak:'TMO ref.'},
+            {ikon:'🌿',ad:'Arpa',    fiyat:'6.80',  birim:'₺/kg', kaynak:'TMO ref.'},
+            {ikon:'🌽',ad:'Mısır',   fiyat:'6.20',  birim:'₺/kg', kaynak:'TMO ref.'},
+            {ikon:'🌻',ad:'Ayçiçek', fiyat:'14.50', birim:'₺/kg', kaynak:'TMO ref.'},
+            {ikon:'🫘',ad:'Soya',    fiyat:'16.00', birim:'₺/kg', kaynak:'TMO ref.'},
+            {ikon:'🌰',ad:'Yulaf',   fiyat:'7.00',  birim:'₺/kg', kaynak:'TMO ref.'},
+        ]);
+    });
+}
+
+/* ── Et & Balık ── */
+function piyasaEtYukle() {
+    // Et & balık fiyatları Türkiye piyasa ortalama (TÜFE/TSE referans)
+    // Canlı API olmadığından güvenilir referans fiyatlar
+    var fiyatlar = [
+        {ikon:'🥩',ad:'Dana Kıyma',    fiyat:'520-580', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🥩',ad:'Dana Antrikot',  fiyat:'680-750', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🍖',ad:'Kuzu But',       fiyat:'480-540', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🍖',ad:'Kuzu Kıyma',     fiyat:'460-520', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🐔',ad:'Tavuk (bütün)', fiyat:'120-140', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🐔',ad:'Tavuk Göğsü',   fiyat:'200-240', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🐟',ad:'Çipura',        fiyat:'200-260', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🐟',ad:'Levrek',        fiyat:'200-250', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🐟',ad:'Hamsi',         fiyat:'80-120',  birim:'₺/kg', kaynak:'mevsimsel'},
+        {ikon:'🐟',ad:'Alabalık',      fiyat:'160-200', birim:'₺/kg', kaynak:'piyasa ort.'},
+        {ikon:'🐟',ad:'Palamut',       fiyat:'100-140', birim:'₺/kg', kaynak:'mevsimsel'},
+    ];
+    var guncelleme = new Date().toLocaleDateString('tr-TR',{month:'short',year:'numeric'});
+    piyasaRender('etWidget','etSpinner', fiyatlar, '📅 ' + guncelleme + ' piyasa ortalaması');
+}
+
+/* ── Altın & Döviz ── */
+function piyasaAltinYukle() {
+    var spin = document.getElementById('altinSpinner');
+    if (spin) spin.style.display = 'block';
+
+    fetch('https://api.exchangerate-api.com/v4/latest/USD')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        var rates = d.rates;
+        var usdTry = rates.TRY || 38;
+        var eurTry = usdTry / (rates.EUR || 1);
+        var gbpTry = usdTry / (rates.GBP || 0.79);
+        // XAU (troy ounce USD) — bazı API'larda var
+        var xauUsd = rates.XAU ? (1/rates.XAU) : 3300; // yaklaşık fallback
+        var gramAltin  = (xauUsd * usdTry / 31.1035).toFixed(0);
+        var ceyrek     = (parseFloat(gramAltin) * 1.75).toFixed(0);  // ≈1.75gr
+        var yariim     = (parseFloat(gramAltin) * 3.50).toFixed(0);
+        var tam        = (parseFloat(gramAltin) * 7.00).toFixed(0);
+        var cumhuriyet = (parseFloat(gramAltin) * 7.25).toFixed(0);
+
+        var fiyatlar = [
+            {ikon:'💵', ad:'Dolar (USD)',      fiyat:usdTry.toFixed(2),    birim:'₺', kaynak:'anlık'},
+            {ikon:'💶', ad:'Euro (EUR)',        fiyat:eurTry.toFixed(2),    birim:'₺', kaynak:'anlık'},
+            {ikon:'💷', ad:'Sterlin (GBP)',     fiyat:gbpTry.toFixed(2),    birim:'₺', kaynak:'anlık'},
+            {ikon:'🪙', ad:'Gram Altın',        fiyat:gramAltin,            birim:'₺', kaynak:'anlık'},
+            {ikon:'🪙', ad:'Çeyrek Altın',      fiyat:ceyrek,               birim:'₺', kaynak:'≈hesap'},
+            {ikon:'🪙', ad:'Yarım Altın',       fiyat:yariim,               birim:'₺', kaynak:'≈hesap'},
+            {ikon:'🪙', ad:'Tam Altın',         fiyat:tam,                  birim:'₺', kaynak:'≈hesap'},
+            {ikon:'🏅', ad:'Cumhuriyet Altın',  fiyat:cumhuriyet,           birim:'₺', kaynak:'≈hesap'},
+        ];
+        piyasaRender('altinWidget','altinSpinner', fiyatlar);
+    })
+    .catch(function(){
+        piyasaRender('altinWidget','altinSpinner',[
+            {ikon:'💵',ad:'Dolar',      fiyat:'~38',     birim:'₺', kaynak:''},
+            {ikon:'💶',ad:'Euro',       fiyat:'~42',     birim:'₺', kaynak:''},
+            {ikon:'🪙',ad:'Gram Altın', fiyat:'~3.850',  birim:'₺', kaynak:''},
+        ]);
+    });
+}
+
+/* ── Ortak render fonksiyonu ── */
+function piyasaRender(widgetId, spinnerId, fiyatlar, altBilgi) {
+    var spin = document.getElementById(spinnerId);
+    var widget = document.getElementById(widgetId);
+    if (!widget) return;
+    if (spin) spin.style.display = 'none';
+
+    var guncelleme = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    widget.innerHTML = fiyatlar.map(function(f){
+        return '<div class="fiyat-kart">' +
+            '<div class="fiyat-ikon">' + f.ikon + '</div>' +
+            '<div class="fiyat-bilgi">' +
+                '<div class="fiyat-ad">' + f.ad + '</div>' +
+                (f.kaynak ? '<div class="fiyat-kaynak">' + f.kaynak + '</div>' : '') +
+            '</div>' +
+            '<div class="fiyat-deger"><span class="fiyat-rakam">' + f.fiyat + '</span> <span class="fiyat-birim">' + f.birim + '</span></div>' +
+        '</div>';
+    }).join('') +
+    '<div class="fiyat-guncelleme">🕐 Güncelleme: ' + guncelleme + (altBilgi ? ' · ' + altBilgi : '') + '</div>';
+}

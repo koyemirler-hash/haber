@@ -132,7 +132,7 @@ body.pwa-mode .sidebar-pwa-footer { display:flex  !important; }
   align-items: center;
   height: 100%;
   white-space: nowrap;
-  animation: tickerScroll 12s linear infinite;
+  animation: tickerScroll 6s linear infinite;
   will-change: transform;
 }
 .ticker-inner:hover { animation-play-state: paused; }
@@ -371,3 +371,84 @@ body.pwa-mode #sidebarNav .sidebar-menu{flex:1;overflow-y:auto;}
 
 /* PWA alt menü yok, padding sıfır */
 body.pwa-mode { padding-bottom: 0 !important; }
+
+/* ═══════════════════════════════════════════════════════
+   PİYASA FİYATLARI
+═══════════════════════════════════════════════════════ */
+.piyasa-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 12px 6px;
+  background: #f8faf8;
+  border-bottom: 1px solid #e8f0e8;
+}
+.piyasa-tab {
+  flex: 1;
+  padding: 8px 4px;
+  border: 1.5px solid #d1e8d1;
+  border-radius: 10px;
+  background: #fff;
+  color: #588157;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.piyasa-tab.active {
+  background: linear-gradient(135deg, #3a5a40, #588157);
+  color: #fff;
+  border-color: transparent;
+}
+.piyasa-panel { padding: 8px 10px 12px; }
+.piyasa-panel.hidden { display: none !important; }
+
+.fiyat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+.fiyat-kart {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e8f0e8;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.fiyat-ikon { font-size: 22px; flex-shrink: 0; }
+.fiyat-bilgi { flex: 1; min-width: 0; }
+.fiyat-ad {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d3748;
+}
+.fiyat-kaynak {
+  font-size: 10px;
+  color: #aaa;
+  margin-top: 1px;
+}
+.fiyat-deger {
+  text-align: right;
+  flex-shrink: 0;
+}
+.fiyat-rakam {
+  font-size: 16px;
+  font-weight: 800;
+  color: #3a5a40;
+}
+.fiyat-birim {
+  font-size: 11px;
+  color: #888;
+}
+.fiyat-guncelleme {
+  text-align: center;
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #f0f0f0;
+}

@@ -186,13 +186,20 @@
     </div>
     <!-- KAYAN HABER BANDI -->
     <div class="ticker-band" id="tickerBand">
+      <!-- Satır 1: Hava + CANLI + Kayan yazı -->
       <div class="ticker-row-top">
         <div class="ticker-hava" id="tickerHavaKucuk">🌡️ --°C</div>
         <div class="ticker-label">📡 CANLI</div>
-        <div class="ticker-track"><div class="ticker-inner" id="tickerInner">⏳ Yükleniyor...</div></div>
-        <div class="ticker-namaz-next" id="tickerNamazNext">🕌 --:--</div>
+        <div class="ticker-track">
+          <div class="ticker-inner" id="tickerInner">
+            <span class="ticker-item">⏳ Veriler yükleniyor...</span>
+          </div>
+        </div>
       </div>
+      <!-- Satır 2: Namaz vakitleri bar -->
+      <div class="ticker-namaz-bar" id="tickerNamazBar"></div>
     </div>
+    
     <div class="hikaye-cubugu" id="hikayeCubugu">
       <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
         <div class="hikaye-ekle-daire">＋</div>
@@ -250,29 +257,6 @@
 
   <!-- NOSTALJİ -->
   <section id="view-nostalji" class="view hidden">
-    <!-- 📺 VİDEO GALERİSİ (Nostalji üstü) -->
-    <div class="video-galeri-alan" id="videoGaleriAlan">
-      <div class="video-galeri-header">
-        <span>📺 Videolar</span>
-        <span class="video-canli-badge" id="videoCanliRozet" style="display:none;">🔴 CANLI</span>
-        <button class="video-ekle-btn" id="videoEkleBtn" onclick="videoEkleAc()" style="display:none;">+ Video Ekle</button>
-      </div>
-      <!-- Ana oynatıcı (seçince açılır) -->
-      <div class="video-player-wrap hidden" id="videoPlayerWrap">
-        <video id="anaVideo" class="video-player" playsinline webkit-playsinline
-               onended="videoSonrakiOynat()"></video>
-        <div class="video-overlay-btns">
-          <button onclick="videoOnceki()" class="vbtn">⏮</button>
-          <button onclick="videoCal()" id="videoCalBtn" class="vbtn">⏸</button>
-          <button onclick="videoSonraki()" class="vbtn">⏭</button>
-          <button onclick="videoTamEkran()" class="vbtn vbtn-fs">⛶</button>
-        </div>
-        <div class="video-baslik" id="videoBaslik"></div>
-      </div>
-      <!-- Yatay video küçük resimler -->
-      <div class="video-liste" id="videoListe"></div>
-    </div>
-
     <div class="top-header">
       <span class="header-title">📸 Nostalji</span>
       <button class="header-action-btn" onclick="nostaljiFormToggle()">+ Anı Paylaş</button>

@@ -72,198 +72,63 @@ body.pwa-mode .sidebar-pwa-footer { display:flex  !important; }
    Hava durumu + namaz vakitleri + duyuru başlıkları
 ════════════════════════════════════════════════════════ */
 .ticker-band {
-  display: flex;
-  flex-direction: column;
-  background: linear-gradient(135deg, #1e2d20 0%, #2d4a30 100%);
-  border-bottom: 2px solid rgba(88,129,87,0.5);
+  background: linear-gradient(135deg,#1a2e1a,#2d4a30);
+  border-bottom: 2px solid rgba(88,129,87,.4);
   flex-shrink: 0;
-  position: relative;
 }
-
-/* Üst satır: hava + canli label + kayan yazı */
 .ticker-row-top {
   display: flex;
   align-items: center;
   height: 38px;
   overflow: hidden;
 }
-
-/* Küçük hava widget */
-.ticker-hava {
-  flex-shrink: 0;
-  background: rgba(0,0,0,0.25);
-  color: #fff;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 0 10px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-  border-right: 1px solid rgba(255,255,255,0.1);
-  min-width: 80px;
-}
-
-/* CANLI etiketi */
 .ticker-label {
   flex-shrink: 0;
-  background: #588157;
+  background: #e63946;
   color: #fff;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 900;
+  letter-spacing: .5px;
   padding: 0 10px;
   height: 100%;
   display: flex;
   align-items: center;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
   text-transform: uppercase;
 }
-
 .ticker-track {
   flex: 1;
   overflow: hidden;
-  position: relative;
   height: 100%;
+  position: relative;
 }
-
 .ticker-inner {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   height: 100%;
   white-space: nowrap;
-  animation: tickerScroll 12s linear infinite;
   will-change: transform;
 }
-.ticker-inner:hover { animation-play-state: paused; }
-
-@keyframes tickerScroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
-/* Kayan yazı öğeleri */
-.ticker-item {
+.ti {
   display: inline-flex;
   align-items: center;
-  color: #e8f4e8;
+  padding: 0 12px;
   font-size: 12px;
-  font-weight: 500;
-  padding: 0 16px;
+  color: #e8f4e8;
   white-space: nowrap;
 }
-.ticker-item b { color: #fff; font-weight: 700; margin: 0 2px; }
-.ticker-sep { color: rgba(255,255,255,0.3); padding: 0 8px; font-size: 10px; }
-.doviz-item  { color: #fde68a; }
-.altin-item  { color: #fcd34d; }
-.tarim-item  { color: #86efac; }
-.borsa-item  { color: #93c5fd; }
-.akaryakit-item { color: #fdba74; }
-.duyuru-item { color: #c4b5fd; }
+.ti b { color:#fff; font-weight:800; margin:0 2px; }
+.tsep { color:rgba(255,255,255,.2); padding:0 6px; font-size:10px; }
+.tc-hava   { color:#bfdbfe; }
+.tc-namaz  { color:#fde68a; font-weight:700; }
+.tc-doviz  { color:#fde68a; }
+.tc-altin  { color:#fcd34d; }
+.tc-tarim  { color:#86efac; }
+.tc-et     { color:#fdba74; }
+.tc-borsa  { color:#93c5fd; }
+.tc-duyuru { color:#c4b5fd; }
+.tc-yukari { color:#4ade80; }
+.tc-asagi  { color:#f87171; }
 
-/* Namaz vakitleri bar - alt satır */
-.ticker-namaz-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.3);
-  height: 26px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  gap: 0;
-  padding: 0 8px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
-.ticker-namaz-bar::-webkit-scrollbar { display: none; }
-
-.namaz-vakit {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 10px;
-  color: rgba(255,255,255,0.65);
-  padding: 0 6px;
-  white-space: nowrap;
-  border-radius: 4px;
-  transition: all 0.3s;
-}
-.namaz-vakit.namaz-aktif {
-  color: #fde68a;
-  font-weight: 800;
-  background: rgba(253,230,138,0.12);
-}
-.namaz-ad   { font-weight: 600; }
-.namaz-saat { font-weight: 700; font-size: 11px; }
-.namaz-sep  { color: rgba(255,255,255,0.15); padding: 0 2px; font-size: 9px; }
-
-
-/* Soldan sağa gradient fade */
-.ticker-band::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 40px;
-  z-index: 3;
-  pointer-events: none;
-}
-.ticker-band::after {
-  content: '';
-  position: absolute;
-  right: 0; top: 0; bottom: 0;
-  width: 40px;
-  background: linear-gradient(270deg, #1e2d20, transparent);
-  z-index: 3;
-  pointer-events: none;
-}
-
-/* ─── ALT NAVİGASYON ─── */
-/* Browser modunda alt menü TAMAMEN GİZLİ - yan menü var */
-body.browser-mode #navBar {
-  display: none !important;
-}
-body.browser-mode {
-  padding-bottom: 0 !important;
-}
-/* PWA modunda sadece ikonlar */
-.nav-footer .nav-label { display: none !important; }
-.nav-footer { height: 52px; }
-.nav-footer .nav-item { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:6px 0; }
-.nav-footer .nav-icon { font-size: 20px; line-height: 1; }
-body.pwa-mode { padding-bottom: 54px !important; }
-
-/* ─── DERNEK ─── */
-.dernek-kart { background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.07); border-left:4px solid #588157; }
-.dernek-tip-toplanti{border-left-color:#1976d2;} .dernek-tip-karar{border-left-color:#e65100;} .dernek-tip-proje{border-left-color:#388e3c;} .dernek-tip-etkinlik{border-left-color:#d81b60;} .dernek-tip-diger{border-left-color:#7b3f00;}
-.dernek-kart-ust{padding:14px 16px 8px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;}
-.dernek-tip-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;flex-shrink:0;background:#e8f5e9;color:#2e7d32;}
-.tip-toplanti{background:#e3f2fd;color:#1565c0;} .tip-karar{background:#fff3e0;color:#e65100;} .tip-proje{background:#e8f5e9;color:#388e3c;} .tip-etkinlik{background:#fce4ec;color:#c62828;} .tip-diger{background:#f3e5f5;color:#6a1b9a;}
-.dernek-baslik{font-size:15px;font-weight:700;color:#1a1a1a;flex:1;min-width:0;word-break:break-word;}
-.dernek-tarih{padding:0 16px 6px;font-size:12px;color:#999;font-weight:600;}
-.dernek-aciklama{padding:0 16px 14px;font-size:14px;color:#444;line-height:1.7;white-space:pre-wrap;}
-.dernek-footer{padding:8px 16px 12px;border-top:1px solid #f5f5f5;display:flex;justify-content:flex-end;}
-
-/* ─── MUHTAR ─── */
-.muhtar-sayfa{padding:12px;padding-bottom:80px;display:flex;flex-direction:column;}
-.muhtar-profil-kart{background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1);margin-bottom:14px;}
-.muhtar-profil-foto{width:100%;max-height:260px;object-fit:cover;display:block;}
-.muhtar-profil-foto-placeholder{width:100%;height:180px;background:linear-gradient(135deg,#588157,#3a5a40);display:flex;align-items:center;justify-content:center;font-size:90px;}
-.muhtar-profil-bilgi{padding:18px 18px 20px;}
-.muhtar-ad{font-size:22px;font-weight:900;color:#1a1a1a;margin-bottom:6px;}
-.muhtar-unvan{display:inline-block;font-size:12px;font-weight:700;color:#5c3d0e;background:linear-gradient(135deg,#fff3cd,#ffe082);padding:4px 12px;border-radius:20px;margin-bottom:14px;border:1px solid #ffd54f;}
-.muhtar-bio{font-size:14px;color:#555;line-height:1.75;}
-.muhtar-bolum-baslik-row{padding:14px 4px 10px;}
-.muhtar-bolum-baslik{font-size:16px;font-weight:800;color:#3a5a40;border-left:4px solid #588157;padding-left:12px;}
-.muhtar-hizmet-listesi{display:flex;flex-direction:column;gap:8px;margin-bottom:6px;}
-.muhtar-hizmet-kart{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 2px 10px rgba(0,0,0,0.07);display:flex;gap:12px;align-items:flex-start;}
-.muhtar-hizmet-yil{font-size:12px;font-weight:800;color:#3a5a40;background:#e8f5e9;border:1px solid #a5d6a7;padding:4px 9px;border-radius:10px;flex-shrink:0;min-width:46px;text-align:center;}
-.muhtar-hizmet-icerik{flex:1;min-width:0;}
-.muhtar-hizmet-baslik{font-size:14px;font-weight:700;color:#1a1a1a;margin-bottom:3px;}
-.muhtar-hizmet-aciklama{font-size:13px;color:#666;line-height:1.5;}
-.muhtar-hizmet-sil{background:none;border:none;color:#ddd;font-size:16px;cursor:pointer;padding:2px;flex-shrink:0;}
-.muhtar-iletisim{margin-bottom:16px;}
-.muhtar-iletisim .contact-buttons{flex-direction:row;flex-wrap:wrap;gap:10px;}
-.muhtar-iletisim .contact-btn{flex:1;min-width:120px;justify-content:center;border-radius:14px;padding:12px 16px;font-size:14px;}
 
 /* ═══════════ DERNEK YÖNETİM KURULU ═══════════ */
 .dernek-yonetim-bolum {
@@ -371,3 +236,41 @@ body.pwa-mode #sidebarNav .sidebar-menu{flex:1;overflow-y:auto;}
 
 /* PWA alt menü yok, padding sıfır */
 body.pwa-mode { padding-bottom: 0 !important; }
+
+/* ═══ 📺 VİDEO GALERİSİ ═══ */
+.video-galeri-alan { background:#0d0d0d; border-bottom:2px solid #1a1a2e; }
+.video-galeri-header { display:flex; align-items:center; gap:8px; padding:10px 14px 6px; color:#fff; font-size:14px; font-weight:700; }
+.video-canli-badge { background:#e63946; color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px; animation:cpulse 1s infinite; }
+@keyframes cpulse { 0%,100%{opacity:1}50%{opacity:.6} }
+.video-ekle-btn { margin-left:auto; background:#588157; color:#fff; border:none; padding:5px 12px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; }
+.video-player-wrap { position:relative; background:#000; width:100%; }
+.video-player-wrap.hidden { display:none!important; }
+.video-player { width:100%; max-height:220px; display:block; object-fit:contain; background:#000; }
+.video-overlay-btns { position:absolute; bottom:8px; left:0; right:0; display:flex; justify-content:center; gap:8px; }
+.vbtn { background:rgba(0,0,0,.6); color:#fff; border:none; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+.vbtn-fs { background:rgba(88,129,87,.85); }
+.video-baslik { position:absolute; top:8px; left:10px; right:10px; color:#fff; font-size:12px; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.8); pointer-events:none; }
+.video-liste { display:flex; gap:8px; padding:8px 12px 10px; overflow-x:auto; scrollbar-width:none; }
+.video-liste::-webkit-scrollbar { display:none; }
+.video-thumb { flex-shrink:0; width:90px; cursor:pointer; border-radius:8px; overflow:hidden; background:#1a1a2e; border:2px solid transparent; transition:border-color .2s; position:relative; }
+.video-thumb.video-thumb-aktif { border-color:#588157; }
+.video-thumb-placeholder { width:90px; height:56px; display:flex; align-items:center; justify-content:center; font-size:24px; background:#1a1a2e; }
+.video-thumb-canli { position:absolute; top:4px; left:4px; background:#e63946; color:#fff; font-size:9px; font-weight:900; padding:1px 5px; border-radius:3px; }
+.video-thumb-baslik { color:#ccc; font-size:10px; padding:4px 6px; line-height:1.3; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+/* ═══ 💰 PİYASA FİYATLARI ═══ */
+.piyasa-tabs { display:flex; gap:6px; padding:10px 12px 6px; background:#f8faf8; border-bottom:1px solid #e8f0e8; }
+.piyasa-tab { flex:1; padding:8px 4px; border:1.5px solid #d1e8d1; border-radius:10px; background:#fff; color:#588157; font-size:12px; font-weight:600; cursor:pointer; text-align:center; }
+.piyasa-tab.active { background:linear-gradient(135deg,#3a5a40,#588157); color:#fff; border-color:transparent; }
+.piyasa-panel { padding:8px 10px 12px; }
+.piyasa-panel.hidden { display:none!important; }
+.fiyat-grid { display:flex; flex-direction:column; gap:6px; margin-top:6px; }
+.fiyat-kart { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #e8f0e8; border-radius:12px; padding:10px 12px; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.fiyat-ikon { font-size:22px; flex-shrink:0; }
+.fiyat-bilgi { flex:1; min-width:0; }
+.fiyat-ad { font-size:13px; font-weight:700; color:#2d3748; }
+.fiyat-kaynak { font-size:10px; color:#aaa; margin-top:1px; }
+.fiyat-deger { text-align:right; flex-shrink:0; }
+.fiyat-rakam { font-size:16px; font-weight:800; color:#3a5a40; }
+.fiyat-birim { font-size:11px; color:#888; }
+.fiyat-guncelleme { text-align:center; font-size:10px; color:#bbb; margin-top:8px; padding-top:6px; border-top:1px solid #f0f0f0; }

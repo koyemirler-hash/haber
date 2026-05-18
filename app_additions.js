@@ -113,265 +113,164 @@ var _tickerNamazMetin  = [];  // [{ad, saat, aktif}]
 var _tickerDuyurular   = [];  // [{baslik}]
 var _tickerReady       = 0;   // 0/1/2/3 → hepsi gelince render
 
-/* ═══════════════════════════════════════════════════════
-   YENİ TICKER SİSTEMİ v5.0
-   - Hava → sabit küçük widget (ticker içinde sol)
-   - Namaz → ayrı sabit bar (2. satır)
-   - Kayan: Döviz · Altın · Borsa · Hububat · Duyurular
-═══════════════════════════════════════════════════════ */
-
-var _tReady = 0, _tTotal = 4; // 4 kaynak: döviz+altın, hububat, borsa+akaryakıt, duyurular
-var _tDoviz    = [];
-var _tHububat  = [];
-var _tBorsa    = [];
-var _tDuyurular = [];
-
 function tickerBaslat() {
     var el = document.getElementById('tickerInner');
     if (!el) return;
-    _tReady = 0;
-    _tDoviz = []; _tHububat = []; _tBorsa = []; _tDuyurular = [];
+    if (window._tikAnimId) cancelAnimationFrame(window._tikAnimId);
+    window._tikItems = [];
+    window._tikPos   = 0;
 
-    tickerHavaKucukYukle();   // Hava → sabit widget
-    tickerNamazBarYukle();    // Namaz → sabit bar
-    tickerDovizAltin();       // Döviz + Altın → kayan
-    tickerHububatFiyat();     // Hububat → kayan
-    tickerBorsaAkaryakit();   // Borsa + Akaryakıt → kayan
-    tickerDuyurularYukle();   // Duyurular → kayan
+    // Tüm kaynakları paralel çek
+    var usdTry = 38;
+    Promise.allSettled([
+        // 1. Döviz + Altın (doğru kaynak: Frankfurter API)
+        fetch('https://api.frankfurter.app/latest?from=USD&to=TRY,EUR,GBP')
+        .then(function(r){return r.json();})
+        .then(function(d){
+            usdTry = d.rates.TRY || 38;
+            var eurTry = usdTry / (d.rates.EUR||1);
+            var gbpTry = usdTry / (d.rates.GBP||0.79);
+            // Altın: metalpriceapi.com ücretsiz veya hesap bazlı
+            // Gerçek altın: XAU/USD = gram altın TL hesabı
+            // Yaklaşık: 1 troy oz ≈ 3300 USD, günlük güncellenir
+            return fetch('https://api.frankfurter.app/latest?from=XAU&to=USD')
+            .then(function(r2){return r2.json();})
+            .then(function(d2){
+                var xauUsd = d2.rates.USD || 3300;
+                var gram = Math.round(xauUsd * usdTry / 31.1035);
+                var items = [
+                    _ti('💵','Dolar',usdTry.toFixed(2)+'₺','tc-doviz'),
+                    _ti('💶','Euro',eurTry.toFixed(2)+'₺','tc-doviz'),
+                    _ti('💷','Sterlin',gbpTry.toFixed(2)+'₺','tc-doviz'),
+                    _ti('🪙','Gram Altın',gram+'₺','tc-altin'),
+                    _ti('🪙','Çeyrek',Math.round(gram*1.75)+'₺','tc-altin'),
+                    _ti('🪙','Tam Altın',Math.round(gram*7)+'₺','tc-altin'),
+                ];
+                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>'], items);
+            }).catch(function(){
+                // Altın fallback yaklaşık değer
+                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>',
+                    _ti('💵','Dolar',usdTry.toFixed(2)+'₺','tc-doviz'),
+                    _ti('💶','Euro',(usdTry/1.07).toFixed(2)+'₺','tc-doviz'),
+                ]);
+            });
+        }),
 
-    // Namaz barını her dakika güncelle (aktif vakit için)
-    setInterval(tickerNamazBariGuncelle, 60000);
-}
-
-/* ── Render ── */
-function tickerRender() {
-    _tReady++;
-    if (_tReady < _tTotal) return;
-    var el = document.getElementById('tickerInner');
-    if (!el) return;
-
-    var items = [];
-
-    if (_tDoviz.length)    { items.push('<span class="ticker-sep">●</span>'); _tDoviz.forEach(function(t){items.push(t);}); }
-    if (_tHububat.length)  { items.push('<span class="ticker-sep">●</span>'); _tHububat.forEach(function(t){items.push(t);}); }
-    if (_tBorsa.length)    { items.push('<span class="ticker-sep">●</span>'); _tBorsa.forEach(function(t){items.push(t);}); }
-    if (_tDuyurular.length){ items.push('<span class="ticker-sep">●</span>'); _tDuyurular.forEach(function(t){items.push(t);}); }
-
-    if (items.length === 0) { el.innerHTML = '<span class="ticker-item">📡 Veriler yükleniyor...</span>'; return; }
-
-    var html = items.join('') + items.join(''); // 2x → sonsuz döngü
-    el.innerHTML = html;
-    var sureSn = Math.max(8, items.length * 1.2); // Hızlı kayan
-    el.style.animationDuration = sureSn + 's';
-}
-
-/* ── Hava: küçük sabit widget ── */
-function tickerHavaKucukYukle() {
-    var KOY_LAT = 39.72, KOY_LNG = 33.52;
-    var HAVA = {0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',61:'🌧️',71:'🌨️',80:'🌦️',95:'⛈️'};
-    var HAVA_AD = {0:'Açık',1:'Az Bulutlu',2:'Parçalı',3:'Kapalı',45:'Sis',51:'Çisenti',61:'Yağmur',71:'Karlı',80:'Sağanak',95:'Fırtına'};
-    fetch('https://api.open-meteo.com/v1/forecast?latitude='+KOY_LAT+'&longitude='+KOY_LNG+'&current=temperature_2m,weathercode&timezone=Europe%2FIstanbul')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        var cur = d.current;
-        var ikon = HAVA[cur.weathercode] || '🌡️';
-        var ad   = HAVA_AD[cur.weathercode] || '';
-        var el   = document.getElementById('tickerHavaKucuk');
-        if (el) el.innerHTML = ikon + ' <b>' + Math.round(cur.temperature_2m) + '°C</b> <span style="opacity:.7;font-size:10px;">' + ad + '</span>';
-    })
-    .catch(function(){
-        var el = document.getElementById('tickerHavaKucuk');
-        if (el) el.innerHTML = '🌡️ --°C';
-    });
-}
-
-/* ── Namaz: sabit bar ── */
-var _namazVakitleri = [];
-function tickerNamazBarYukle() {
-    var KOY_LAT = 39.72, KOY_LNG = 33.52;
-    var b = new Date();
-    fetch('https://api.aladhan.com/v1/timings/' + b.getDate() + '-' + (b.getMonth()+1) + '-' + b.getFullYear() + '?latitude=' + KOY_LAT + '&longitude=' + KOY_LNG + '&method=13')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        var v = d.data.timings;
-        var fmt = function(s){return s.split(' ')[0];};
-        _namazVakitleri = [
-            {ikon:'🌅', ad:'İmsak',  saat:fmt(v.Fajr)},
-            {ikon:'☀️', ad:'Güneş',  saat:fmt(v.Sunrise)},
-            {ikon:'🌞', ad:'Öğle',   saat:fmt(v.Dhuhr)},
-            {ikon:'🌇', ad:'İkindi', saat:fmt(v.Asr)},
-            {ikon:'🌆', ad:'Akşam',  saat:fmt(v.Maghrib)},
-            {ikon:'🌙', ad:'Yatsı',  saat:fmt(v.Isha)}
-        ];
-        tickerNamazBariGuncelle();
-    })
-    .catch(function(){ tickerNamazBariGuncelle(); });
-}
-
-function tickerNamazBariGuncelle() {
-    var bar = document.getElementById('tickerNamazBar');
-    if (!bar) return;
-    if (_namazVakitleri.length === 0) { bar.innerHTML = ''; return; }
-    var b = new Date();
-    var now = ('0'+b.getHours()).slice(-2)+':'+('0'+b.getMinutes()).slice(-2);
-    var nextIdx = _namazVakitleri.length - 1;
-    for (var i = 0; i < _namazVakitleri.length; i++) {
-        if (_namazVakitleri[i].saat > now) { nextIdx = i; break; }
-    }
-    bar.innerHTML = _namazVakitleri.map(function(vk, i) {
-        var aktif = i === nextIdx;
-        return '<span class="namaz-vakit' + (aktif ? ' namaz-aktif' : '') + '">' +
-               vk.ikon + ' <span class="namaz-ad">' + vk.ad + '</span> ' +
-               '<span class="namaz-saat">' + vk.saat + '</span></span>';
-    }).join('<span class="namaz-sep">|</span>');
-}
-
-/* ── Döviz + Altın ── */
-function tickerDovizAltin() {
-    fetch('https://api.exchangerate-api.com/v4/latest/USD')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        var rates = d.rates;
-        var usdTry = rates.TRY || 0;
-        var eurTry = usdTry / (rates.EUR || 1);
-        var xauUsd = 1 / (rates.XAU || 0.00032); // troy ons USD
-        var gramAltin = (xauUsd * usdTry) / 31.1035;
-
-        _tDoviz = [
-            '<span class="ticker-item doviz-item">💵 Dolar <b>' + usdTry.toFixed(2) + ' ₺</b></span>',
-            '<span class="ticker-item doviz-item">💶 Euro <b>' + eurTry.toFixed(2) + ' ₺</b></span>',
-            '<span class="ticker-item altin-item">🪙 Gram Altın <b>' + gramAltin.toFixed(0) + ' ₺</b></span>'
-        ];
-        tickerRender();
-    })
-    .catch(function(){
-        _tDoviz = ['<span class="ticker-item">💱 Döviz verisi alınamadı</span>'];
-        tickerRender();
-    });
-}
-
-/* ── Hububat & Tarımsal Fiyatlar ──
-   Kaynaklar:
-   - Buğday: ZW=F (CBOT) — 1 bushel = 27.2155 kg
-   - Mısır:  ZC=F (CBOT) — 1 bushel = 25.4012 kg
-   - Arpa:   BO1! (ICE)  — EUR/ton yaklaşık
-   - Soya:   ZS=F (CBOT) — 1 bushel = 27.2155 kg
-   Tüm fiyatlar USD → TRY çevrimi ile gösterilir */
-function tickerHububatFiyat() {
-    // Önce USD/TRY kuru al, sonra emtia fiyatlarını çek
-    fetch('https://api.exchangerate-api.com/v4/latest/USD')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        var usdTry = d.rates.TRY || 38;
-        var eurTry = usdTry / (d.rates.EUR || 1);
-        // Yahoo Finance — Buğday, Mısır, Soya, Arpa
-        // Arpa için ayrı sembol: ZB=F veya MFBA vadeli
-        var symbols = 'ZW=F,ZC=F,ZS=F,KE=F';
-        return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=' + symbols + '&range=1d&interval=1d')
-        .then(function(r2){return r2.json();})
-        .then(function(d2){
-            var items = [];
-            var spark = d2.spark && d2.spark.result ? d2.spark.result : [];
-            var fiyatMap = {};
+        // 2. BIST100 + Hisse
+        fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=XU100.IS,THYAO.IS&range=1d&interval=1d')
+        .then(function(r){return r.json();})
+        .then(function(d){
+            var items = ['<span class="tsep">◆</span>'];
+            var spark = d.spark&&d.spark.result ? d.spark.result : [];
             spark.forEach(function(s){
-                if (s && s.symbol && s.response && s.response[0]) {
-                    var meta = s.response[0].meta;
-                    fiyatMap[s.symbol] = meta.regularMarketPrice || meta.chartPreviousClose || 0;
-                }
+                if (!s||!s.response||!s.response[0]) return;
+                var m = s.response[0].meta;
+                var p = m.regularMarketPrice||0;
+                var c = m.regularMarketChangePercent||0;
+                var ok = c>=0?'▲':'▼';
+                items.push(_ti('📊',s.symbol.replace('.IS',''),p.toFixed(0)+' '+ok+Math.abs(c).toFixed(1)+'%',c>=0?'tc-yukari':'tc-asagi'));
             });
+            window._tikItems = window._tikItems.concat(items);
+        }).catch(function(){}),
 
-            var tanim = [
-                {s:'ZW=F',  ikon:'🌾', ad:'Buğday',   bushel:27.2155, doviz:'usd'},
-                {s:'KE=F',  ikon:'🌿', ad:'Kızıl Buğ',bushel:27.2155, doviz:'usd'},
-                {s:'ZC=F',  ikon:'🌽', ad:'Mısır',    bushel:25.4012, doviz:'usd'},
-                {s:'ZS=F',  ikon:'🫘', ad:'Soya',     bushel:27.2155, doviz:'usd'},
-            ];
+        // 3. Hububat (CBOT vadeli)
+        fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW=F,ZC=F,ZS=F,ZO=F&range=1d&interval=1d')
+        .then(function(r){return r.json();})
+        .then(function(d){
+            var fmap={};
+            var spark=d.spark&&d.spark.result?d.spark.result:[];
+            spark.forEach(function(s){ if(s&&s.symbol&&s.response&&s.response[0]) fmap[s.symbol]=s.response[0].meta.regularMarketPrice||0; });
+            var usd = usdTry||38;
+            var items = ['<span class="tsep">◆</span>'];
+            if(fmap['ZW=F']){ items.push(_ti('🌾','Buğday',(fmap['ZW=F']*usd/27.22).toFixed(2)+'₺/kg','tc-tarim')); }
+            if(fmap['ZW=F']){ items.push(_ti('🌿','Arpa',(fmap['ZW=F']*0.78*usd/27.22).toFixed(2)+'₺/kg','tc-tarim')); }
+            if(fmap['ZC=F']){ items.push(_ti('🌽','Mısır',(fmap['ZC=F']*usd/25.40).toFixed(2)+'₺/kg','tc-tarim')); }
+            if(fmap['ZS=F']){ items.push(_ti('🫘','Soya',(fmap['ZS=F']*usd/27.22).toFixed(2)+'₺/kg','tc-tarim')); }
+            if(items.length>1) window._tikItems=window._tikItems.concat(items);
+            else window._tikItems=window._tikItems.concat(['<span class="tsep">◆</span>',
+                _ti('🌾','Buğday','~8.5₺/kg','tc-tarim'),_ti('🌿','Arpa','~6.8₺/kg','tc-tarim'),_ti('🌽','Mısır','~6.2₺/kg','tc-tarim')]);
+        }).catch(function(){
+            window._tikItems=window._tikItems.concat(['<span class="tsep">◆</span>',
+                _ti('🌾','Buğday','~8.5₺/kg','tc-tarim'),_ti('🌿','Arpa','~6.8₺/kg','tc-tarim'),_ti('🌽','Mısır','~6.2₺/kg','tc-tarim')]);
+        }),
 
-            tanim.forEach(function(t){
-                var f = fiyatMap[t.s];
-                if (f && f > 0) {
-                    var kgFiyat = (f * usdTry / t.bushel).toFixed(0);
-                    items.push('<span class="ticker-item tarim-item">' + t.ikon + ' ' + t.ad + ' <b>' + kgFiyat + ' ₺/kg</b></span>');
-                }
-            });
+        // 4. Et & Balık (piyasa ortalaması)
+        Promise.resolve().then(function(){
+            window._tikItems=window._tikItems.concat(['<span class="tsep">◆</span>',
+                _ti('🥩','Dana Kıyma','~550₺/kg','tc-et'),
+                _ti('🍖','Kuzu','~510₺/kg','tc-et'),
+                _ti('🐔','Tavuk','~130₺/kg','tc-et'),
+                _ti('🐟','Çipura','~230₺/kg','tc-et'),
+                _ti('🐟','Hamsi','~100₺/kg','tc-et'),
+            ]);
+        }),
 
-            // Arpa için alternatif hesap (buğdayın ~%80'i)
-            if (fiyatMap['ZW=F'] && !fiyatMap['BA=F']) {
-                var arpaFiyat = ((fiyatMap['ZW=F'] * 0.80) * usdTry / 27.2155).toFixed(0);
-                items.splice(1, 0, '<span class="ticker-item tarim-item">🌿 Arpa <b>' + arpaFiyat + ' ₺/kg</b></span>');
-            }
+        // 5. Hava durumu
+        fetch('https://api.open-meteo.com/v1/forecast?latitude=39.72&longitude=33.52&current=temperature_2m,weathercode&timezone=Europe%2FIstanbul')
+        .then(function(r){return r.json();})
+        .then(function(d){
+            var HAVA={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',61:'🌧️',71:'🌨️',80:'🌦️',95:'⛈️'};
+            var AD={0:'Açık',1:'Az Bulutlu',2:'Parçalı',3:'Kapalı',45:'Sis',51:'Çisenti',61:'Yağmurlu',71:'Karlı',80:'Sağanak',95:'Fırtına'};
+            var c=d.current;
+            window._tikItems = [_ti(HAVA[c.weathercode]||'🌡️','Emirler',Math.round(c.temperature_2m)+'°C · '+(AD[c.weathercode]||''),'tc-hava')].concat(window._tikItems);
+        }).catch(function(){
+            window._tikItems = [_ti('🌡️','Emirler','-- °C','tc-hava')].concat(window._tikItems);
+        }),
 
-            _tHububat = items.length > 0 ? items : tickerHububatFallback();
-            tickerRender();
-        });
-    })
-    .catch(function(){
-        _tHububat = tickerHububatFallback();
-        tickerRender();
+        // 6. Namaz — sadece sonraki vakit
+        (function(){
+            var b=new Date();
+            return fetch('https://api.aladhan.com/v1/timings/'+b.getDate()+'-'+(b.getMonth()+1)+'-'+b.getFullYear()+'?latitude=39.72&longitude=33.52&method=13')
+            .then(function(r){return r.json();})
+            .then(function(d){
+                var v=d.data.timings, now=('0'+b.getHours()).slice(-2)+':'+('0'+b.getMinutes()).slice(-2);
+                var vk=[{i:'🌅',a:'İmsak',s:v.Fajr.split(' ')[0]},{i:'☀️',a:'Güneş',s:v.Sunrise.split(' ')[0]},
+                        {i:'🌞',a:'Öğle',s:v.Dhuhr.split(' ')[0]},{i:'🌇',a:'İkindi',s:v.Asr.split(' ')[0]},
+                        {i:'🌆',a:'Akşam',s:v.Maghrib.split(' ')[0]},{i:'🌙',a:'Yatsı',s:v.Isha.split(' ')[0]}];
+                var son=vk[vk.length-1];
+                for(var i=0;i<vk.length;i++){if(vk[i].s>now){son=vk[i];break;}}
+                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>',_ti(son.i,'Sonraki Namaz',son.a+' '+son.s,'tc-namaz')]);
+            }).catch(function(){});
+        })(),
+
+        // 7. Duyurular
+        (typeof db!=='undefined' ? db.collection('announcements').limit(5).get()
+        .then(function(snap){
+            var items=['<span class="tsep">◆</span>'];
+            snap.forEach(function(doc){ var t=(doc.data().title||doc.data().text||'').substring(0,55); if(t) items.push('<span class="ti tc-duyuru">📢 '+t+'</span>'); });
+            if(items.length>1) window._tikItems=window._tikItems.concat(items);
+        }).catch(function(){}) : Promise.resolve())
+
+    ]).then(function(){
+        tickerRenderVeBaslat();
     });
 }
 
-function tickerHububatFallback() {
-    // Fallback — yaklaşık TMO fiyatları (elle güncellenir)
-    return [
-        '<span class="ticker-item tarim-item">🌾 Buğday <b>~8.5 ₺/kg</b></span>',
-        '<span class="ticker-item tarim-item">🌿 Arpa <b>~7 ₺/kg</b></span>',
-        '<span class="ticker-item tarim-item">🌽 Mısır <b>~6.5 ₺/kg</b></span>',
-        '<span class="ticker-item tarim-item">🫘 Ayçiçek <b>~14 ₺/kg</b></span>'
-    ];
+function _ti(ikon, ad, deger, cls) {
+    return '<span class="ti '+(cls||'')+'">'+ikon+' <b>'+ad+'</b> '+deger+'</span>';
 }
 
-/* ── Borsa + Akaryakıt ── */
-function tickerBorsaAkaryakit() {
-    // BIST100 endeksi
-    fetch('https://query1.finance.yahoo.com/v7/finance/quote?symbols=XU100.IS&lang=tr')
-    .then(function(r){return r.json();})
-    .then(function(d){
-        var q = d.quoteResponse && d.quoteResponse.result && d.quoteResponse.result[0];
-        var items = [];
-        if (q) {
-            var pct = (q.regularMarketChangePercent || 0).toFixed(2);
-            var ok = parseFloat(pct) >= 0 ? '▲' : '▼';
-            var renk = parseFloat(pct) >= 0 ? 'style="color:#4ade80;"' : 'style="color:#f87171;"';
-            items.push('<span class="ticker-item borsa-item">📊 BIST100 <b>' +
-                Math.round(q.regularMarketPrice).toLocaleString('tr') + '</b> <span ' + renk + '>' + ok + pct + '%</span></span>');
-        }
-        // Akaryakıt (sabit, EPDK haftalık)
-        items.push('<span class="ticker-item akaryakit-item">⛽ Benzin <b>~42 ₺/L</b></span>');
-        items.push('<span class="ticker-item akaryakit-item">🚛 Motorin <b>~38 ₺/L</b></span>');
-        _tBorsa = items;
-        tickerRender();
-    })
-    .catch(function(){
-        _tBorsa = [
-            '<span class="ticker-item borsa-item">📊 Borsa verisi alınamadı</span>',
-            '<span class="ticker-item akaryakit-item">⛽ Benzin <b>~42 ₺/L</b></span>',
-            '<span class="ticker-item akaryakit-item">🚛 Motorin <b>~38 ₺/L</b></span>'
-        ];
-        tickerRender();
-    });
+function tickerRenderVeBaslat() {
+    var el = document.getElementById('tickerInner');
+    if (!el || !window._tikItems || window._tikItems.length===0) return;
+    el.innerHTML = window._tikItems.join('') + window._tikItems.join('') + window._tikItems.join('');
+    el.style.animation = 'none';
+    el.style.transform = 'translateX(0)';
+    window._tikPos = 0;
+    if (window._tikAnimId) cancelAnimationFrame(window._tikAnimId);
+    var speed = 2.2; // px/frame — hızlı
+    function adim(){
+        window._tikPos += speed;
+        var limit = el.scrollWidth / 3;
+        if (window._tikPos >= limit) window._tikPos = 0;
+        el.style.transform = 'translateX(-'+window._tikPos+'px)';
+        window._tikAnimId = requestAnimationFrame(adim);
+    }
+    window._tikAnimId = requestAnimationFrame(adim);
+    // 5 dakikada bir yenile
+    setTimeout(tickerBaslat, 300000);
 }
 
-/* ── Duyurular ── */
-function tickerDuyurularYukle() {
-    if (typeof db === 'undefined') { _tDuyurular = []; tickerRender(); return; }
-    db.collection('announcements').limit(8).get()
-    .then(function(snap){
-        var docs = [];
-        snap.forEach(function(doc){ docs.push(doc.data()); });
-        docs.sort(function(a,b){
-            var ta = a.time && a.time.toDate ? a.time.toDate().getTime() : 0;
-            var tb = b.time && b.time.toDate ? b.time.toDate().getTime() : 0;
-            return tb - ta;
-        });
-        _tDuyurular = docs.slice(0,5).filter(function(d){ return d.title || d.text; }).map(function(d){
-            var baslik = (d.title || d.text || '').substring(0, 60);
-            return '<span class="ticker-item duyuru-item">📢 ' + baslik + '</span>';
-        });
-        tickerRender();
-    })
-    .catch(function(){ _tDuyurular = []; tickerRender(); });
-}
 
 /* Feed açılınca ticker yükle — her modda */
 var _tickerYuklendi = false;
@@ -639,3 +538,205 @@ function dernekYonetimUyeSil(idx){
 }
 
 console.log('[Emirler] v4.5 yüklendi ✓');
+
+/* ═══════════════════════════════════════════════════════
+   📺 VİDEO GALERİSİ
+═══════════════════════════════════════════════════════ */
+var _videolar=[], _aktifVideo=0;
+
+function videoGaleriYukle() {
+    var ekleBtn=document.getElementById('videoEkleBtn');
+    if(ekleBtn&&typeof yetkili==='function'&&yetkili()) ekleBtn.style.display='';
+    var liste=document.getElementById('videoListe');
+    if(!liste) return;
+    if(typeof db==='undefined'){liste.innerHTML='';return;}
+    db.collection('videolar').orderBy('zaman','desc').limit(20).get()
+    .then(function(snap){
+        _videolar=[];
+        snap.forEach(function(doc){_videolar.push(Object.assign({id:doc.id},doc.data()));});
+        if(_videolar.length===0){
+            liste.innerHTML='<div style="padding:14px;text-align:center;color:#555;font-size:13px;">📺 Henüz video eklenmemiş</div>';
+            return;
+        }
+        liste.innerHTML=_videolar.map(function(v,i){
+            return '<div class="video-thumb" onclick="videoSec('+i+')">'
+                +(v.tip==='canli'?'<div class="video-thumb-canli">🔴</div>':'')
+                +'<div class="video-thumb-placeholder">🎬</div>'
+                +'<div class="video-thumb-baslik">'+(v.baslik||'Video')+'</div></div>';
+        }).join('');
+        videoSec(0);
+    }).catch(function(){liste.innerHTML='';});
+}
+
+function videoSec(idx) {
+    if(idx<0||idx>=_videolar.length) return;
+    _aktifVideo=idx;
+    var v=_videolar[idx];
+    var player=document.getElementById('anaVideo');
+    var wrap=document.getElementById('videoPlayerWrap');
+    var baslik=document.getElementById('videoBaslik');
+    var rozet=document.getElementById('videoCanliRozet');
+    if(!player) return;
+    if(wrap) wrap.classList.remove('hidden');
+    if(baslik) baslik.textContent=v.baslik||'Video '+(idx+1);
+    if(rozet) rozet.style.display=v.tip==='canli'?'':'none';
+    player.src=v.url||'';
+    player.load();
+    player.play().catch(function(){});
+    document.querySelectorAll('.video-thumb').forEach(function(t,i){
+        t.classList.toggle('video-thumb-aktif',i===idx);
+    });
+}
+
+function videoSonrakiOynat(){videoSec((_aktifVideo+1)%_videolar.length);}
+function videoOnceki(){videoSec((_aktifVideo-1+_videolar.length)%_videolar.length);}
+function videoSonraki(){videoSec((_aktifVideo+1)%_videolar.length);}
+
+function videoCal() {
+    var p=document.getElementById('anaVideo');
+    var btn=document.getElementById('videoCalBtn');
+    if(!p) return;
+    if(p.paused){p.play();if(btn)btn.textContent='⏸';}
+    else{p.pause();if(btn)btn.textContent='▶️';}
+}
+
+function videoTamEkran() {
+    var player=document.getElementById('anaVideo');
+    if(!player) return;
+    if(document.fullscreenElement||document.webkitFullscreenElement) {
+        (document.exitFullscreen||document.webkitExitFullscreen).call(document);
+        if(screen.orientation&&screen.orientation.unlock) screen.orientation.unlock();
+    } else {
+        var req=player.requestFullscreen||player.webkitRequestFullscreen;
+        if(req) req.call(player);
+        if(screen.orientation&&screen.orientation.lock)
+            screen.orientation.lock('landscape').catch(function(){});
+    }
+}
+
+document.addEventListener('fullscreenchange',function(){
+    if(!document.fullscreenElement&&screen.orientation&&screen.orientation.unlock)
+        screen.orientation.unlock();
+});
+
+function videoEkleAc() {
+    var url=prompt('📺 Video URL (MP4/m3u8/YouTube):');
+    if(!url) return;
+    var baslik=prompt('Video başlığı:','Video');
+    var tip=confirm('🔴 Canlı yayın mı?')?'canli':'video';
+    if(typeof db==='undefined') return;
+    db.collection('videolar').add({
+        url:url, baslik:baslik||'Video', tip:tip,
+        zaman:firebase.firestore.FieldValue.serverTimestamp()
+    }).then(videoGaleriYukle).catch(function(e){alert('Hata: '+e.message);});
+}
+
+/* ═══════════════════════════════════════════════════════
+   💰 PİYASA FİYATLARI — Köy Bilgileri
+═══════════════════════════════════════════════════════ */
+var _piyasaYuklendi={emtia:false,et:false,altin:false};
+
+function piyasaTab(tab, btn) {
+    document.querySelectorAll('.piyasa-tab').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.piyasa-panel').forEach(function(p){p.classList.add('hidden');});
+    if(btn) btn.classList.add('active');
+    var panel=document.getElementById('piyasa-'+tab);
+    if(panel) panel.classList.remove('hidden');
+    if(!_piyasaYuklendi[tab]) {
+        _piyasaYuklendi[tab]=true;
+        if(tab==='emtia') piyasaEmtiaYukle();
+        if(tab==='et')    piyasaEtYukle();
+        if(tab==='altin') piyasaAltinYukle();
+    }
+}
+
+function _piyasaRender(widgetId, fiyatlar) {
+    var el=document.getElementById(widgetId);
+    if(!el) return;
+    el.innerHTML=fiyatlar.map(function(f){
+        return '<div class="fiyat-kart">'
+            +'<div class="fiyat-ikon">'+f.i+'</div>'
+            +'<div class="fiyat-bilgi"><div class="fiyat-ad">'+f.a+'</div>'
+            +(f.k?'<div class="fiyat-kaynak">'+f.k+'</div>':'')+'</div>'
+            +'<div class="fiyat-deger"><span class="fiyat-rakam">'+f.f+'</span> <span class="fiyat-birim">'+f.b+'</span></div>'
+            +'</div>';
+    }).join('')+'<div class="fiyat-guncelleme">🕐 '+new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+'</div>';
+}
+
+function piyasaEmtiaYukle() {
+    fetch('https://api.frankfurter.app/latest?from=USD&to=TRY')
+    .then(function(r){return r.json();})
+    .then(function(d){
+        var usd=d.rates.TRY||38;
+        return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW=F,ZC=F,ZS=F,ZO=F&range=1d&interval=1d')
+        .then(function(r2){return r2.json();})
+        .then(function(d2){
+            var fm={};
+            (d2.spark&&d2.spark.result||[]).forEach(function(s){if(s&&s.response&&s.response[0]) fm[s.symbol]=s.response[0].meta.regularMarketPrice||0;});
+            _piyasaRender('emtiaWidget',[
+                {i:'🌾',a:'Buğday',  f:fm['ZW=F']?(fm['ZW=F']*usd/27.22).toFixed(2):'~8.50', b:'₺/kg', k:'CBOT'},
+                {i:'🌿',a:'Arpa',    f:fm['ZW=F']?(fm['ZW=F']*0.78*usd/27.22).toFixed(2):'~6.80', b:'₺/kg', k:'≈CBOT'},
+                {i:'🌽',a:'Mısır',   f:fm['ZC=F']?(fm['ZC=F']*usd/25.40).toFixed(2):'~6.20', b:'₺/kg', k:'CBOT'},
+                {i:'🫘',a:'Soya',    f:fm['ZS=F']?(fm['ZS=F']*usd/27.22).toFixed(2):'~16.00', b:'₺/kg', k:'CBOT'},
+                {i:'🌰',a:'Yulaf',   f:fm['ZO=F']?(fm['ZO=F']*usd/14.52).toFixed(2):'~7.00', b:'₺/kg', k:'CBOT'},
+                {i:'🌻',a:'Ayçiçek', f:fm['ZS=F']?(fm['ZS=F']*1.15*usd/27.22).toFixed(2):'~14.50', b:'₺/kg', k:'≈CBOT'},
+            ]);
+        });
+    }).catch(function(){
+        _piyasaRender('emtiaWidget',[
+            {i:'🌾',a:'Buğday', f:'~8.50',  b:'₺/kg',k:'TMO ref.'},{i:'🌿',a:'Arpa',f:'~6.80',b:'₺/kg',k:'TMO ref.'},
+            {i:'🌽',a:'Mısır',  f:'~6.20',  b:'₺/kg',k:'TMO ref.'},{i:'🌻',a:'Ayçiçek',f:'~14.50',b:'₺/kg',k:'TMO ref.'},
+        ]);
+    });
+}
+
+function piyasaEtYukle() {
+    var gun=new Date().toLocaleDateString('tr-TR',{month:'short',year:'numeric'});
+    _piyasaRender('etWidget',[
+        {i:'🥩',a:'Dana Kıyma',    f:'520-580',b:'₺/kg',k:gun},{i:'🥩',a:'Dana Antrikot',f:'680-750',b:'₺/kg',k:gun},
+        {i:'🍖',a:'Kuzu But',      f:'480-540',b:'₺/kg',k:gun},{i:'🍖',a:'Kuzu Kıyma',  f:'460-520',b:'₺/kg',k:gun},
+        {i:'🐔',a:'Tavuk (bütün)',f:'120-140',b:'₺/kg',k:gun},{i:'🐔',a:'Tavuk Göğsü', f:'200-240',b:'₺/kg',k:gun},
+        {i:'🐟',a:'Çipura',       f:'200-260',b:'₺/kg',k:gun},{i:'🐟',a:'Levrek',      f:'200-250',b:'₺/kg',k:gun},
+        {i:'🐟',a:'Hamsi',        f:'80-120', b:'₺/kg',k:'mevsimsel'},{i:'🐟',a:'Alabalık',f:'160-200',b:'₺/kg',k:gun},
+    ]);
+}
+
+function piyasaAltinYukle() {
+    fetch('https://api.frankfurter.app/latest?from=USD&to=TRY,EUR,GBP')
+    .then(function(r){return r.json();})
+    .then(function(d){
+        var usd=d.rates.TRY||38, eur=usd/(d.rates.EUR||1), gbp=usd/(d.rates.GBP||0.79);
+        return fetch('https://api.frankfurter.app/latest?from=XAU&to=USD')
+        .then(function(r2){return r2.json();})
+        .then(function(d2){
+            var xauUsd=d2.rates.USD||3300;
+            var gram=Math.round(xauUsd*usd/31.1035);
+            _piyasaRender('altinWidget',[
+                {i:'💵',a:'Dolar',        f:usd.toFixed(2),       b:'₺',k:'anlık'},
+                {i:'💶',a:'Euro',         f:eur.toFixed(2),       b:'₺',k:'anlık'},
+                {i:'💷',a:'Sterlin',      f:gbp.toFixed(2),       b:'₺',k:'anlık'},
+                {i:'🪙',a:'Gram Altın',   f:gram.toString(),      b:'₺',k:'Frankfurter'},
+                {i:'🪙',a:'Çeyrek Altın', f:Math.round(gram*1.75).toString(),b:'₺',k:'≈hesap'},
+                {i:'🪙',a:'Yarım Altın',  f:Math.round(gram*3.5).toString(), b:'₺',k:'≈hesap'},
+                {i:'🪙',a:'Tam Altın',    f:Math.round(gram*7).toString(),   b:'₺',k:'≈hesap'},
+                {i:'🏅',a:'Cumhuriyet',   f:Math.round(gram*7.25).toString(),b:'₺',k:'≈hesap'},
+            ]);
+        });
+    }).catch(function(){
+        _piyasaRender('altinWidget',[
+            {i:'💵',a:'Dolar',      f:'~38',    b:'₺',k:''},{i:'💶',a:'Euro',f:'~42',b:'₺',k:''},
+            {i:'🪙',a:'Gram Altın', f:'~3.850', b:'₺',k:''},
+        ]);
+    });
+}
+
+// Piyasa accordeon açılınca yükle
+(function(){
+    var orijFn=window.akordeonToggle;
+    if(orijFn){
+        window.akordeonToggle=function(id){
+            orijFn(id);
+            if(id==='piyasa'&&!_piyasaYuklendi.emtia){_piyasaYuklendi.emtia=true;setTimeout(piyasaEmtiaYukle,200);}
+        };
+    }
+})();

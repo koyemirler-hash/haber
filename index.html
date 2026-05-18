@@ -186,20 +186,15 @@
     </div>
     <!-- KAYAN HABER BANDI -->
     <div class="ticker-band" id="tickerBand">
-      <!-- Satır 1: Hava + CANLI + Kayan yazı -->
       <div class="ticker-row-top">
-        <div class="ticker-hava" id="tickerHavaKucuk">🌡️ --°C</div>
         <div class="ticker-label">📡 CANLI</div>
         <div class="ticker-track">
           <div class="ticker-inner" id="tickerInner">
-            <span class="ticker-item">⏳ Veriler yükleniyor...</span>
+            <span class="ti">⏳ Yükleniyor...</span>
           </div>
         </div>
       </div>
-      <!-- Satır 2: Namaz vakitleri bar -->
-      <div class="ticker-namaz-bar" id="tickerNamazBar"></div>
     </div>
-    
     <div class="hikaye-cubugu" id="hikayeCubugu">
       <div class="hikaye-ekle-btn" onclick="hikayeEkleAc()">
         <div class="hikaye-ekle-daire">＋</div>
@@ -257,6 +252,24 @@
 
   <!-- NOSTALJİ -->
   <section id="view-nostalji" class="view hidden">
+    <div class="video-galeri-alan" id="videoGaleriAlan">
+      <div class="video-galeri-header">
+        <span>📺 Videolar</span>
+        <span class="video-canli-badge" id="videoCanliRozet" style="display:none;">🔴 CANLI</span>
+        <button class="video-ekle-btn" id="videoEkleBtn" onclick="videoEkleAc()" style="display:none;">+ Ekle</button>
+      </div>
+      <div class="video-player-wrap hidden" id="videoPlayerWrap">
+        <video id="anaVideo" class="video-player" playsinline webkit-playsinline onended="videoSonrakiOynat()"></video>
+        <div class="video-overlay-btns">
+          <button onclick="videoOnceki()" class="vbtn">⏮</button>
+          <button onclick="videoCal()" id="videoCalBtn" class="vbtn">⏸</button>
+          <button onclick="videoSonraki()" class="vbtn">⏭</button>
+          <button onclick="videoTamEkran()" class="vbtn vbtn-fs">⛶</button>
+        </div>
+        <div class="video-baslik" id="videoBaslik"></div>
+      </div>
+      <div class="video-liste" id="videoListe"><div style="padding:10px;text-align:center;color:#888;font-size:12px;">📺 Video yükleniyor...</div></div>
+    </div>
     <div class="top-header">
       <span class="header-title">📸 Nostalji</span>
       <button class="header-action-btn" onclick="nostaljiFormToggle()">+ Anı Paylaş</button>
@@ -363,6 +376,19 @@
       <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('tarim')"><span>🌾 Tarım Takvimi</span><span class="akordeon-ok" id="ok-tarim">▼</span></div><div class="akordeon-icerik hidden" id="icerik-tarim"><div id="tarimWidget"><div class="loading-spinner">⏳</div></div></div></div>
       <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('asi')"><span>💉 Hayvan Aşı Takvimi</span><span class="akordeon-ok" id="ok-asi">▼</span></div><div class="akordeon-icerik hidden" id="icerik-asi"><div id="asiWidget"></div></div></div>
       <div class="akordeon-kart"><div class="akordeon-baslik" onclick="akordeonToggle('hastalik')"><span>🏥 Hayvan Hastalıkları</span><span class="akordeon-ok" id="ok-hastalik">▼</span></div><div class="akordeon-icerik hidden" id="icerik-hastalik"><div id="hastalikWidget"></div></div></div>
+      <div class="akordeon-kart">
+        <div class="akordeon-baslik" onclick="akordeonToggle('piyasa')"><span>💰 Piyasa Fiyatları</span><span class="akordeon-ok" id="ok-piyasa">▼</span></div>
+        <div class="akordeon-icerik hidden" id="icerik-piyasa">
+          <div class="piyasa-tabs">
+            <button class="piyasa-tab active" onclick="piyasaTab('emtia',this)">🌾 Emtia</button>
+            <button class="piyasa-tab" onclick="piyasaTab('et',this)">🥩 Et & Balık</button>
+            <button class="piyasa-tab" onclick="piyasaTab('altin',this)">🪙 Altın & Döviz</button>
+          </div>
+          <div id="piyasa-emtia" class="piyasa-panel"><div id="emtiaWidget" class="fiyat-grid"></div></div>
+          <div id="piyasa-et" class="piyasa-panel hidden"><div id="etWidget" class="fiyat-grid"></div></div>
+          <div id="piyasa-altin" class="piyasa-panel hidden"><div id="altinWidget" class="fiyat-grid"></div></div>
+        </div>
+      </div>
     </div>
   </section>
 

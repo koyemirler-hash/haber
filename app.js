@@ -469,6 +469,7 @@ auth.onAuthStateChanged(async user => {
         mesajlariDinle();
         isletmeleriYukle();
         nostaljiDinle();
+        if(typeof videoGaleriYukle==="function")setTimeout(videoGaleriYukle,500);
         if (ayricaliklimi()) { nostaljiOnayBekleyenleriDinle(); ilanOnayBekleyenleriDinle(); }
         if (adminMi()) { onlineListesiYukle(); resetTalepleriniDinle(); }
 

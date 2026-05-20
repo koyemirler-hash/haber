@@ -114,17 +114,6 @@ var _tickerDuyurular   = [];  // [{baslik}]
 var _tickerReady       = 0;   // 0/1/2/3 → hepsi gelince render
 
 function tickerBaslat() {
-    // Tarih + saat - her saniye güncellenir
-    if (window._saatInterval) clearInterval(window._saatInterval);
-    window._saatInterval = setInterval(function(){
-        var now = new Date();
-        var gunler = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
-        var tarih = gunler[now.getDay()] + ' ' +
-            now.getDate() + '.' + (now.getMonth()+1) + '.' + now.getFullYear() + ' ' +
-            ('0'+now.getHours()).slice(-2) + ':' + ('0'+now.getMinutes()).slice(-2) + ':' + ('0'+now.getSeconds()).slice(-2);
-        var el = document.getElementById('tikTarih');
-        if (el) el.textContent = '📅 ' + tarih;
-    }, 1000);
     var el = document.getElementById('tickerInner');
     if (!el) return;
     if (window._tikAnimId) cancelAnimationFrame(window._tikAnimId);
@@ -144,8 +133,7 @@ function tickerBaslat() {
             // Altın: metalpriceapi.com ücretsiz veya hesap bazlı
             // Gerçek altın: XAU/USD = gram altın TL hesabı
             // Yaklaşık: 1 troy oz ≈ 3300 USD, günlük güncellenir
-            // Altın: Yahoo Finance GC=F (gerçek zamanlı vadeli)
-        return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=GC=F,SI=F&range=1d&interval=1d')
+            return fetch('https://api.frankfurter.app/latest?from=XAU&to=USD')
             .then(function(r2){return r2.json();})
             .then(function(d2){
                 var xauUsd = d2.rates.USD || 3300;
@@ -265,9 +253,7 @@ function _ti(ikon, ad, deger, cls) {
 function tickerRenderVeBaslat() {
     var el = document.getElementById('tickerInner');
     if (!el || !window._tikItems || window._tikItems.length===0) return;
-    var tarihItem = '<span class="ti tc-tarih" id="tikTarih">📅 Yükleniyor...</span><span class="tsep">◆</span>';
-    var content = tarihItem + window._tikItems.join('');
-    el.innerHTML = content + content + content;
+    el.innerHTML = window._tikItems.join('') + window._tikItems.join('') + window._tikItems.join('');
     el.style.animation = 'none';
     el.style.transform = 'translateX(0)';
     window._tikPos = 0;
@@ -572,16 +558,11 @@ function videoGaleriYukle() {
             liste.innerHTML='<div style="padding:14px;text-align:center;color:#555;font-size:13px;">📺 Henüz video eklenmemiş</div>';
             return;
         }
-        var isAdmin = typeof yetkili==='function'&&yetkili();
         liste.innerHTML=_videolar.map(function(v,i){
-            return '<div class="video-thumb-wrap">'
-                +'<div class="video-thumb" onclick="videoSec('+i+')">'
+            return '<div class="video-thumb" onclick="videoSec('+i+')">'
                 +(v.tip==='canli'?'<div class="video-thumb-canli">🔴</div>':'')
                 +'<div class="video-thumb-placeholder">🎬</div>'
-                +'<div class="video-thumb-baslik">'+(v.baslik||'Video')+'</div>'
-                +'</div>'
-                +(isAdmin?'<button class="video-sil-btn" onclick="videoSil(''+v.id+'')">🗑</button>':'')
-                +'</div>';
+                +'<div class="video-thumb-baslik">'+(v.baslik||'Video')+'</div></div>';
         }).join('');
         videoSec(0);
     }).catch(function(){liste.innerHTML='';});
@@ -599,13 +580,9 @@ function videoSec(idx) {
     if(wrap) wrap.classList.remove('hidden');
     if(baslik) baslik.textContent=v.baslik||'Video '+(idx+1);
     if(rozet) rozet.style.display=v.tip==='canli'?'':'none';
-    player.muted = true; // İlk açılışta sesiz
     player.src=v.url||'';
     player.load();
     player.play().catch(function(){});
-    // Ses butonu güncelle
-    var sesBtn = document.getElementById('videoSesBtnIcon');
-    if(sesBtn) sesBtn.textContent='🔇';
     document.querySelectorAll('.video-thumb').forEach(function(t,i){
         t.classList.toggle('video-thumb-aktif',i===idx);
     });
@@ -621,13 +598,6 @@ function videoCal() {
     if(!p) return;
     if(p.paused){p.play();if(btn)btn.textContent='⏸';}
     else{p.pause();if(btn)btn.textContent='▶️';}
-}
-function videoSesDegistir() {
-    var p=document.getElementById('anaVideo');
-    var btn=document.getElementById('videoSesBtnIcon');
-    if(!p) return;
-    p.muted=!p.muted;
-    if(btn) btn.textContent=p.muted?'🔇':'🔊';
 }
 
 function videoTamEkran() {
@@ -650,64 +620,15 @@ document.addEventListener('fullscreenchange',function(){
 });
 
 function videoEkleAc() {
-    // Admin kontrolü
-    if(typeof yetkili!=='function'||!yetkili()){alert('❌ Sadece admin video ekleyebilir!');return;}
-    var mod = document.getElementById('videoEkleModal');
-    if(mod) { mod.classList.remove('hidden'); return; }
-    // Modal yoksa fallback URL ile ekle
-    var url=prompt('📺 Video URL (Cloudinary MP4 linki):');
+    var url=prompt('📺 Video URL (MP4/m3u8/YouTube):');
     if(!url) return;
     var baslik=prompt('Video başlığı:','Video');
     var tip=confirm('🔴 Canlı yayın mı?')?'canli':'video';
-    _videoKaydet(url, baslik, tip, '');
-}
-function _videoKaydet(url, baslik, tip, thumbnail) {
     if(typeof db==='undefined') return;
     db.collection('videolar').add({
-        url:url, baslik:baslik||'Video', tip:tip||'video',
-        thumbnail:thumbnail||'',
-        yukleyen:currentUser?currentUser.uid:'',
+        url:url, baslik:baslik||'Video', tip:tip,
         zaman:firebase.firestore.FieldValue.serverTimestamp()
-    }).then(function(){
-        videoGaleriYukle();
-        var mod=document.getElementById('videoEkleModal');
-        if(mod) mod.classList.add('hidden');
-    }).catch(function(e){alert('Hata: '+e.message);});
-}
-async function videoCloudinaryYukle(input) {
-    var file = input.files[0];
-    if(!file) return;
-    var btn = document.getElementById('videoYukleBtn');
-    if(btn){btn.textContent='⏳ Yükleniyor...';btn.disabled=true;}
-    try {
-        var fd = new FormData();
-        fd.append('file', file);
-        fd.append('upload_preset', typeof UPLOAD_PRESET!=='undefined'?UPLOAD_PRESET:'koyapp');
-        fd.append('resource_type','video');
-        var cloud = typeof CLOUD_NAME!=='undefined'?CLOUD_NAME:'ddt11vhyb';
-        var r = await fetch('https://api.cloudinary.com/v1_1/'+cloud+'/video/upload', {method:'POST',body:fd});
-        var d = await r.json();
-        if(d.secure_url) {
-            document.getElementById('videoUrlInput').value = d.secure_url;
-            document.getElementById('videoOnizle').src = d.secure_url;
-            document.getElementById('videoOnizle').style.display='block';
-        }
-    } catch(e){ alert('Yükleme hatası: '+e.message); }
-    if(btn){btn.textContent='✅ Yüklendi';btn.disabled=false;}
-}
-function videoModalKaydet() {
-    var url    = document.getElementById('videoUrlInput').value.trim();
-    var baslik = document.getElementById('videoBaslikInput').value.trim();
-    var tip    = document.getElementById('videoTipSelect').value;
-    if(!url){alert('Video URL veya dosya gerekli!');return;}
-    _videoKaydet(url, baslik||'Video', tip, '');
-}
-function videoSil(id) {
-    if(!confirm('Bu videoyu silmek istediğinizden emin misiniz?')) return;
-    if(typeof db==='undefined') return;
-    db.collection('videolar').doc(id).delete()
-    .then(videoGaleriYukle)
-    .catch(function(e){alert('Hata: '+e.message);});
+    }).then(videoGaleriYukle).catch(function(e){alert('Hata: '+e.message);});
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -785,11 +706,10 @@ function piyasaAltinYukle() {
     .then(function(r){return r.json();})
     .then(function(d){
         var usd=d.rates.TRY||38, eur=usd/(d.rates.EUR||1), gbp=usd/(d.rates.GBP||0.79);
-        return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=GC=F&range=1d&interval=1d')
+        return fetch('https://api.frankfurter.app/latest?from=XAU&to=USD')
         .then(function(r2){return r2.json();})
         .then(function(d2){
-            var spark=d2.spark&&d2.spark.result?d2.spark.result:[];
-            var xauUsd = (spark[0]&&spark[0].response&&spark[0].response[0]) ? spark[0].response[0].meta.regularMarketPrice||3300 : 3300;
+            var xauUsd=d2.rates.USD||3300;
             var gram=Math.round(xauUsd*usd/31.1035);
             _piyasaRender('altinWidget',[
                 {i:'💵',a:'Dolar',        f:usd.toFixed(2),       b:'₺',k:'anlık'},

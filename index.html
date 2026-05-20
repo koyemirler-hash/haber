@@ -264,7 +264,6 @@
           <button onclick="videoOnceki()" class="vbtn">⏮</button>
           <button onclick="videoCal()" id="videoCalBtn" class="vbtn">⏸</button>
           <button onclick="videoSonraki()" class="vbtn">⏭</button>
-          <button onclick="videoSesDegistir()" class="vbtn"><span id="videoSesBtnIcon">🔇</span></button>
           <button onclick="videoTamEkran()" class="vbtn vbtn-fs">⛶</button>
         </div>
         <div class="video-baslik" id="videoBaslik"></div>
@@ -752,37 +751,5 @@ if ("serviceWorker" in navigator) {
 }
 </script>
 
-
-<!-- VİDEO EKLEME MODALİ (Sadece Admin) -->
-<div id="videoEkleModal" class="modal hidden" style="z-index:9995;">
-  <div class="modal-overlay" onclick="document.getElementById('videoEkleModal').classList.add('hidden')"></div>
-  <div class="modal-content" style="border-radius:24px 24px 0 0;padding-bottom:32px;max-height:90vh;overflow-y:auto;">
-    <div class="modal-header">
-      <h4>📺 Video Ekle</h4>
-      <button class="modal-close-btn" onclick="document.getElementById('videoEkleModal').classList.add('hidden')">✕</button>
-    </div>
-    <div style="padding:16px;">
-      <p style="font-size:13px;color:#888;margin:0 0 14px;">Videoyu Cloudinary'e yükleyin veya direkt URL girin</p>
-
-      <!-- Dosya yükleme -->
-      <label class="file-label" style="margin-bottom:12px;display:block;">
-        📁 Video Dosyası Seç (.mp4, .mov, .webm)
-        <input type="file" accept="video/*" onchange="videoCloudinaryYukle(this)">
-      </label>
-      <video id="videoOnizle" style="display:none;width:100%;border-radius:12px;margin-bottom:12px;" controls muted></video>
-      <button id="videoYukleBtn" style="display:none;"></button>
-
-      <div style="text-align:center;color:#ccc;margin:8px 0;font-size:12px;">— veya URL ile ekle —</div>
-
-      <input id="videoUrlInput" type="url" placeholder="https://... (MP4/m3u8 URL)" class="input-field" style="margin-bottom:10px;">
-      <input id="videoBaslikInput" type="text" placeholder="Video başlığı *" class="input-field" style="margin-bottom:10px;">
-      <select id="videoTipSelect" class="input-field" style="margin-bottom:16px;">
-        <option value="video">🎬 Normal Video</option>
-        <option value="canli">🔴 Canlı Yayın (m3u8)</option>
-      </select>
-      <button class="btn btn-primary" onclick="videoModalKaydet()" style="width:100%;">💾 Kaydet</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>

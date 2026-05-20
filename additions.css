@@ -371,3 +371,31 @@ body.pwa-mode #sidebarNav .sidebar-menu{flex:1;overflow-y:auto;}
 
 /* PWA alt menü yok, padding sıfır */
 body.pwa-mode { padding-bottom: 0 !important; }
+
+/* ── Kayan Yazı (Ticker) Öğe Renkleri ── */
+span.ti {
+  color: #ffffff !important;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 0 14px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+span.ti b {
+  color: #ffffff !important;
+  font-weight: 700;
+  margin: 0 2px;
+}
+span.tc-doviz  { color: #ffffff !important; }
+span.tc-altin  { color: #fef08a !important; }
+span.tc-tarim  { color: #bbf7d0 !important; }
+span.tc-borsa  { color: #bfdbfe !important; }
+span.tc-et     { color: #fed7aa !important; }
+span.tc-hava   { color: #ffffff !important; }
+span.tc-namaz  { color: #e9d5ff !important; }
+span.tc-duyuru { color: #fbcfe8 !important; }
+span.tc-yukari { color: #86efac !important; }
+span.tc-asagi  { color: #fca5a5 !important; }
+span.tsep      { color: rgba(255,255,255,0.4); padding: 0 6px; font-size: 10px; }

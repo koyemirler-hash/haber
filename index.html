@@ -252,25 +252,6 @@
 
   <!-- NOSTALJİ -->
   <section id="view-nostalji" class="view hidden">
-    <div class="video-galeri-alan" id="videoGaleriAlan">
-      <div class="video-galeri-header">
-        <span>📺 Videolar</span>
-        <span class="video-canli-badge" id="videoCanliRozet" style="display:none;">🔴 CANLI</span>
-        <button class="video-ekle-btn" id="videoEkleBtn" onclick="videoEkleAc()" style="display:none;">+ Ekle</button>
-      </div>
-      <div class="video-player-wrap hidden" id="videoPlayerWrap">
-        <video id="anaVideo" class="video-player" playsinline webkit-playsinline onended="videoSonrakiOynat()"></video>
-        <div class="video-overlay-btns">
-          <button onclick="videoOnceki()" class="vbtn">⏮</button>
-          <button onclick="videoCal()" id="videoCalBtn" class="vbtn">⏸</button>
-          <button onclick="videoSonraki()" class="vbtn">⏭</button>
-          <button onclick="videoSesDegistir()" class="vbtn"><span id="videoSesBtnIcon">🔇</span></button>
-          <button onclick="videoTamEkran()" class="vbtn vbtn-fs">⛶</button>
-        </div>
-        <div class="video-baslik" id="videoBaslik"></div>
-      </div>
-      <div class="video-liste" id="videoListe"><div style="padding:10px;text-align:center;color:#888;font-size:12px;">📺 Video yükleniyor...</div></div>
-    </div>
     <div class="top-header">
       <span class="header-title">📸 Nostalji</span>
       <button class="header-action-btn" onclick="nostaljiFormToggle()">+ Anı Paylaş</button>

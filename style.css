@@ -11,6 +11,7 @@ input, textarea, select { outline: none; font-family: inherit; }
 a { text-decoration: none; color: inherit; }
 button { font-family: inherit; }
 
+
 /* ─── PWA BANNER ─── */
 .pwa-banner { position: fixed; top: 0; left: 0; right: 0; background: #1a1a2e; z-index: 99999; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.3); animation: slideDown 0.4s ease; }
 @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
@@ -18,11 +19,12 @@ button { font-family: inherit; }
 .pwa-banner-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .pwa-icon { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
 .pwa-banner-title { font-size: 14px; font-weight: 700; color: white; }
-.pwa-banner-sub { font-size: 11px; color: #aaa; }
+.pwa-banner-sub { font-size: 11px; color: #ffffff; } /* <── Burası #aaa yerine #ffffff (Beyaz) yapıldı */
 .pwa-banner-btns { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .pwa-install-btn { background: var(--green); color: white; border: none; border-radius: 20px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; }
 .pwa-close-btn { background: rgba(255,255,255,0.12); color: #ccc; border: none; border-radius: 50%; width: 28px; height: 28px; font-size: 14px; cursor: pointer; }
 body.pwa-banner-acik { padding-top: 62px; }
+
 
 /* ─── FORM ELEMENTS ─── */
 .input-field { width: 100%; padding: 12px 15px; border: 2px solid #dde3dd; border-radius: 12px; font-size: 15px; margin-bottom: 10px; background: var(--white); transition: border-color 0.2s; }

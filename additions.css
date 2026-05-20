@@ -274,3 +274,16 @@ body.pwa-mode { padding-bottom: 0 !important; }
 .fiyat-rakam { font-size:16px; font-weight:800; color:#3a5a40; }
 .fiyat-birim { font-size:11px; color:#888; }
 .fiyat-guncelleme { text-align:center; font-size:10px; color:#bbb; margin-top:8px; padding-top:6px; border-top:1px solid #f0f0f0; }
+
+/* Ticker tarih/saat */
+.tc-tarih { color:#a5f3fc; font-weight:700; font-size:11px; }
+
+/* Video thumb wrap (sil butonu için) */
+.video-thumb-wrap { position:relative; flex-shrink:0; }
+.video-sil-btn {
+  position:absolute; top:2px; right:2px;
+  background:rgba(220,38,38,.85); color:#fff;
+  border:none; border-radius:50%; width:20px; height:20px;
+  font-size:10px; cursor:pointer; display:flex;
+  align-items:center; justify-content:center; z-index:2;
+}

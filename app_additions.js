@@ -120,184 +120,89 @@ function tickerBaslat() {
     window._tikItems = [];
     window._tikPos   = 0;
 
-    var usdTry = 38;
+    var usdTry = 43;
 
     Promise.allSettled([
 
-        // ── 1. Döviz + Altın + BIST100 → finans.truncgil.com (ücretsiz TR API, CORS açık) ──
-        fetch('https://finans.truncgil.com/today.json')
-        .then(function(r){ return r.json(); })
-        .then(function(d){
+        // ── 1. Döviz + Altın + BIST100 → GenelPara (ücretsiz, key yok, doğrudan TL) ──
+        Promise.all([
+            fetch('https://api.genelpara.com/json/?list=doviz&sembol=USD,EUR,GBP').then(function(r){return r.json();}),
+            fetch('https://api.genelpara.com/json/?list=altin&sembol=all').then(function(r){return r.json();})
+        ]).then(function(res){
+            var dov = (res[0]&&res[0].data) || {};
+            var alt = (res[1]&&res[1].data) || {};
+
             // Döviz
-            var usd = parseFloat((d['USD']&&(d['USD']['Satış']||d['USD']['Selling']||d['USD']['satis']))||'38') || 38;
-            var eur = parseFloat((d['EUR']&&(d['EUR']['Satış']||d['EUR']['Selling']||d['EUR']['satis']))||'0') || 0;
-            var gbp = parseFloat((d['GBP']&&(d['GBP']['Satış']||d['GBP']['Selling']||d['GBP']['satis']))||'0') || 0;
-            usdTry = usd;
-            var dovizItems = [_ti('💵','Dolar',usd.toFixed(2)+'₺','tc-doviz')];
-            if(eur>0) dovizItems.push(_ti('💶','Euro',eur.toFixed(2)+'₺','tc-doviz'));
-            if(gbp>0) dovizItems.push(_ti('💷','Sterlin',gbp.toFixed(2)+'₺','tc-doviz'));
+            var usd = parseFloat((dov.USD&&dov.USD.satis)||'0')||0;
+            var eur = parseFloat((dov.EUR&&dov.EUR.satis)||'0')||0;
+            var gbp = parseFloat((dov.GBP&&dov.GBP.satis)||'0')||0;
+            if(usd>0) usdTry = usd;
+            var dovItems = [];
+            if(usd>0) dovItems.push(_ti('💵','Dolar',usd.toFixed(2)+'₺','tc-doviz'));
+            if(eur>0) dovItems.push(_ti('💶','Euro',eur.toFixed(2)+'₺','tc-doviz'));
+            if(gbp>0) dovItems.push(_ti('💷','Sterlin',gbp.toFixed(2)+'₺','tc-doviz'));
 
-            // Altın
-            var gramAltin = 0;
-            var altinAlanlar = ['Gram Altın','gram-altin','gram_altin','Gram Altın (TL)','GAU'];
-            for(var ai=0; ai<altinAlanlar.length; ai++){
-                var av = d[altinAlanlar[ai]];
-                if(av){ gramAltin = parseFloat(av['Satış']||av['Selling']||av['satis']||av['Son']||'0')||0; break; }
-            }
-            var ceyrekAltin = 0, tamAltin = 0;
-            var ceyrekAlanlar = ['Çeyrek Altın','ceyrek-altin','Çeyrek Altın (TL)'];
-            for(var ci=0; ci<ceyrekAlanlar.length; ci++){
-                var cv = d[ceyrekAlanlar[ci]];
-                if(cv){ ceyrekAltin = parseFloat(cv['Satış']||cv['Selling']||cv['satis']||cv['Son']||'0')||0; break; }
-            }
-            var tamAlanlar = ['Tam Altın','tam-altin','Cumhuriyet Altın','cumhuriyet-altin'];
-            for(var ti2=0; ti2<tamAlanlar.length; ti2++){
-                var tv = d[tamAlanlar[ti2]];
-                if(tv){ tamAltin = parseFloat(tv['Satış']||tv['Selling']||tv['satis']||tv['Son']||'0')||0; break; }
-            }
-            // Fallback: gram altın XAU/USD hesabından
-            if(gramAltin === 0 && usd > 0){
-                gramAltin = Math.round(usd * 96); // yaklaşık: oz_fiyat/31.1
-            }
-            var altinItems = [];
-            if(gramAltin>0) altinItems.push(_ti('🪙','Gram Altın',Math.round(gramAltin).toLocaleString('tr-TR')+'₺','tc-altin'));
-            if(ceyrekAltin>0) altinItems.push(_ti('🪙','Çeyrek',Math.round(ceyrekAltin).toLocaleString('tr-TR')+'₺','tc-altin'));
-            else if(gramAltin>0) altinItems.push(_ti('🪙','Çeyrek',Math.round(gramAltin*1.75).toLocaleString('tr-TR')+'₺','tc-altin'));
-            if(tamAltin>0) altinItems.push(_ti('🪙','Tam Altın',Math.round(tamAltin).toLocaleString('tr-TR')+'₺','tc-altin'));
-            else if(gramAltin>0) altinItems.push(_ti('🪙','Tam Altın',Math.round(gramAltin*7).toLocaleString('tr-TR')+'₺','tc-altin'));
+            // Altın — GA=gram, C=çeyrek, T=tam, CMR=cumhuriyet
+            function aF(k){ return alt[k]&&parseFloat(alt[k].satis||'0')||0; }
+            var gram=aF('GA'), ceyrek=aF('C'), tam=aF('T'), cumh=aF('CMR');
+            var altItems = [];
+            if(gram>0)   altItems.push(_ti('🪙','Gram Altın',Math.round(gram).toLocaleString('tr-TR')+'₺','tc-altin'));
+            if(ceyrek>0) altItems.push(_ti('🪙','Çeyrek',Math.round(ceyrek).toLocaleString('tr-TR')+'₺','tc-altin'));
+            if(tam>0)    altItems.push(_ti('🪙','Tam Altın',Math.round(tam).toLocaleString('tr-TR')+'₺','tc-altin'));
+            if(cumh>0)   altItems.push(_ti('🏅','Cumhuriyet',Math.round(cumh).toLocaleString('tr-TR')+'₺','tc-altin'));
 
-            window._tikItems = window._tikItems.concat(
-                ['<span class="tsep">◆</span>'], dovizItems,
-                ['<span class="tsep">◆</span>'], altinItems
-            );
-
-            // BIST100
-            var bist = d['BIST 100'] || d['bist100'] || d['BIST100'] || d['XU100'];
-            if(bist){
-                var bVal = parseFloat(bist['Son']||bist['Value']||bist['Deger']||'0')||0;
-                var bFark = bist['Fark']||bist['Rate']||bist['Degisim']||'';
-                var bUp = bFark.indexOf('-') === -1;
-                var bTxt = bVal>0 ? bVal.toLocaleString('tr-TR',{maximumFractionDigits:0}) : '...';
-                var bFarkTxt = bFark ? ' '+(bUp?'▲':'▼')+bFark.replace('%','').replace('+','').replace('-','').trim()+'%' : '';
-                window._tikItems = window._tikItems.concat([
-                    '<span class="tsep">◆</span>',
-                    _ti('📊','BIST 100',bTxt+bFarkTxt, bUp?'tc-yukari':'tc-asagi')
-                ]);
-            }
-        })
-        .catch(function(){
-            // Fallback: Frankfurter API döviz
-            return fetch('https://api.frankfurter.app/latest?from=USD&to=TRY,EUR,GBP')
-            .then(function(r){return r.json();})
-            .then(function(d){
-                usdTry = d.rates.TRY||38;
-                var eurTry = usdTry/(d.rates.EUR||1);
-                var gbpTry = usdTry/(d.rates.GBP||0.79);
-                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>',
-                    _ti('💵','Dolar',usdTry.toFixed(2)+'₺','tc-doviz'),
-                    _ti('💶','Euro',eurTry.toFixed(2)+'₺','tc-doviz'),
-                    _ti('💷','Sterlin',gbpTry.toFixed(2)+'₺','tc-doviz'),
-                ]);
-            }).catch(function(){});
+            if(dovItems.length>0)
+                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>'], dovItems);
+            if(altItems.length>0)
+                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>'], altItems);
         }),
 
-        // ── 2. Emtia: Hububat fiyatları (Yahoo Finance CBOT vadeli, USD→TRY) ──
-        fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW%3DF%2CZC%3DF%2CZS%3DF%2CZO%3DF&range=1d&interval=1d')
+        // ── 2. BIST100 → GenelPara borsa ──
+        fetch('https://api.genelpara.com/json/?list=borsa&sembol=XU100')
         .then(function(r){return r.json();})
         .then(function(d){
-            var fmap={};
-            var spark=d.spark&&d.spark.result?d.spark.result:[];
-            spark.forEach(function(s){ if(s&&s.symbol&&s.response&&s.response[0]) fmap[s.symbol]=s.response[0].meta.regularMarketPrice||0; });
-            var usd = usdTry||38;
+            var bist = d&&d.data&&(d.data['XU100']||d.data['BIST 100']||d.data['xu100']);
+            if(!bist) return;
+            var bVal = parseFloat(bist.satis||bist.deger||bist.kapanis||'0')||0;
+            var bUp  = bist.yon==='moneyUp';
+            var bOran= bist.degisim ? bist.degisim.replace(/[+\-]/g,'').trim() : '';
+            if(bVal>0){
+                var bTxt = bVal.toLocaleString('tr-TR',{maximumFractionDigits:0});
+                if(bOran) bTxt += ' '+(bUp?'▲':'▼')+bOran+'%';
+                window._tikItems = window._tikItems.concat([
+                    '<span class="tsep">◆</span>',
+                    _ti('📊','BIST 100', bTxt, bUp?'tc-yukari':'tc-asagi')
+                ]);
+            }
+        }).catch(function(){}),
+
+        // ── 3. Emtia: CBOT hububat (USD/TRY GenelPara'dan) ──
+        fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW%3DF%2CZC%3DF%2CZS%3DF&range=1d&interval=1d')
+        .then(function(r){return r.json();})
+        .then(function(d){
+            var fm={};
+            (d.spark&&d.spark.result||[]).forEach(function(s){
+                if(s&&s.response&&s.response[0]) fm[s.symbol]=s.response[0].meta.regularMarketPrice||0;
+            });
+            var usd = usdTry||43;
             var items = ['<span class="tsep">◆</span>'];
-            // CBOT fiyatları cent/bushel → ₺/kg dönüşüm
-            if(fmap['ZW=F']){ items.push(_ti('🌾','Buğday',(fmap['ZW=F']*usd/2722).toFixed(2)+'₺/kg','tc-tarim')); }
-            if(fmap['ZW=F']){ items.push(_ti('🌿','Arpa',(fmap['ZW=F']*0.78*usd/2722).toFixed(2)+'₺/kg','tc-tarim')); }
-            if(fmap['ZC=F']){ items.push(_ti('🌽','Mısır',(fmap['ZC=F']*usd/2540).toFixed(2)+'₺/kg','tc-tarim')); }
-            if(fmap['ZS=F']){ items.push(_ti('🫘','Soya',(fmap['ZS=F']*usd/2722).toFixed(2)+'₺/kg','tc-tarim')); }
+            if(fm['ZW=F']) items.push(_ti('🌾','Buğday',(fm['ZW=F']*usd/2722).toFixed(2)+'₺/kg','tc-tarim'));
+            if(fm['ZW=F']) items.push(_ti('🌿','Arpa',(fm['ZW=F']*0.78*usd/2722).toFixed(2)+'₺/kg','tc-tarim'));
+            if(fm['ZC=F']) items.push(_ti('🌽','Mısır',(fm['ZC=F']*usd/2540).toFixed(2)+'₺/kg','tc-tarim'));
+            if(fm['ZS=F']) items.push(_ti('🫘','Soya',(fm['ZS=F']*usd/2722).toFixed(2)+'₺/kg','tc-tarim'));
             if(items.length>1) window._tikItems=window._tikItems.concat(items);
         }).catch(function(){}),
 
-        // ── 3. Et & Balık fiyatları → İstanbul Su Ürünleri ve Et Hali (allorigins proxy) ──
-        fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://hal.istanbul.gov.tr/hal-fiyatlari'))
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-            var html = res.contents || '';
-            var etItems = ['<span class="tsep">◆</span>'];
-            // Tablo satırlarından fiyat parse et
-            var rows = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            var parsed = {};
-            rows.forEach(function(row){
-                var cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-                if(cells.length >= 2){
-                    var urun = cells[0].replace(/<[^>]+>/g,'').trim().toLowerCase();
-                    var fiyat = cells[cells.length-1].replace(/<[^>]+>/g,'').trim().replace(',','.');
-                    var fVal = parseFloat(fiyat);
-                    if(!isNaN(fVal) && fVal > 0){
-                        if(urun.indexOf('dana')!==-1 && urun.indexOf('kıyma')!==-1) parsed['dana']=fVal;
-                        else if(urun.indexOf('kuzu')!==-1 && (urun.indexOf('but')!==-1||urun.indexOf('kol')!==-1||urun.indexOf('but')!==-1)) parsed['kuzu']=fVal;
-                        else if(urun.indexOf('tavuk')!==-1 && urun.indexOf('but')!==-1) parsed['tavuk']=fVal;
-                        else if(urun.indexOf('çipura')!==-1||urun.indexOf('cipura')!==-1) parsed['cipura']=fVal;
-                        else if(urun.indexOf('levrek')!==-1) parsed['levrek']=fVal;
-                        else if(urun.indexOf('hamsi')!==-1) parsed['hamsi']=fVal;
-                        else if(urun.indexOf('somon')!==-1) parsed['somon']=fVal;
-                    }
-                }
-            });
-            if(parsed['dana'])   etItems.push(_ti('🥩','Dana Kıyma',Math.round(parsed['dana'])+'₺/kg','tc-et'));
-            if(parsed['kuzu'])   etItems.push(_ti('🍖','Kuzu But',Math.round(parsed['kuzu'])+'₺/kg','tc-et'));
-            if(parsed['tavuk'])  etItems.push(_ti('🐔','Tavuk But',Math.round(parsed['tavuk'])+'₺/kg','tc-et'));
-            if(parsed['cipura']) etItems.push(_ti('🐟','Çipura',Math.round(parsed['cipura'])+'₺/kg','tc-et'));
-            if(parsed['levrek']) etItems.push(_ti('🐟','Levrek',Math.round(parsed['levrek'])+'₺/kg','tc-et'));
-            if(parsed['hamsi'])  etItems.push(_ti('🐟','Hamsi',Math.round(parsed['hamsi'])+'₺/kg','tc-et'));
-            if(parsed['somon'])  etItems.push(_ti('🐟','Somon',Math.round(parsed['somon'])+'₺/kg','tc-et'));
-            // Eğer parse edilemezse ESK üzerinden dene
-            if(etItems.length <= 1) throw new Error('parse_bos');
-            window._tikItems = window._tikItems.concat(etItems);
-        })
-        .catch(function(){
-            // Fallback: ESK (Et ve Süt Kurumu) resmi sitesi
-            return fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.esk.gov.tr/perakende-fiyat-listesi'))
-            .then(function(r){ return r.json(); })
-            .then(function(res){
-                var html = res.contents || '';
-                var etItems = ['<span class="tsep">◆</span>'];
-                var rows = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-                var parsed = {};
-                rows.forEach(function(row){
-                    var cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-                    if(cells.length >= 2){
-                        var urun = cells[0].replace(/<[^>]+>/g,'').trim().toLowerCase();
-                        var fiyat = (cells[1]||cells[cells.length-1]).replace(/<[^>]+>/g,'').trim().replace(',','.');
-                        var fVal = parseFloat(fiyat);
-                        if(!isNaN(fVal) && fVal > 10){
-                            if(urun.indexOf('dana')!==-1&&(urun.indexOf('kıyma')!==-1||urun.indexOf('kiyma')!==-1)) parsed['dana']=fVal;
-                            else if(urun.indexOf('kuzu')!==-1) parsed['kuzu']=parsed['kuzu']||fVal;
-                            else if(urun.indexOf('tavuk')!==-1&&urun.indexOf('but')!==-1) parsed['tavuk']=fVal;
-                            else if(urun.indexOf('çipura')!==-1||urun.indexOf('cipura')!==-1) parsed['cipura']=fVal;
-                            else if(urun.indexOf('hamsi')!==-1) parsed['hamsi']=fVal;
-                        }
-                    }
-                });
-                if(parsed['dana'])   etItems.push(_ti('🥩','Dana Kıyma',Math.round(parsed['dana'])+'₺/kg','tc-et'));
-                if(parsed['kuzu'])   etItems.push(_ti('🍖','Kuzu',Math.round(parsed['kuzu'])+'₺/kg','tc-et'));
-                if(parsed['tavuk'])  etItems.push(_ti('🐔','Tavuk But',Math.round(parsed['tavuk'])+'₺/kg','tc-et'));
-                if(parsed['cipura']) etItems.push(_ti('🐟','Çipura',Math.round(parsed['cipura'])+'₺/kg','tc-et'));
-                if(parsed['hamsi'])  etItems.push(_ti('🐟','Hamsi',Math.round(parsed['hamsi'])+'₺/kg','tc-et'));
-                if(etItems.length > 1) window._tikItems = window._tikItems.concat(etItems);
-            }).catch(function(){});
-        }),
-
-        // ── 4. Hava durumu (open-meteo — ücretsiz, CORS açık) ──
+        // ── 4. Hava durumu ──
         fetch('https://api.open-meteo.com/v1/forecast?latitude=39.72&longitude=33.52&current=temperature_2m,weathercode&timezone=Europe%2FIstanbul')
         .then(function(r){return r.json();})
         .then(function(d){
             var HAVA={0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',51:'🌦️',61:'🌧️',71:'🌨️',80:'🌦️',95:'⛈️'};
             var AD={0:'Açık',1:'Az Bulutlu',2:'Parçalı',3:'Kapalı',45:'Sis',51:'Çisenti',61:'Yağmurlu',71:'Karlı',80:'Sağanak',95:'Fırtına'};
             var c=d.current;
-            window._tikItems = [_ti(HAVA[c.weathercode]||'🌡️','Emirler',Math.round(c.temperature_2m)+'°C · '+(AD[c.weathercode]||''),'tc-hava')].concat(window._tikItems);
+            window._tikItems=[_ti(HAVA[c.weathercode]||'🌡️','Emirler',Math.round(c.temperature_2m)+'°C · '+(AD[c.weathercode]||''),'tc-hava')].concat(window._tikItems);
         }).catch(function(){
-            window._tikItems = [_ti('🌡️','Emirler','-- °C','tc-hava')].concat(window._tikItems);
+            window._tikItems=[_ti('🌡️','Emirler','-- °C','tc-hava')].concat(window._tikItems);
         }),
 
         // ── 5. Namaz vakitleri ──
@@ -312,7 +217,7 @@ function tickerBaslat() {
                         {i:'🌆',a:'Akşam',s:v.Maghrib.split(' ')[0]},{i:'🌙',a:'Yatsı',s:v.Isha.split(' ')[0]}];
                 var son=vk[vk.length-1];
                 for(var i=0;i<vk.length;i++){if(vk[i].s>now){son=vk[i];break;}}
-                window._tikItems = window._tikItems.concat(['<span class="tsep">◆</span>',_ti(son.i,'Sonraki Namaz',son.a+' '+son.s,'tc-namaz')]);
+                window._tikItems=window._tikItems.concat(['<span class="tsep">◆</span>',_ti(son.i,'Sonraki Namaz',son.a+' '+son.s,'tc-namaz')]);
             }).catch(function(){});
         })(),
 
@@ -717,7 +622,7 @@ function videoEkleAc() {
 /* ═══════════════════════════════════════════════════════
    💰 PİYASA FİYATLARI — Köy Bilgileri
 ═══════════════════════════════════════════════════════ */
-var _piyasaYuklendi={emtia:false,et:false,altin:false};
+var _piyasaYuklendi={emtia:false,altin:false};
 
 function piyasaTab(tab, btn) {
     document.querySelectorAll('.piyasa-tab').forEach(function(b){b.classList.remove('active');});
@@ -728,7 +633,6 @@ function piyasaTab(tab, btn) {
     if(!_piyasaYuklendi[tab]) {
         _piyasaYuklendi[tab]=true;
         if(tab==='emtia') piyasaEmtiaYukle();
-        if(tab==='et')    piyasaEtYukle();
         if(tab==='altin') piyasaAltinYukle();
     }
 }
@@ -746,20 +650,34 @@ function _piyasaRender(widgetId, fiyatlar) {
     }).join('')+'<div class="fiyat-guncelleme">🕐 '+new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})+'</div>';
 }
 
+// ── GenelPara API yardımcı: Ücretsiz, key yok, 1000 istek/gün, Türkiye TL verileri ──
+var _GP = 'https://api.genelpara.com/json/';
+var _gpCache = {};
+function _gpFetch(list, sembol) {
+    var key = list+'_'+sembol;
+    var now = Date.now();
+    if(_gpCache[key] && now - _gpCache[key].t < 1800000) {
+        return Promise.resolve(_gpCache[key].d);
+    }
+    return fetch(_GP + '?list='+list+'&sembol='+sembol)
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            if(d && d.data) { _gpCache[key]={d:d.data, t:now}; return d.data; }
+            throw new Error('no_data');
+        });
+}
+
 function piyasaEmtiaYukle() {
-    // USD/TRY önce truncgil.com'dan al, sonra CBOT emtia
-    fetch('https://finans.truncgil.com/today.json')
-    .then(function(r){ return r.json(); })
+    _gpFetch('doviz','USD')
     .then(function(d){
-        var usd = parseFloat((d['USD']&&(d['USD']['Satış']||d['USD']['Selling']))||'38')||38;
+        var usd = parseFloat((d.USD&&d.USD.satis)||'43') || 43;
         return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW%3DF%2CZC%3DF%2CZS%3DF%2CZO%3DF&range=1d&interval=1d')
-        .then(function(r2){ return r2.json(); })
+        .then(function(r){ return r.json(); })
         .then(function(d2){
             var fm={};
             (d2.spark&&d2.spark.result||[]).forEach(function(s){
                 if(s&&s.response&&s.response[0]) fm[s.symbol]=s.response[0].meta.regularMarketPrice||0;
             });
-            // cent/bushel → ₺/kg dönüşüm katsayıları
             _piyasaRender('emtiaWidget',[
                 {i:'🌾',a:'Buğday',  f:fm['ZW=F']?(fm['ZW=F']*usd/2722).toFixed(2):'—', b:'₺/kg',k:'CBOT·anlık'},
                 {i:'🌿',a:'Arpa',    f:fm['ZW=F']?(fm['ZW=F']*0.78*usd/2722).toFixed(2):'—', b:'₺/kg',k:'≈CBOT'},
@@ -769,215 +687,63 @@ function piyasaEmtiaYukle() {
                 {i:'🌻',a:'Ayçiçek', f:fm['ZS=F']?(fm['ZS=F']*1.15*usd/2722).toFixed(2):'—', b:'₺/kg',k:'≈CBOT'},
             ]);
         });
-    }).catch(function(){
-        // Fallback: Frankfurter USD/TRY
-        fetch('https://api.frankfurter.app/latest?from=USD&to=TRY')
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-            var usd=d.rates.TRY||38;
-            return fetch('https://query2.finance.yahoo.com/v8/finance/spark?symbols=ZW%3DF%2CZC%3DF%2CZS%3DF%2CZO%3DF&range=1d&interval=1d')
-            .then(function(r2){ return r2.json(); })
-            .then(function(d2){
-                var fm={};
-                (d2.spark&&d2.spark.result||[]).forEach(function(s){
-                    if(s&&s.response&&s.response[0]) fm[s.symbol]=s.response[0].meta.regularMarketPrice||0;
-                });
-                _piyasaRender('emtiaWidget',[
-                    {i:'🌾',a:'Buğday', f:fm['ZW=F']?(fm['ZW=F']*usd/2722).toFixed(2):'—',b:'₺/kg',k:'CBOT'},
-                    {i:'🌿',a:'Arpa',   f:fm['ZW=F']?(fm['ZW=F']*0.78*usd/2722).toFixed(2):'—',b:'₺/kg',k:'≈CBOT'},
-                    {i:'🌽',a:'Mısır',  f:fm['ZC=F']?(fm['ZC=F']*usd/2540).toFixed(2):'—',b:'₺/kg',k:'CBOT'},
-                    {i:'🫘',a:'Soya',   f:fm['ZS=F']?(fm['ZS=F']*usd/2722).toFixed(2):'—',b:'₺/kg',k:'CBOT'},
-                ]);
-            });
-        }).catch(function(){
-            _piyasaRender('emtiaWidget',[
-                {i:'⚠️',a:'Veri alınamadı',f:'—',b:'',k:'Bağlantı hatası'}
-            ]);
-        });
+    }).catch(function(e){
+        console.warn('piyasaEmtia hata:',e);
+        _piyasaRender('emtiaWidget',[{i:'⚠️',a:'Veri alınamadı',f:'—',b:'',k:'Bağlantı hatası'}]);
     });
 }
 
-function piyasaEtYukle() {
-    var el = document.getElementById('etWidget');
-    if(el) el.innerHTML = '<div style="padding:14px;text-align:center;color:#888;font-size:13px;">⏳ Hal fiyatları yükleniyor...</div>';
-
-    // İstanbul Su Ürünleri ve Et Hali → allorigins proxy
-    fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://hal.istanbul.gov.tr/hal-fiyatlari'))
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-        var html = res.contents || '';
-        var rows = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-        var parsed = {};
-        rows.forEach(function(row){
-            var cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-            if(cells.length >= 2){
-                var urun = cells[0].replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ').trim().toLowerCase();
-                var fiyatTxt = cells[cells.length-1].replace(/<[^>]+>/g,'').trim().replace(',','.');
-                var fVal = parseFloat(fiyatTxt);
-                if(!isNaN(fVal) && fVal > 10){
-                    if(urun.indexOf('dana')!==-1&&(urun.indexOf('kıyma')!==-1||urun.indexOf('kiyma')!==-1)) parsed['dana_kiyma']=fVal;
-                    else if(urun.indexOf('dana')!==-1&&urun.indexOf('antrikot')!==-1) parsed['dana_antrikot']=fVal;
-                    else if(urun.indexOf('dana')!==-1&&!parsed['dana_genel']) parsed['dana_genel']=fVal;
-                    else if(urun.indexOf('kuzu')!==-1&&urun.indexOf('but')!==-1) parsed['kuzu_but']=fVal;
-                    else if(urun.indexOf('kuzu')!==-1&&(urun.indexOf('kıyma')!==-1||urun.indexOf('kiyma')!==-1)) parsed['kuzu_kiyma']=fVal;
-                    else if(urun.indexOf('kuzu')!==-1&&!parsed['kuzu_genel']) parsed['kuzu_genel']=fVal;
-                    else if(urun.indexOf('tavuk')!==-1&&urun.indexOf('but')!==-1) parsed['tavuk_but']=fVal;
-                    else if(urun.indexOf('tavuk')!==-1&&(urun.indexOf('gogus')!==-1||urun.indexOf('göğüs')!==-1)) parsed['tavuk_gogus']=fVal;
-                    else if(urun.indexOf('tavuk')!==-1&&!parsed['tavuk_genel']) parsed['tavuk_genel']=fVal;
-                    else if(urun.indexOf('çipura')!==-1||urun.indexOf('cipura')!==-1) parsed['cipura']=fVal;
-                    else if(urun.indexOf('levrek')!==-1) parsed['levrek']=fVal;
-                    else if(urun.indexOf('hamsi')!==-1) parsed['hamsi']=fVal;
-                    else if(urun.indexOf('alabalık')!==-1||urun.indexOf('alabalik')!==-1) parsed['alabalik']=fVal;
-                    else if(urun.indexOf('somon')!==-1) parsed['somon']=fVal;
-                }
-            }
-        });
-        var fiyatlar = [];
-        var kaynak = 'İst. Hali·anlık';
-        if(parsed['dana_kiyma'])   fiyatlar.push({i:'🥩',a:'Dana Kıyma',   f:Math.round(parsed['dana_kiyma']).toString(),   b:'₺/kg',k:kaynak});
-        if(parsed['dana_antrikot'])fiyatlar.push({i:'🥩',a:'Dana Antrikot',f:Math.round(parsed['dana_antrikot']).toString(), b:'₺/kg',k:kaynak});
-        else if(parsed['dana_genel']) fiyatlar.push({i:'🥩',a:'Dana Et',   f:Math.round(parsed['dana_genel']).toString(),    b:'₺/kg',k:kaynak});
-        if(parsed['kuzu_but'])     fiyatlar.push({i:'🍖',a:'Kuzu But',     f:Math.round(parsed['kuzu_but']).toString(),      b:'₺/kg',k:kaynak});
-        if(parsed['kuzu_kiyma'])   fiyatlar.push({i:'🍖',a:'Kuzu Kıyma',   f:Math.round(parsed['kuzu_kiyma']).toString(),    b:'₺/kg',k:kaynak});
-        else if(parsed['kuzu_genel']) fiyatlar.push({i:'🍖',a:'Kuzu Et',   f:Math.round(parsed['kuzu_genel']).toString(),    b:'₺/kg',k:kaynak});
-        if(parsed['tavuk_but'])    fiyatlar.push({i:'🐔',a:'Tavuk But',    f:Math.round(parsed['tavuk_but']).toString(),     b:'₺/kg',k:kaynak});
-        if(parsed['tavuk_gogus'])  fiyatlar.push({i:'🐔',a:'Tavuk Göğüs',  f:Math.round(parsed['tavuk_gogus']).toString(),   b:'₺/kg',k:kaynak});
-        else if(parsed['tavuk_genel']) fiyatlar.push({i:'🐔',a:'Tavuk',    f:Math.round(parsed['tavuk_genel']).toString(),   b:'₺/kg',k:kaynak});
-        if(parsed['cipura'])       fiyatlar.push({i:'🐟',a:'Çipura',       f:Math.round(parsed['cipura']).toString(),        b:'₺/kg',k:kaynak});
-        if(parsed['levrek'])       fiyatlar.push({i:'🐟',a:'Levrek',       f:Math.round(parsed['levrek']).toString(),        b:'₺/kg',k:kaynak});
-        if(parsed['hamsi'])        fiyatlar.push({i:'🐟',a:'Hamsi',        f:Math.round(parsed['hamsi']).toString(),         b:'₺/kg',k:kaynak});
-        if(parsed['alabalik'])     fiyatlar.push({i:'🐟',a:'Alabalık',     f:Math.round(parsed['alabalik']).toString(),      b:'₺/kg',k:kaynak});
-        if(parsed['somon'])        fiyatlar.push({i:'🐟',a:'Somon',        f:Math.round(parsed['somon']).toString(),         b:'₺/kg',k:kaynak});
-
-        if(fiyatlar.length > 0){
-            _piyasaRender('etWidget', fiyatlar);
-        } else {
-            throw new Error('parse_bos');
-        }
-    })
-    .catch(function(){
-        // Fallback: ESK perakende fiyat listesi
-        fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.esk.gov.tr/perakende-fiyat-listesi'))
-        .then(function(r){ return r.json(); })
-        .then(function(res){
-            var html = res.contents || '';
-            var rows = html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            var fiyatlar = [];
-            rows.forEach(function(row){
-                var cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-                if(cells.length >= 2){
-                    var urun = cells[0].replace(/<[^>]+>/g,'').replace(/&[a-z]+;/g,' ').trim();
-                    var fiyatTxt = cells[cells.length-1].replace(/<[^>]+>/g,'').trim().replace(',','.');
-                    var fVal = parseFloat(fiyatTxt);
-                    if(urun.length > 1 && !isNaN(fVal) && fVal > 10){
-                        var ikon = urun.toLowerCase().indexOf('balık')!==-1||urun.toLowerCase().indexOf('hamsi')!==-1||
-                                   urun.toLowerCase().indexOf('çipura')!==-1||urun.toLowerCase().indexOf('levrek')!==-1 ? '🐟' :
-                                   urun.toLowerCase().indexOf('tavuk')!==-1 ? '🐔' :
-                                   urun.toLowerCase().indexOf('kuzu')!==-1 ? '🍖' : '🥩';
-                        fiyatlar.push({i:ikon, a:urun, f:Math.round(fVal).toString(), b:'₺/kg', k:'ESK·resmi'});
-                    }
-                }
-            });
-            if(fiyatlar.length > 0) _piyasaRender('etWidget', fiyatlar);
-            else throw new Error('esk_bos');
-        })
-        .catch(function(){
-            if(el) el.innerHTML = '<div style="padding:14px;text-align:center;color:#e07b39;font-size:13px;">⚠️ Et & balık fiyatları şu an alınamadı.<br><span style="font-size:11px;color:#aaa;">Hal kaynağına bağlanılamıyor</span></div>';
-        });
-    });
-}
+function piyasaEtYukle() { /* kaldırıldı */ }
 
 function piyasaAltinYukle() {
-    // truncgil.com: döviz + altın + BIST tek istekte
-    fetch('https://finans.truncgil.com/today.json')
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-        var usd = parseFloat((d['USD']&&(d['USD']['Satış']||d['USD']['Selling']))||'38')||38;
-        var eur = parseFloat((d['EUR']&&(d['EUR']['Satış']||d['EUR']['Selling']))||'0')||0;
-        var gbp = parseFloat((d['GBP']&&(d['GBP']['Satış']||d['GBP']['Selling']))||'0')||0;
+    Promise.all([
+        _gpFetch('doviz','USD,EUR,GBP'),
+        _gpFetch('altin','all')
+    ]).then(function(results){
+        var dov = results[0] || {};
+        var alt = results[1] || {};
+        var usd = parseFloat((dov.USD&&dov.USD.satis)||'0')||0;
+        var eur = parseFloat((dov.EUR&&dov.EUR.satis)||'0')||0;
+        var gbp = parseFloat((dov.GBP&&dov.GBP.satis)||'0')||0;
+        var usdDeg = dov.USD&&dov.USD.yon==='moneyUp'?'▲':'▼';
+        var eurDeg = dov.EUR&&dov.EUR.yon==='moneyUp'?'▲':'▼';
+        function altF(kod){ return alt[kod]&&parseFloat(alt[kod].satis||'0')||0; }
+        function altDeg(kod){ return alt[kod]&&alt[kod].yon==='moneyUp'?'▲':'▼'; }
+        var gram=altF('GA'), ceyrek=altF('C'), yarim=altF('Y'), tam=altF('T'), cumh=altF('CMR');
+        function fmt(v){ return v.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-        var gramAltin = 0;
-        var altinAlanlar = ['Gram Altın','gram-altin','Gram Altın (TL)'];
-        for(var ai=0; ai<altinAlanlar.length; ai++){
-            var av=d[altinAlanlar[ai]];
-            if(av){ gramAltin=parseFloat(av['Satış']||av['Selling']||av['Son']||'0')||0; break; }
-        }
-        var ceyrek = 0, yarim = 0, tam = 0, cumhuriyet = 0;
-        var ceyrekAlanlar = ['Çeyrek Altın','ceyrek-altin'];
-        for(var ci=0; ci<ceyrekAlanlar.length; ci++){
-            var cv=d[ceyrekAlanlar[ci]];
-            if(cv){ ceyrek=parseFloat(cv['Satış']||cv['Selling']||cv['Son']||'0')||0; break; }
-        }
-        var yarimAlanlar = ['Yarım Altın','yarim-altin'];
-        for(var yi=0; yi<yarimAlanlar.length; yi++){
-            var yv=d[yarimAlanlar[yi]];
-            if(yv){ yarim=parseFloat(yv['Satış']||yv['Selling']||yv['Son']||'0')||0; break; }
-        }
-        var tamAlanlar = ['Tam Altın','tam-altin','Cumhuriyet Altın'];
-        for(var ti3=0; ti3<tamAlanlar.length; ti3++){
-            var tv=d[tamAlanlar[ti3]];
-            if(tv){ tam=parseFloat(tv['Satış']||tv['Selling']||tv['Son']||'0')||0; break; }
-        }
-        var cumAlanlar = ['Cumhuriyet Altın','cumhuriyet-altin'];
-        for(var cumi=0; cumi<cumAlanlar.length; cumi++){
-            var cumv=d[cumAlanlar[cumi]];
-            if(cumv){ cumhuriyet=parseFloat(cumv['Satış']||cumv['Selling']||cumv['Son']||'0')||0; break; }
-        }
-        // Hesaplama ile fallback
-        if(gramAltin===0 && usd>0) gramAltin = usd*96;
-        if(ceyrek===0)    ceyrek    = Math.round(gramAltin*1.75);
-        if(yarim===0)     yarim     = Math.round(gramAltin*3.5);
-        if(tam===0)       tam       = Math.round(gramAltin*7);
-        if(cumhuriyet===0)cumhuriyet= Math.round(gramAltin*7.25);
+        return _gpFetch('borsa','XU100')
+        .then(function(bist){
+            var bXU = bist&&(bist['XU100']||bist['BIST 100']||bist['xu100']);
+            var bistVal = bXU ? parseFloat(bXU.satis||bXU.deger||bXU.kapanis||'0')||0 : 0;
+            var bistDeg = bXU&&bXU.yon==='moneyUp'?'▲':'▼';
+            var bistOran = bXU&&bXU.degisim ? bXU.degisim.replace('+','').replace('-','').trim() : '';
 
-        // BIST100
-        var bist = d['BIST 100']||d['bist100']||d['BIST100']||d['XU100'];
-        var bistTxt = '';
-        if(bist){
-            var bVal=parseFloat(bist['Son']||bist['Value']||'0')||0;
-            var bFark=bist['Fark']||bist['Rate']||'';
-            if(bVal>0){
-                var bUp = bFark.indexOf('-')===-1;
-                bistTxt = bVal.toLocaleString('tr-TR',{maximumFractionDigits:0});
-                if(bFark) bistTxt += ' '+(bUp?'▲':'▼')+bFark.replace(/[%+\-]/g,'').trim()+'%';
-            }
-        }
-
-        var liste = [
-            {i:'💵',a:'Dolar',       f:usd.toFixed(2),                                  b:'₺',k:'truncgil·anlık'},
-            {i:'💶',a:'Euro',        f:eur>0?eur.toFixed(2):'—',                         b:'₺',k:'truncgil·anlık'},
-            {i:'💷',a:'Sterlin',     f:gbp>0?gbp.toFixed(2):'—',                         b:'₺',k:'truncgil·anlık'},
-            {i:'🪙',a:'Gram Altın',  f:Math.round(gramAltin).toLocaleString('tr-TR'),    b:'₺',k:'truncgil·anlık'},
-            {i:'🪙',a:'Çeyrek Altın',f:Math.round(ceyrek).toLocaleString('tr-TR'),       b:'₺',k:'truncgil'},
-            {i:'🪙',a:'Yarım Altın', f:Math.round(yarim).toLocaleString('tr-TR'),        b:'₺',k:'truncgil'},
-            {i:'🪙',a:'Tam Altın',   f:Math.round(tam).toLocaleString('tr-TR'),          b:'₺',k:'truncgil'},
-            {i:'🏅',a:'Cumhuriyet',  f:Math.round(cumhuriyet).toLocaleString('tr-TR'),   b:'₺',k:'truncgil'},
-        ];
-        if(bistTxt) liste.push({i:'📊',a:'BIST 100',f:bistTxt,b:'',k:'truncgil·anlık'});
-        _piyasaRender('altinWidget', liste);
-    })
-    .catch(function(){
-        // Fallback: Frankfurter
-        fetch('https://api.frankfurter.app/latest?from=USD&to=TRY,EUR,GBP')
-        .then(function(r){ return r.json(); })
-        .then(function(d){
-            var usd=d.rates.TRY||38, eur=usd/(d.rates.EUR||1), gbp=usd/(d.rates.GBP||0.79);
-            return fetch('https://api.frankfurter.app/latest?from=XAU&to=USD')
-            .then(function(r2){ return r2.json(); })
-            .then(function(d2){
-                var gram=Math.round((d2.rates.USD||3300)*usd/31.1035);
-                _piyasaRender('altinWidget',[
-                    {i:'💵',a:'Dolar',       f:usd.toFixed(2),                    b:'₺',k:'Frankfurter'},
-                    {i:'💶',a:'Euro',        f:eur.toFixed(2),                    b:'₺',k:'Frankfurter'},
-                    {i:'💷',a:'Sterlin',     f:gbp.toFixed(2),                    b:'₺',k:'Frankfurter'},
-                    {i:'🪙',a:'Gram Altın',  f:gram.toLocaleString('tr-TR'),      b:'₺',k:'XAU/USD hesap'},
-                    {i:'🪙',a:'Çeyrek Altın',f:Math.round(gram*1.75).toLocaleString('tr-TR'),b:'₺',k:'≈hesap'},
-                    {i:'🪙',a:'Tam Altın',   f:Math.round(gram*7).toLocaleString('tr-TR'),   b:'₺',k:'≈hesap'},
-                ]);
-            });
+            var liste = [];
+            if(usd>0) liste.push({i:'💵',a:'Dolar',       f:usd.toFixed(4)+' '+usdDeg, b:'₺',k:'GenelPara·anlık'});
+            if(eur>0) liste.push({i:'💶',a:'Euro',        f:eur.toFixed(4)+' '+eurDeg, b:'₺',k:'GenelPara·anlık'});
+            if(gbp>0) liste.push({i:'💷',a:'Sterlin',     f:gbp.toFixed(4),            b:'₺',k:'GenelPara·anlık'});
+            if(gram>0)   liste.push({i:'🪙',a:'Gram Altın',   f:fmt(gram)+' '+altDeg('GA'),   b:'₺',k:'GenelPara·anlık'});
+            if(ceyrek>0) liste.push({i:'🪙',a:'Çeyrek Altın', f:fmt(ceyrek)+' '+altDeg('C'), b:'₺',k:'GenelPara·anlık'});
+            if(yarim>0)  liste.push({i:'🪙',a:'Yarım Altın',  f:fmt(yarim)+' '+altDeg('Y'),  b:'₺',k:'GenelPara·anlık'});
+            if(tam>0)    liste.push({i:'🪙',a:'Tam Altın',    f:fmt(tam)+' '+altDeg('T'),    b:'₺',k:'GenelPara·anlık'});
+            if(cumh>0)   liste.push({i:'🏅',a:'Cumhuriyet',   f:fmt(cumh)+' '+altDeg('CMR'), b:'₺',k:'GenelPara·anlık'});
+            if(bistVal>0) liste.push({i:'📊',a:'BIST 100',
+                f:bistVal.toLocaleString('tr-TR',{maximumFractionDigits:0})+(bistOran?' '+bistDeg+bistOran+'%':''),
+                b:'',k:'GenelPara·anlık'});
+            _piyasaRender('altinWidget', liste.length>0?liste:[{i:'⚠️',a:'Veri alınamadı',f:'—',b:'',k:''}]);
         }).catch(function(){
-            _piyasaRender('altinWidget',[{i:'⚠️',a:'Veri alınamadı',f:'—',b:'',k:'Bağlantı hatası'}]);
+            var liste = [];
+            if(usd>0)  liste.push({i:'💵',a:'Dolar',     f:usd.toFixed(4), b:'₺',k:'GenelPara'});
+            if(eur>0)  liste.push({i:'💶',a:'Euro',      f:eur.toFixed(4), b:'₺',k:'GenelPara'});
+            if(gram>0) liste.push({i:'🪙',a:'Gram Altın',f:fmt(gram),      b:'₺',k:'GenelPara'});
+            if(ceyrek>0) liste.push({i:'🪙',a:'Çeyrek',  f:fmt(ceyrek),    b:'₺',k:'GenelPara'});
+            if(tam>0)  liste.push({i:'🪙',a:'Tam Altın', f:fmt(tam),       b:'₺',k:'GenelPara'});
+            _piyasaRender('altinWidget', liste.length>0?liste:[{i:'⚠️',a:'Veri alınamadı',f:'—',b:'',k:''}]);
         });
+    }).catch(function(e){
+        console.warn('piyasaAltin hata:',e);
+        _piyasaRender('altinWidget',[{i:'⚠️',a:'Veri alınamadı',f:'—',b:'',k:'Bağlantı hatası'}]);
     });
 }
 
